@@ -2,12 +2,12 @@
   --color-text: black;
   --color-background: white;
   --color-base: white;
-  --color-1: rgb(249.9, 249.9, 249.9);
-  --color-2: rgb(244.8, 244.8, 244.8);
-  --color-3: rgb(237.15, 237.15, 237.15);
-  --color-4: rgb(229.5, 229.5, 229.5);
-  --color-5: rgb(221.85, 221.85, 221.85);
-  --color-6: rgb(214.2, 214.2, 214.2);
+  --color-1: rgb(98%, 98%, 98%);
+  --color-2: rgb(96%, 96%, 96%);
+  --color-3: rgb(93%, 93%, 93%);
+  --color-4: rgb(90%, 90%, 90%);
+  --color-5: rgb(87%, 87%, 87%);
+  --color-6: rgb(84%, 84%, 84%);
   --color-drag1: rgb(95, 134, 196);
   --color-drag2: rgb(119, 166, 119);
   --color-drag1-background: rgba(95, 134, 196, 0.1);

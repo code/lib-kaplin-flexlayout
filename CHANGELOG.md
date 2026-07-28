@@ -1,3 +1,11 @@
+## 0.10.2 - 2026-07-29
+* **Updated:** the data-layout-path attribute in sublayout elements
+* **Added:** action for moving a floating panel
+* **Added:** isAdjusting() method to actions to allow intermediate dragging actions to be ignored in
+Action log and when implementing undo/redo.
+* **Added:** undo/redo buttons to demo
+* **Updated:** Dev Dependencies.
+
 ## 0.10.1 - 2026-07-21
 * **Fixed:** flash of sublayout rendered via the factory when replacing the model with a modified copy of its json.
 * **Fixed:** `ILayoutApi.editTabName(tabNodeId)` in popouts

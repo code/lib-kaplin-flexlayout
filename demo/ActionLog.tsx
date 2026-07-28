@@ -2,7 +2,7 @@ import * as React from "react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ModuleRegistry, ClientSideRowModelModule, RowApiModule, ScrollApiModule, ValidationModule } from "ag-grid-community";
-import { Action, Actions, Model } from "../src";
+import { Action, Model } from "../src";
 
 ModuleRegistry.registerModules([
     ClientSideRowModelModule,
@@ -20,7 +20,6 @@ export interface IActionEntry {
 export const ActionLog = (props: { model: Model }) => {
     const nextActionId = React.useRef<number>(0);
     const [actions, setActions] = React.useState<IActionEntry[]>([]);
-    const lastSplitterResizeAction = React.useRef<Action | undefined>(undefined);
     const currentActions = React.useRef<IActionEntry[]>(actions);
 
     const [colDefs] = React.useState<ColDef<IActionEntry>[]>([
@@ -35,7 +34,6 @@ export const ActionLog = (props: { model: Model }) => {
 
     React.useEffect(() => {
         const currentModel = props.model;
-        let timer: ReturnType<typeof setInterval>;
 
         const addAction = (action: Action) => {
             nextActionId.current++;
@@ -52,27 +50,7 @@ export const ActionLog = (props: { model: Model }) => {
 
         const listener = (action: Action) => {
             // only show last splitter change in log
-            if (action.type === Actions.ADJUST_WEIGHTS || action.type === Actions.ADJUST_BORDER_SPLIT) {
-                lastSplitterResizeAction.current = action;
-                if (timer) {
-                    clearTimeout(timer);
-                }
-                timer = setTimeout(() => {
-                    if (lastSplitterResizeAction.current) {
-                        addAction(lastSplitterResizeAction.current);
-                        setActions(currentActions.current);
-                        lastSplitterResizeAction.current = undefined;
-                    }
-                }, 500);
-            } else {
-                if (lastSplitterResizeAction.current) {
-                    addAction(lastSplitterResizeAction.current);
-                    setActions(currentActions.current);
-                    lastSplitterResizeAction.current = undefined;
-                    if (timer) {
-                        clearTimeout(timer);
-                    }
-                }
+            if (!action.isAdjusting()) {
                 addAction(action);
                 setActions(currentActions.current);
             }
@@ -81,7 +59,6 @@ export const ActionLog = (props: { model: Model }) => {
         currentModel.addChangeListener(listener);
         return () => {
             currentModel.removeChangeListener(listener);
-            clearTimeout(timer);
         };
     }, [props.model]);
 

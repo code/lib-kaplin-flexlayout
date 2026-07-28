@@ -5,6 +5,7 @@ import { LayoutController } from "./layout/LayoutInternal";
 import { Layout } from "../model/Layout";
 import { Rect } from "../model/Rect";
 import { startDrag, getPageMetrics } from "./Utils";
+import { Actions } from "../model/Actions";
 
 enum FloatWindowResizeDirection {
     North = "n",
@@ -37,6 +38,7 @@ const MIN_HEIGHT = 25;
 export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) => {
     const { controller, layout, children } = props;
     const [rect, setRect] = React.useState<Rect>(layout.getRect());
+    const latestRect = React.useRef<Rect>(Rect.empty());
     const cm = controller.getClassName;
     const selfRef = React.useRef<HTMLDivElement>(null);
     const headerRef = React.useRef<HTMLDivElement>(null);
@@ -50,6 +52,16 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
     const nwRef = React.useRef<HTMLDivElement>(null);
     const moveToFrontRef = React.useRef<boolean>(false);
     const raiseTimerRef = React.useRef<number | undefined>(undefined);
+
+    React.useEffect(() => {
+        latestRect.current = rect;
+    }, [rect]);
+
+    React.useEffect(() => {
+        requestAnimationFrame(() => {
+            setRect(layout.getRect());
+        });
+    }, [layout]);
 
     const clampToDoc = React.useCallback(
         (rect: Rect) => {
@@ -155,14 +167,16 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
                 const newRect = new Rect(x - offset.x, y - offset.y, rect.width, rect.height);
                 const clamped = clampToDoc(newRect);
                 setRect(clamped);
-                layout.setRect(clamped);
+                controller.doAction(Actions.moveFloat(layout.getLayoutId(), clamped).setAdjusting(true));
             },
 
             () => {
+                controller.doAction(Actions.moveFloat(layout.getLayoutId(), latestRect.current).setAdjusting(false));
                 controller.redrawLayout();
                 controller.showOverlayOnAllWindows(false);
             },
             () => {
+                controller.doAction(Actions.moveFloat(layout.getLayoutId(), latestRect.current).setAdjusting(false));
                 controller.redrawLayout();
                 controller.showOverlayOnAllWindows(false);
             },
@@ -203,14 +217,16 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
                 const newRect = new Rect(newX, newY, Math.max(MIN_WIDTH, newW), Math.max(MIN_HEIGHT, newH));
                 const clamped = clampToDoc(newRect);
                 setRect(clamped);
-                layout.setRect(clamped);
+                controller.doAction(Actions.moveFloat(layout.getLayoutId(), clamped).setAdjusting(true));
             },
 
             () => {
+                controller.doAction(Actions.moveFloat(layout.getLayoutId(), latestRect.current).setAdjusting(false));
                 controller.redrawLayout();
                 controller.showOverlayOnAllWindows(false);
             },
             () => {
+                controller.doAction(Actions.moveFloat(layout.getLayoutId(), latestRect.current).setAdjusting(false));
                 controller.redrawLayout();
                 controller.showOverlayOnAllWindows(false);
             },

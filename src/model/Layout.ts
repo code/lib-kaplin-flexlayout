@@ -12,6 +12,7 @@ export class Layout {
     private _layoutId: string;
     private _type: ILayoutType;
     private _rect: Rect;
+    private _path: string;
 
     private _controller: LayoutController | undefined;
     private _rootRow?: RowNode | undefined;
@@ -19,11 +20,20 @@ export class Layout {
     private _activeTabSet?: TabSetNode | undefined;
     private _toExportRectFunction: (rect: Rect, type: ILayoutType) => Rect;
 
-    constructor(layoutId: string, type: ILayoutType, rect: Rect) {
+    constructor(layoutId: string, subLayoutId: number, type: ILayoutType, rect: Rect) {
         this._layoutId = layoutId;
         this._type = type;
         this._rect = rect;
         this._toExportRectFunction = (r, _type) => r;
+        if (layoutId === Model.MAIN_LAYOUT_ID) {
+            this._path = "";
+        } else {
+            this._path = "/sublayout" + subLayoutId;
+        }
+    }
+
+    getPath() {
+        return this._path;
     }
 
     visitNodes(fn: (node: Node, level: number) => void) {
@@ -123,8 +133,9 @@ export class Layout {
         // round to whole pixels; drift across save/restore cycles is prevented by the popout window
         // converging on its saved metrics after opening (see PopoutWindow)
         rect.snap(1);
+        const subLayoutId = layoutId === Model.MAIN_LAYOUT_ID ? 0 : model.getNextSubLayoutId();
 
-        const layout = new Layout(layoutId, layoutJson.type || "window", rect);
+        const layout = new Layout(layoutId, subLayoutId, layoutJson.type || "window", rect);
         layout.setRootRow(RowNode.fromJson(layoutJson.layout, model, layout));
 
         return layout;

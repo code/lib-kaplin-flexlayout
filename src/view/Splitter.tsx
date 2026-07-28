@@ -152,7 +152,7 @@ export const Splitter = (props: ISplitterProps) => {
         enablePointerOnIFrames(true, controller.getCurrentDocument()!);
     };
 
-    const updateLayout = (_realtime: boolean) => {
+    const updateLayout = (adjusting: boolean) => {
         const redraw = () => {
             if (outlineDiv.current) {
                 let value: number;
@@ -164,11 +164,11 @@ export const Splitter = (props: ISplitterProps) => {
 
                 if (node instanceof BorderNode) {
                     const pos = (node as BorderNode).calculateSplit(node, value);
-                    controller.doAction(Actions.adjustBorderSplit(node.getId(), pos));
+                    controller.doAction(Actions.adjustBorderSplit(node.getId(), pos).setAdjusting(adjusting));
                 } else {
                     const init = initalSizes.current;
                     const weights = node.calculateSplit(index, value, init.initialSizes, init.sum, init.startPosition);
-                    controller.doAction(Actions.adjustWeights(node.getId(), weights));
+                    controller.doAction(Actions.adjustWeights(node.getId(), weights).setAdjusting(adjusting));
                 }
             }
         };

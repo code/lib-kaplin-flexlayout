@@ -115,7 +115,7 @@ export const TabSet = (props: ITabSetProps) => {
     };
 
     const onPointerDown = (event: React.PointerEvent<HTMLElement>) => {
-        if (!isAuxMouseEvent(event)) {
+        if (!isAuxMouseEvent(event) && !tabsetNode.isActive()) {
             controller.doAction(Actions.setActiveTabset(tabsetNode.getId(), controller.getLayoutId()));
         }
     };

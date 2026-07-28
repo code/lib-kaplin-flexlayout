@@ -39,54 +39,30 @@ import "./styles.css";
 import { Attributes } from "./Attributes";
 import { TabLayout } from "../src/view/TabLayout";
 
-const fields = ["Name", "Field1", "Field2", "Field3", "Field4", "Field5"];
-
-const randomString = (len: number, chars: string) => {
-    const a = [];
-    for (let i = 0; i < len; i++) {
-        a.push(chars[Math.floor(Math.random() * chars.length)]);
-    }
-
-    return a.join("");
-};
-
-const makeFakeData = () => {
-    const data = [];
-    const r = Math.random() * 50;
-    for (let i = 0; i < r; i++) {
-        const rec: { [key: string]: any } = {};
-        rec.Name = randomString(5, "BCDFGHJKLMNPQRSTVWXYZ");
-        for (let j = 1; j < fields.length; j++) {
-            rec[fields[j]] = (1.5 + Math.random() * 2).toFixed(2);
-        }
-        data.push(rec);
-    }
-    return data;
-};
-
 const ContextExample = React.createContext("");
 
-const borderIconStyle = { width: "1em", height: "1em", display: "flex", alignItems: "center" };
-
-// a side panel splitting the layout (side by side)
-const SplitBorderIcon = () => (
-    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" style={borderIconStyle} viewBox="0 0 24 24">
-        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--color-icon)" strokeWidth="1.5" />
-        <rect x="6.75" y="7.75" width="6" height="8.5" rx="1" fill="var(--color-icon)" stroke="var(--color-icon)" />
-    </svg>
-);
-
-// a side panel floating over the layout (protrudes beyond the frame, knocked out where it crosses it)
-const OverlayBorderIcon = () => (
-    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" style={borderIconStyle} viewBox="0 0 24 24">
-        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--color-icon)" strokeWidth="1.5" />
-        <rect x="3.75" y="4.75" width="8" height="14.5" rx="1" fill="var(--color-icon)" stroke="var(--color-icon)" />
-    </svg>
-);
-
 function App() {
-    const [layoutFile, setLayoutFile] = React.useState<string | null>(null);
-    const [model, setModel] = React.useState<Model | null>(null);
+    const [layoutFile, setLayoutFile] = React.useState<string | null>(() => {
+        if (typeof window === "undefined") return "default";
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+        return params.get("layout") || "default";
+    });
+    const [model, setModel] = React.useState<Model | null>(() => {
+        if (typeof window === "undefined" || !layoutFile) return null;
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams(url.search);
+        const layout = params.get("layout") || "default";
+        const json = localStorage.getItem(layout);
+        if (json != null) {
+            try {
+                return Model.fromJson(JSON.parse(json));
+            } catch (e) {
+                console.error("Error parsing layout from localStorage", e);
+            }
+        }
+        return null;
+    });
     const [, setJson] = React.useState<string>("");
     const [, setFontSize] = React.useState<string>("medium");
     const [realtimeResize, setRealtimeResize] = React.useState<boolean>(true);
@@ -105,6 +81,14 @@ function App() {
     const latestModel = React.useRef<Model | null>(model);
     const latestLayoutFile = React.useRef<string | null>(layoutFile);
 
+    // undo/redo fields
+    const lastModelJson = React.useRef<string>("");
+    const modelBeforeAdjusting = React.useRef<string | null>(null);
+    const undoBuffer = React.useRef<string[]>([]);
+    const redoBuffer = React.useRef<string[]>([]);
+    const [undoBufferLength, setUndoBufferLength] = React.useState(0);
+    const [redoBufferLength, setRedoBufferLength] = React.useState(0);
+
     React.useEffect(() => {
         latestModel.current = model;
         latestLayoutFile.current = layoutFile;
@@ -116,14 +100,55 @@ function App() {
         (window as any).__flexLayout = () => layoutRef.current;
     });
 
+    // record model changes for undo/redo
+    React.useEffect(() => {
+        if (model) {
+            lastModelJson.current = JSON.stringify(model.toJson());
+        }
+
+        const afterAction = (action: Action) => {
+            if (action.isAdjusting()) {
+                if (modelBeforeAdjusting.current === null) {
+                    modelBeforeAdjusting.current = lastModelJson.current;
+                }
+            } else {
+                if (action.type !== Actions.SET_ACTIVE_TABSET) {
+                    undoBuffer.current.push(modelBeforeAdjusting.current || lastModelJson.current);
+                    if (undoBuffer.current.length > 100) {
+                        // keep upto 100 in undo buffer
+                        undoBuffer.current.shift();
+                    }
+                    redoBuffer.current = [];
+                    setUndoBufferLength(undoBuffer.current.length);
+                    setRedoBufferLength(redoBuffer.current.length);
+                }
+                modelBeforeAdjusting.current = null;
+                if (model) {
+                    lastModelJson.current = JSON.stringify(model.toJson());
+                }
+            }
+        };
+        model?.addChangeListener(afterAction);
+
+        return () => {
+            model?.removeChangeListener(afterAction);
+        };
+    }, [model]);
+
     const save = () => {
-        const jsonStr = JSON.stringify(latestModel.current!.toJson(), null, "\t");
-        localStorage.setItem(latestLayoutFile.current!, jsonStr);
+        if (latestModel.current && latestLayoutFile.current) {
+            const jsonStr = JSON.stringify(latestModel.current.toJson(), null, "\t");
+            localStorage.setItem(latestLayoutFile.current, jsonStr);
+        }
     };
 
     const load = (jsonText: string) => {
         const json = JSON.parse(jsonText);
         const model = Model.fromJson(json);
+        undoBuffer.current = [];
+        redoBuffer.current = [];
+        setUndoBufferLength(0);
+        setRedoBufferLength(0);
 
         // model.addChangeListener((action:Action) => {
         //     console.log(JSON.stringify(action));
@@ -184,29 +209,38 @@ function App() {
 
     React.useEffect(() => {
         // save layout when unloading page
-        window.onbeforeunload = () => {
+        const handleBeforeUnload = () => {
             save();
         };
+        window.addEventListener("beforeunload", handleBeforeUnload);
 
         const url = new URL(window.location.href);
         const params = new URLSearchParams(url.search);
         const layout = params.get("layout") || "default";
 
-        loadLayout(layout, false);
+        // Only download layout from file if not already present in localStorage
+        const hasLocalStorage = localStorage.getItem(layout) !== null;
+        if (!hasLocalStorage) {
+            loadingLayoutName.current = layout;
+            Utils.downloadFile("layouts/" + layout + ".layout", load, error);
+        }
 
         // use to generate json typescript interfaces
         // Model.toTypescriptInterfaces();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
     }, []);
 
     const onAddActiveClick = (_event: React.MouseEvent) => {
+        if (!layoutRef.current) return;
         if (layoutFile?.startsWith("test_")) {
-            layoutRef!.current!.addTabToActiveTabSet({
+            layoutRef.current.addTabToActiveTabSet({
                 component: "testing",
                 name: "Text" + nextGridIndex.current++,
             });
         } else {
-            layoutRef!.current!.addTabToActiveTabSet({
+            layoutRef.current.addTabToActiveTabSet({
                 component: "grid",
                 icon: "images/article.svg",
                 name: "Grid " + nextGridIndex.current++,
@@ -402,16 +436,40 @@ function App() {
     };
 
     const onRerenderClick = (_event: React.MouseEvent) => {
-        // round trip the model: swapping in a new model keeps the tab contents mounted (no flash)
-        setModel(Model.fromJson(latestModel.current!.toJson(), latestModel.current!));
+        if (latestModel.current) {
+            // round trip the model: swapping in a new model keeps the tab contents mounted (no flash)
+            setModel(Model.fromJson(latestModel.current.toJson(), latestModel.current));
+        }
     };
 
     const onShowLayoutClick = (_event: React.MouseEvent) => {
-        console.log(JSON.stringify(model!.toJson(), null, "\t"));
+        if (model) {
+            console.log(JSON.stringify(model.toJson(), null, "\t"));
+        }
     };
 
     const onAction = (action: Action) => {
         return action;
+    };
+
+    const onUndo = (_event: React.MouseEvent) => {
+        if (undoBuffer.current.length > 0 && model) {
+            const json = undoBuffer.current.pop()!;
+            redoBuffer.current.push(JSON.stringify(model.toJson()));
+            setModel(Model.fromJson(JSON.parse(json), model));
+            setUndoBufferLength(undoBuffer.current.length);
+            setRedoBufferLength(redoBuffer.current.length);
+        }
+    };
+
+    const onRedo = (_event: React.MouseEvent) => {
+        if (redoBuffer.current.length > 0 && model) {
+            const json = redoBuffer.current.pop()!;
+            undoBuffer.current.push(JSON.stringify(model.toJson()));
+            setModel(Model.fromJson(JSON.parse(json), model));
+            setUndoBufferLength(undoBuffer.current.length);
+            setRedoBufferLength(redoBuffer.current.length);
+        }
     };
 
     const factory = (node: TabNode) => {
@@ -484,8 +542,8 @@ function App() {
                 model = node.getExtraData().model;
                 // save submodel on save event
                 node.setEventListener("save", (_p: any) => {
-                    latestModel.current!.doAction(Actions.updateNodeAttributes(node.getId(), { config: { model: node.getExtraData().model.toJson() } }));
-                    //  node.getConfig().model = node.getExtraData().model.toJson();
+                    // latestModel.current!.doAction(Actions.updateNodeAttributes(node.getId(), { config: { model: node.getExtraData().model.toJson() } }));
+                    node.getConfig().model = node.getExtraData().model.toJson();
                 });
             }
 
@@ -743,8 +801,28 @@ function App() {
                             <option value="sub">SubLayout</option>
                             <option value="complex">Complex</option>
                         </select>
-                        <button key="reloadbutton" className="toolbar_control" onClick={onReloadFromFile} style={{ marginLeft: 5 }}>
+                        <button key="reloadbutton" className="toolbar_control " onClick={onReloadFromFile} style={{ marginLeft: 5 }}>
                             Reload
+                        </button>
+                        <button
+                            key="undobutton"
+                            title={"undo (" + undoBufferLength + ")"}
+                            className="toolbar_control reset-btn"
+                            onClick={onUndo}
+                            disabled={undoBufferLength === 0}
+                            style={{ marginLeft: 5 }}
+                        >
+                            <img src="images/undo.svg" alt="" style={{ width: "1.5em", height: "1.5em" }} />
+                        </button>
+                        <button
+                            key="redobutton"
+                            title={"redo (" + redoBufferLength + ")"}
+                            className="toolbar_control reset-btn"
+                            onClick={onRedo}
+                            disabled={redoBufferLength === 0}
+                            style={{ marginLeft: 5 }}
+                        >
+                            <img src="images/redo.svg" alt="" style={{ width: "1.5em", height: "1.5em" }} />
                         </button>
                         <div style={{ flexGrow: 1 }}></div>
                         <button
@@ -837,6 +915,49 @@ function SimpleTable(props: { fields: any; node: Node; data: any; onDragStart: (
         </table>
     );
 }
+
+const borderIconStyle = { width: "1em", height: "1em", display: "flex", alignItems: "center" };
+
+// a side panel splitting the layout (side by side)
+const SplitBorderIcon = () => (
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" style={borderIconStyle} viewBox="0 0 24 24">
+        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--color-icon)" strokeWidth="1.5" />
+        <rect x="6.75" y="7.75" width="6" height="8.5" rx="1" fill="var(--color-icon)" stroke="var(--color-icon)" />
+    </svg>
+);
+
+// a side panel floating over the layout (protrudes beyond the frame, knocked out where it crosses it)
+const OverlayBorderIcon = () => (
+    <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" style={borderIconStyle} viewBox="0 0 24 24">
+        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--color-icon)" strokeWidth="1.5" />
+        <rect x="3.75" y="4.75" width="8" height="14.5" rx="1" fill="var(--color-icon)" stroke="var(--color-icon)" />
+    </svg>
+);
+
+const fields = ["Name", "Field1", "Field2", "Field3", "Field4", "Field5"];
+
+const randomString = (len: number, chars: string) => {
+    const a = [];
+    for (let i = 0; i < len; i++) {
+        a.push(chars[Math.floor(Math.random() * chars.length)]);
+    }
+
+    return a.join("");
+};
+
+const makeFakeData = () => {
+    const data = [];
+    const r = Math.random() * 50;
+    for (let i = 0; i < r; i++) {
+        const rec: { [key: string]: any } = {};
+        rec.Name = randomString(5, "BCDFGHJKLMNPQRSTVWXYZ");
+        for (let j = 1; j < fields.length; j++) {
+            rec[fields[j]] = (1.5 + Math.random() * 2).toFixed(2);
+        }
+        data.push(rec);
+    }
+    return data;
+};
 
 // function InnerComponent() {
 //     const value = React.useContext(ContextExample);

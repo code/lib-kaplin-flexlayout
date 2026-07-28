@@ -51,6 +51,8 @@ export class Model {
     private onAllowDrop?: (dragNode: Node, dropInfo: DropInfo) => boolean;
     /** @internal */
     private onCreateTabSet?: (tabNode?: TabNode) => ITabSetAttributes;
+    /** @internal */
+    private nextSubLayoutId: number;
 
     /**
      * 'private' constructor. Use the static method Model.fromJson(json) to create a model
@@ -62,7 +64,8 @@ export class Model {
         this.borders = new BorderSet(this);
         this.idMap = new Map();
         this.changeListeners = [];
-        this.mainLayout = new Layout(Model.MAIN_LAYOUT_ID, "window", Rect.empty());
+        this.nextSubLayoutId = 1;
+        this.mainLayout = new Layout(Model.MAIN_LAYOUT_ID, 0, "window", Rect.empty());
         this.layouts.set(Model.MAIN_LAYOUT_ID, this.mainLayout);
         this.splitterSize = 8;
     }
@@ -137,7 +140,7 @@ export class Model {
                     const layoutId = randomUUID();
                     const type = action.data.type || "window";
 
-                    const layout = new Layout(layoutId, type, oldLayout.getToExportRectFunction()(node.getRect(), type));
+                    const layout = new Layout(layoutId, this.getNextSubLayoutId(), type, oldLayout.getToExportRectFunction()(node.getRect(), type));
                     const json = {
                         type: "row",
                     };
@@ -161,7 +164,7 @@ export class Model {
                     const popoutRect = parent.getContentRect();
                     const oldLayout = node.getLayout()!;
                     const type = action.data.type || "window";
-                    const layout = new Layout(layoutId, type, oldLayout.getToExportRectFunction()(popoutRect, type));
+                    const layout = new Layout(layoutId, this.getNextSubLayoutId(), type, oldLayout.getToExportRectFunction()(popoutRect, type));
                     const tabsetId = randomUUID();
                     const json: IJsonRowNode = {
                         type: "row",
@@ -304,7 +307,7 @@ export class Model {
 
             case Actions.CREATE_SUBLAYOUT: {
                 const layoutId = randomUUID();
-                const layout = new Layout(layoutId, action.data.type || "window", Rect.fromJson(action.data.rect));
+                const layout = new Layout(layoutId, this.getNextSubLayoutId(), action.data.type || "window", Rect.fromJson(action.data.rect));
                 const row = RowNode.fromJson(action.data.layout, this, layout);
                 layout.setRootRow(row);
                 this.layouts.set(layoutId, layout);
@@ -328,6 +331,15 @@ export class Model {
                 if (layout) {
                     this.layouts.delete(layoutId);
                     this.layouts.set(layoutId, layout);
+                }
+                break;
+            }
+
+            case Actions.MOVE_FLOAT: {
+                const layoutId = action.data.layoutId;
+                const layout = this.layouts.get(layoutId);
+                if (layout) {
+                    layout.setRect(action.data.rect);
                 }
                 break;
             }
@@ -683,6 +695,11 @@ export class Model {
     /** @internal */
     getOnCreateTabSet() {
         return this.onCreateTabSet;
+    }
+
+    /** @internal */
+    getNextSubLayoutId() {
+        return this.nextSubLayoutId++;
     }
 
     static toTypescriptInterfaces() {

@@ -39,6 +39,7 @@ export interface ILayoutInternalProps extends ILayoutProps {
 
     // used only for sublayouts:
     layoutId?: string;
+    path?: string;
     mainLayoutController?: LayoutController;
 }
 
@@ -299,7 +300,7 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
     const model = props.model;
     const layoutId = controller.getLayoutId();
     model.getRootRow(layoutId)!.calcMinMaxSize();
-    model.getRootRow(layoutId)!.setPaths("");
+    model.getRootRow(layoutId)!.setPaths(props.path || "");
 
     if (controller.isMainLayout()) {
         model.getBorderSet().setPaths();

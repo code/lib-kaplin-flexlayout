@@ -81,7 +81,9 @@ export const TabButton = (props: ITabButtonProps) => {
     };
 
     const onClick = () => {
-        controller.doAction(Actions.selectTab(tabNode.getId()));
+        if (!tabNode.isSelected()) {
+            controller.doAction(Actions.selectTab(tabNode.getId()));
+        }
     };
 
     const focusAdjacentTab = (delta: number) => {

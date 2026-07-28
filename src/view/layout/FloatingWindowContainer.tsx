@@ -25,7 +25,7 @@ export const FloatingWindowContainer = ({ controller }: IFloatingWindowContainer
                         onCloseLayout={controller.onCloseLayout}
                     >
                         <div className={controller.getProps().popoutClassName}>
-                            <LayoutInternal {...controller.getProps()} layoutId={layoutId} mainLayoutController={controller} />
+                            <LayoutInternal {...controller.getProps()} layoutId={layoutId} path={layout.getPath()} mainLayoutController={controller} />
                         </div>
                     </PopoutWindow>,
                 );
@@ -33,7 +33,7 @@ export const FloatingWindowContainer = ({ controller }: IFloatingWindowContainer
             } else if (layout.getType() === "float") {
                 floatingLayouts.push(
                     <FloatWindow key={layoutId + "float"} controller={controller} layout={layout} zIndex={floatPopoutZIndex} onCloseLayout={controller.onCloseLayout}>
-                        <LayoutInternal {...controller.getProps()} layoutId={layoutId} mainLayoutController={controller} />
+                        <LayoutInternal {...controller.getProps()} layoutId={layoutId} path={layout.getPath()} mainLayoutController={controller} />
                     </FloatWindow>,
                 );
                 floatPopoutZIndex++;

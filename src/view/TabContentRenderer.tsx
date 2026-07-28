@@ -21,9 +21,11 @@ export const TabContentRenderer = React.memo(({ controller, tabNode }: ITabConte
     if (tabNode.getComponent()) {
         content = controller.getFactory()(tabNode);
     } else if (tabNode.getSubLayoutId()) {
+        const model = tabNode.getModel();
+        const subLayout = model.getLayouts().get(tabNode.getSubLayoutId()!)!;
         content = (
             <div className={controller.getClassName(CLASSES.FLEXLAYOUT__TAB_LAYOUT_CONTAINER)}>
-                <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} mainLayoutController={controller.getMainController()} />;
+                <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} path={tabNode.getPath() + subLayout.getPath()} mainLayoutController={controller.getMainController()} />;
             </div>
         );
     }

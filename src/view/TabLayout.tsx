@@ -20,9 +20,11 @@ export const TabLayout = (props: ITabLayoutProps) => {
 
     if (!controller) return;
 
+    const model = tabNode.getModel();
+    const subLayout = model.getLayouts().get(tabNode.getSubLayoutId()!)!;
     return (
         <div className={controller.getClassName(CLASSES.FLEXLAYOUT__TAB_LAYOUT_CONTAINER_USER)}>
-            <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} mainLayoutController={controller.getMainController()} />;
+            <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} path={tabNode.getPath() + subLayout.getPath()} mainLayoutController={controller.getMainController()} />;
         </div>
     );
 };

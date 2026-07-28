@@ -1,6 +1,7 @@
 import { DockLocation } from "./DockLocation";
 import { IGlobalAttributes, IJsonRect, IJsonRowNode, IJsonTabNode, IRowAttributes, ITabAttributes, ITabSetAttributes } from "./IJsonModel";
 import { ILayoutType } from "./IJsonModel";
+import { Rect } from "./Rect";
 
 /**
  * The Action creator class for FlexLayout model actions
@@ -25,6 +26,7 @@ export class Actions {
     static POPOUT_TABSET = "FlexLayout_PopoutTabset";
     static CLOSE_POPOUT = "FlexLayout_ClosePopout";
     static MOVE_POPOUT_TO_FRONT = "FlexLayout_MoveFloatToFront";
+    static MOVE_FLOAT = "FlexLayout_MoveFloat";
 
     static CREATE_SUBLAYOUT = "FlexLayout_CreateSubLayout";
 
@@ -228,6 +230,16 @@ export class Actions {
     }
 
     /**
+     * Moves a floating panel
+     * @param layoutId the id of the floating panel to move
+     * @param rect the new rectangle
+     * @returns {Action} the action
+     */
+    static moveFloat(layoutId: string, rect: Rect): Action {
+        return new Action(Actions.MOVE_FLOAT, { layoutId: layoutId, rect: rect });
+    }
+
+    /**
      * Creates a new empty popout window with the given layout (alias for createSubLayout)
      * @param layout the json layout for the new window
      * @param rect the window rectangle in screen coordinates
@@ -253,9 +265,20 @@ export class Actions {
 export class Action {
     type: string;
     data: Record<string, any>;
+    adjusting: boolean;
 
     constructor(type: string, data: Record<string, any>) {
         this.type = type;
         this.data = data;
+        this.adjusting = false;
+    }
+
+    setAdjusting(adjusting: boolean): Action {
+        this.adjusting = adjusting;
+        return this;
+    }
+
+    isAdjusting(): boolean {
+        return this.adjusting;
     }
 }
