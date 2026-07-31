@@ -1,7 +1,25 @@
 {
 	"global": {
 	},
-	"borders": [],
+	"borders": [
+				{
+			"location": "left",
+			"type": "border",
+			"size": 400,
+			"children": [
+				{
+					"type": "tab",
+					"id": "model_explorer",
+					"name": "Model Explorer",
+					"component": "model_explorer",
+					"icon": "images/dns.svg",
+					"enableClose": false,
+					"enableScrollbars": false,
+					"config": { "alwaysShowInDemo": true }
+				}
+			]
+		}
+	],
 	"layout": {
 		"type": "row",
 		"id": "1",
@@ -13,9 +31,10 @@
 				"children": [
 					{
 						"type": "tab",
-						"id": "3",
+						"id": "layout_json",
 						"name": "Layout JSON",
-						"component": "json"
+						"component": "json",
+						"icon": "images/data_object.svg"
 					}
 				],
 				"active": true
@@ -27,7 +46,7 @@
 				"children": [
 					{
 						"type": "tab",
-						"id": "5",
+						"id": "editor",
 						"name": "Editor",
 						"component": "monaco",
 						"icon": "images/article.svg"

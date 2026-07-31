@@ -1,7 +1,7 @@
 import * as React from "react";
 import { TabNode } from "../src";
 
-export function Attributes({ node }: { node: TabNode }) {
+export function TabProperties({ node }: { node: TabNode }) {
     const [, setValue] = React.useState<number>(0);
 
     React.useEffect(() => {

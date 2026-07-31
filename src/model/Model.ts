@@ -9,6 +9,7 @@ import { BorderNode } from "./BorderNode";
 import { BorderSet } from "./BorderSet";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
+import { ICloseType } from "./ICloseType";
 import { IGlobalAttributes, IJsonModel, IJsonSubLayout, IJsonRowNode, ITabSetAttributes } from "./IJsonModel";
 import { Node } from "./Node";
 import { RowNode } from "./RowNode";
@@ -30,6 +31,25 @@ export class Model {
 
     /** @internal */
     private static attributeDefinitions: Attributes = Model.createAttributeDefinitions();
+    /** @internal */
+    private static attributePairingDone: boolean = false;
+
+    /**
+     * Pairs the global attribute definitions with the node attribute definitions so that an
+     * inherited node attribute can resolve its type/description/default from the global
+     * attribute it maps to (and vice versa), e.g. tabEnableClose <-> enableClose. Idempotent;
+     * called automatically when the definitions are accessed.
+     */
+    static ensureAttributePairing() {
+        if (Model.attributePairingDone) {
+            return;
+        }
+        Model.attributePairingDone = true;
+        Model.attributeDefinitions.pairAttributes("RowNode", RowNode.getAttributeDefinitions());
+        Model.attributeDefinitions.pairAttributes("TabSetNode", TabSetNode.getAttributeDefinitions());
+        Model.attributeDefinitions.pairAttributes("TabNode", TabNode.getAttributeDefinitions());
+        Model.attributeDefinitions.pairAttributes("BorderNode", BorderNode.getAttributeDefinitions());
+    }
 
     /** @internal */
     private attributes: Record<string, any>;
@@ -225,8 +245,9 @@ export class Model {
                     const c = row.getChildren();
                     for (let i = 0; i < c.length; i++) {
                         const n = c[i] as TabSetNode | RowNode;
-                        if (typeof weights?.[i] === "number") {
-                            // ignore missing weights rather than poisoning the layout with undefined
+                        if (typeof weights?.[i] === "number" && Number.isFinite(weights[i])) {
+                            // ignore missing/non-finite weights rather than poisoning the layout with
+                            // undefined/Infinity/NaN weights
                             n.setWeight(weights[i]);
                         }
                     }
@@ -461,6 +482,7 @@ export class Model {
      * @returns {Model} a new Model object
      */
     static fromJson(json: IJsonModel, previousModel?: Model) {
+        Model.ensureAttributePairing();
         const model = new Model();
         Model.attributeDefinitions.fromJson(json.global ?? {}, model.attributes);
 
@@ -702,11 +724,15 @@ export class Model {
         return this.nextSubLayoutId++;
     }
 
-    static toTypescriptInterfaces() {
-        Model.attributeDefinitions.pairAttributes("RowNode", RowNode.getAttributeDefinitions());
-        Model.attributeDefinitions.pairAttributes("TabSetNode", TabSetNode.getAttributeDefinitions());
-        Model.attributeDefinitions.pairAttributes("TabNode", TabNode.getAttributeDefinitions());
-        Model.attributeDefinitions.pairAttributes("BorderNode", BorderNode.getAttributeDefinitions());
+    /** @internal */
+    static getGlobalAttributeDefinitions(): Attributes {
+        Model.ensureAttributePairing();
+        return Model.attributeDefinitions;
+    }
+
+    /** @internal */
+    static toTypescriptInterfaces(): string {
+        Model.ensureAttributePairing();
 
         const sb = [];
         sb.push(Model.attributeDefinitions.toTypescriptInterface("Global", undefined));
@@ -714,7 +740,7 @@ export class Model {
         sb.push(TabSetNode.getAttributeDefinitions().toTypescriptInterface("TabSet", Model.attributeDefinitions));
         sb.push(TabNode.getAttributeDefinitions().toTypescriptInterface("Tab", Model.attributeDefinitions));
         sb.push(BorderNode.getAttributeDefinitions().toTypescriptInterface("Border", Model.attributeDefinitions));
-        console.log(sb.join("\n"));
+        return sb.join("\n");
     }
 
     /** @internal */
@@ -734,7 +760,14 @@ export class Model {
 
         // tab
         attributeDefinitions.add("tabEnableClose", true).setType(Attribute.BOOLEAN);
-        attributeDefinitions.add("tabCloseType", 1).setType("ICloseType");
+        attributeDefinitions
+            .add("tabCloseType", 1)
+            .setType("ICloseType")
+            .setValues([
+                { value: ICloseType.Visible, label: "Visible" },
+                { value: ICloseType.Always, label: "Always" },
+                { value: ICloseType.Selected, label: "Selected" },
+            ]);
         attributeDefinitions.add("tabEnablePopout", false).setType(Attribute.BOOLEAN).setAlias("tabEnableFloat");
         attributeDefinitions.add("tabEnablePopoutIcon", true).setType(Attribute.BOOLEAN);
         attributeDefinitions.add("tabEnablePopoutFloatIcon", false).setType(Attribute.BOOLEAN);
@@ -763,7 +796,7 @@ export class Model {
         attributeDefinitions.add("tabSetClassNameTabStrip", undefined).setType(Attribute.STRING);
         attributeDefinitions.add("tabSetEnableTabStrip", true).setType(Attribute.BOOLEAN);
         attributeDefinitions.add("tabSetEnableTabWrap", false).setType(Attribute.BOOLEAN);
-        attributeDefinitions.add("tabSetTabLocation", "top").setType("ITabLocation");
+        attributeDefinitions.add("tabSetTabLocation", "top").setType("ITabLocation").setValues(["top", "bottom"]);
         attributeDefinitions.add("tabMinWidth", DefaultMin).setType(Attribute.NUMBER);
         attributeDefinitions.add("tabMinHeight", DefaultMin).setType(Attribute.NUMBER);
         attributeDefinitions.add("tabSetMinWidth", DefaultMin).setType(Attribute.NUMBER);

@@ -1,4 +1,4 @@
-/** @jest-environment jsdom */
+// @vitest-environment jsdom
 import { Action, Actions, BorderNode, DockLocation, IJsonModel, Model, Node, Rect, RowNode, TabNode, TabSetNode } from "../src";
 
 /*
@@ -656,6 +656,197 @@ describe("Tree", function () {
             });
         });
 
+        describe("Splitter weight conservation", () => {
+            // splitter at index 1 sits between A and B in [A, B, C]
+            const makeRow = (aAttrs: object, bAttrs: object, cAttrs: object) =>
+                Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [
+                            { type: "tabset", id: "A", ...aAttrs, children: [{ type: "tab", name: "One" }] },
+                            { type: "tabset", id: "B", ...bAttrs, children: [{ type: "tab", name: "Two" }] },
+                            { type: "tabset", id: "C", ...cAttrs, children: [{ type: "tab", name: "Three" }] },
+                        ],
+                    },
+                });
+
+            const sumWeights = (weights: number[]) => weights.reduce((a, b) => a + b, 0);
+
+            it("conserves the total on a plain 3-child move in both directions", () => {
+                model = makeRow({}, {}, {});
+                const row = model.getRootRow() as RowNode;
+                row.calcMinMaxSize();
+
+                // moved right by 100: A grows, B shrinks, C unchanged
+                const right = row.calculateSplit(1, 350, [250, 250, 250], 750, 250);
+                expect(sumWeights(right)).toBeCloseTo(100);
+
+                // moved left by 100: B grows, A shrinks, C unchanged
+                const left = row.calculateSplit(1, 150, [250, 250, 250], 750, 250);
+                expect(sumWeights(left)).toBeCloseTo(100);
+            });
+
+            it("propagates a growth cap on B to the non-adjacent child C", () => {
+                model = makeRow({}, { maxWidth: 300 }, {});
+                const row = model.getRootRow() as RowNode;
+                row.calcMinMaxSize();
+                // moved left by 200: B (250 -> 450) is capped at 300, so the overflow of 150 must
+                // flow into C (250 -> 400); A shrinks to its min of 50. total must stay conserved
+                const weights = row.calculateSplit(1, 50, [250, 250, 250], 750, 250);
+                expect(weights[0]).toBeCloseTo((50 * 100) / 750);
+                expect(weights[1]).toBeCloseTo((300 * 100) / 750);
+                expect(weights[2]).toBeCloseTo((400 * 100) / 750);
+                expect(sumWeights(weights)).toBeCloseTo(100);
+            });
+
+            it("propagates a shrink floor across the whole right side", () => {
+                model = makeRow({}, { minWidth: 100 }, { minWidth: 100 });
+                const row = model.getRootRow() as RowNode;
+                row.calcMinMaxSize();
+                // moved right by 300 to the bound (550): A (250 -> 550), B and C both floor at 100
+                // and the remaining shift flows onward; the total must stay conserved
+                const weights = row.calculateSplit(1, 550, [250, 250, 250], 750, 250);
+                expect(sumWeights(weights)).toBeCloseTo(100);
+                expect(weights[0]).toBeCloseTo((550 * 100) / 750);
+                expect(weights[1]).toBeCloseTo((100 * 100) / 750);
+                expect(weights[2]).toBeCloseTo((100 * 100) / 750);
+            });
+        });
+
+        describe("Splitter bounds robustness", () => {
+            it("keeps bounds ordered when the child min sizes exceed the available space", () => {
+                model = Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [
+                            { type: "tabset", id: "A", minWidth: 400, children: [{ type: "tab", name: "One" }] },
+                            { type: "tabset", id: "B", minWidth: 400, children: [{ type: "tab", name: "Two" }] },
+                            { type: "tabset", id: "C", minWidth: 400, children: [{ type: "tab", name: "Three" }] },
+                        ],
+                    },
+                });
+                const row = model.getRootRow() as RowNode;
+                const children = row.getChildren();
+                (children[0] as TabSetNode).setRect(new Rect(0, 0, 100, 100));
+                (children[1] as TabSetNode).setRect(new Rect(108, 0, 100, 100));
+                (children[2] as TabSetNode).setRect(new Rect(216, 0, 84, 100));
+
+                const bounds = row.getSplitterBounds(1);
+                // without the degenerate guard this would be [lo, hi] with lo > hi, collapsing every
+                // splitter position and poisoning the weight math
+                expect(bounds[0]).toBeLessThanOrEqual(bounds[1]);
+
+                const weights = row.calculateSplit(1, bounds[0], [100, 100, 84], 284, 108);
+                expect(weights.every((w) => Number.isFinite(w) && w >= 0)).equal(true);
+            });
+
+            it("does not invert bounds when a child has minWidth > maxWidth", () => {
+                model = Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [
+                            { type: "tabset", id: "A", minWidth: 300, maxWidth: 100, children: [{ type: "tab", name: "One" }] },
+                            { type: "tabset", id: "B", children: [{ type: "tab", name: "Two" }] },
+                        ],
+                    },
+                });
+                const row = model.getRootRow() as RowNode;
+                const children = row.getChildren();
+                (children[0] as TabSetNode).setRect(new Rect(0, 0, 300, 100));
+                (children[1] as TabSetNode).setRect(new Rect(308, 0, 200, 100));
+
+                const bounds = row.getSplitterBounds(1);
+                // without the per-child max clamp, A's maxWidth (100) would pull the upper bound
+                // below the lower bound (300), inverting the range
+                expect(bounds[0]).toBeLessThanOrEqual(bounds[1]);
+            });
+
+            it("calculateSplit returns an empty array instead of Infinity for an unmeasured row", () => {
+                model = Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [
+                            { type: "tabset", id: "A", children: [{ type: "tab", name: "One" }] },
+                            { type: "tabset", id: "B", children: [{ type: "tab", name: "Two" }] },
+                        ],
+                    },
+                });
+                const row = model.getRootRow() as RowNode;
+                // zero rects -> zero sum: a division by zero would otherwise emit Infinity weights
+                expect(row.calculateSplit(1, 100, [0, 0], 0, 100)).toEqual([]);
+            });
+
+            it("ignores non-finite weights in adjustWeights", () => {
+                model = Model.fromJson(twoTabs);
+                textRender(model);
+                const row = model.getRootRow()!;
+                const w0 = (row.getChildren()[0] as TabSetNode).getWeight();
+
+                doAction(Actions.adjustWeights(row.getId(), [Infinity, 5]));
+                expect((row.getChildren()[0] as TabSetNode).getWeight()).equal(w0);
+                expect((row.getChildren()[1] as TabSetNode).getWeight()).equal(5);
+            });
+        });
+
+        describe("Border splitter bounds", () => {
+            const locations = ["top", "left", "bottom", "right"] as const;
+            const makeModel = (location: (typeof locations)[number]) =>
+                Model.fromJson({
+                    global: {},
+                    borders: [{ type: "border", location, size: 100, children: [{ type: "tab", name: "B" }] }],
+                    layout: { type: "row", children: [{ type: "tabset", children: [{ type: "tab", name: "T" }] }] },
+                });
+
+            for (const location of locations) {
+                it(`returns ordered finite bounds and a consistent split for the ${location} border`, () => {
+                    model = makeModel(location);
+                    const border = model.getBorderSet().getBorderMap().get(DockLocation.getByName(location)) as BorderNode;
+                    // measured inner area (the root row) plus the border's own tab strip
+                    model.getRootRow()!.setRect(new Rect(10, 10, 500, 300));
+                    if (location === "top") {
+                        border.setTabHeaderRect(new Rect(10, 0, 500, 20)); // strip above the inner area
+                    } else if (location === "left") {
+                        border.setTabHeaderRect(new Rect(0, 10, 20, 300)); // strip left of the inner area
+                    } else if (location === "bottom") {
+                        border.setTabHeaderRect(new Rect(10, 310, 500, 20)); // strip below the inner area
+                    } else {
+                        border.setTabHeaderRect(new Rect(510, 10, 20, 300)); // strip right of the inner area
+                    }
+
+                    const bounds = border.getSplitterBounds(true);
+                    expect(Number.isFinite(bounds[0])).equal(true);
+                    expect(bounds[0]).toBeLessThanOrEqual(bounds[1]);
+
+                    const sizeAtMin = border.calculateSplit(border, bounds[0]);
+                    const sizeAtMax = border.calculateSplit(border, bounds[1]);
+                    expect(Number.isFinite(sizeAtMin)).equal(true);
+                    expect(Number.isFinite(sizeAtMax)).equal(true);
+                    expect(sizeAtMin).toBeGreaterThanOrEqual(0);
+                    expect(sizeAtMax).toBeGreaterThanOrEqual(0);
+                    // growing the splitter grows the border for top/left and shrinks it for
+                    // bottom/right
+                    if (location === "top" || location === "left") {
+                        expect(sizeAtMax).toBeGreaterThanOrEqual(sizeAtMin);
+                    } else {
+                        expect(sizeAtMin).toBeGreaterThanOrEqual(sizeAtMax);
+                    }
+                });
+            }
+
+            it("returns [0,0] before the root row has been measured", () => {
+                model = makeModel("left");
+                const border = model.getBorderSet().getBorderMap().get(DockLocation.LEFT) as BorderNode;
+                border.setTabHeaderRect(new Rect(0, 10, 20, 300));
+                // the root row rect is still Rect.empty(): clamp against its edges must not produce
+                // negative/locked bounds
+                expect(border.getSplitterBounds(true)).toEqual([0, 0]);
+            });
+        });
+
         describe("Maximized tabset cleanup", () => {
             it("delete tabset clears maximized state", () => {
                 model = Model.fromJson({
@@ -1105,3 +1296,73 @@ const threeTabs: IJsonModel = {
         ],
     },
 };
+
+describe("attribute definitions", () => {
+    it("pairs the global attributes with the node attributes at runtime", () => {
+        const global = Model.getGlobalAttributeDefinitions();
+        const tabSetEnableClose = global.getAttributes().find((a) => a.name === "tabSetEnableClose")!;
+        expect(tabSetEnableClose.pairedAttr?.name).toBe("enableClose");
+        expect(tabSetEnableClose.pairedType).toBe("TabSetNode");
+
+        const tabEnableClose = global.getAttributes().find((a) => a.name === "tabEnableClose")!;
+        expect(tabEnableClose.pairedAttr?.name).toBe("enableClose");
+        expect(tabEnableClose.pairedType).toBe("TabNode");
+
+        const borderSize = global.getAttributes().find((a) => a.name === "borderSize")!;
+        expect(borderSize.pairedAttr?.name).toBe("size");
+        expect(borderSize.pairedType).toBe("BorderNode");
+
+        // the node side is reciprocal
+        const enableClose = TabSetNode.getAttributeDefinitions()
+            .getAttributes()
+            .find((a) => a.name === "enableClose")!;
+        expect(enableClose.pairedAttr?.name).toBe("tabSetEnableClose");
+    });
+
+    it("resolves the effective type of an inherited attribute from its global counterpart", () => {
+        const tabSetDefs = TabSetNode.getAttributeDefinitions().getAttributes();
+        const minWidth = tabSetDefs.find((a) => a.name === "minWidth")!;
+        expect(minWidth.getEffectiveType()).toBe("number");
+
+        const tabLocation = tabSetDefs.find((a) => a.name === "tabLocation")!;
+        expect(tabLocation.getEffectiveType()).toBe("ITabLocation");
+
+        const enableClose = tabSetDefs.find((a) => a.name === "enableClose")!;
+        expect(enableClose.getEffectiveType()).toBe("boolean");
+    });
+
+    it("keeps an explicitly set type and returns undefined for a free-form 'any' attribute", () => {
+        const tabNodeDefs = TabNode.getAttributeDefinitions().getAttributes();
+        const enableClose = tabNodeDefs.find((a) => a.name === "enableClose")!;
+        expect(enableClose.getEffectiveType()).toBe("boolean");
+
+        const config = tabNodeDefs.find((a) => a.name === "config")!;
+        expect(config.getEffectiveType()).toBeUndefined();
+    });
+});
+
+describe("getAttributeOwn", () => {
+    it("returns the own value without the global fallback, exposing overrides", () => {
+        const model = Model.fromJson({
+            global: { tabEnableClose: true },
+            layout: {
+                type: "row",
+                children: [{ type: "tabset", children: [{ type: "tab", id: "t0", name: "One" }] }],
+            },
+        });
+        const tab = model.getNodeById("t0") as TabNode;
+
+        // inherited attribute not overridden: no own value, getAttr falls back to the global
+        expect(tab.getAttributeOwn("enableClose")).toBeUndefined();
+        expect(tab.getAttr("enableClose")).toBe(true);
+
+        // overriding it sets the own value
+        model.doAction(Actions.updateNodeAttributes("t0", { enableClose: false }));
+        expect(tab.getAttributeOwn("enableClose")).toBe(false);
+        expect(tab.getAttr("enableClose")).toBe(false);
+
+        // own attributes always have a value, unknown names do not
+        expect(tab.getAttributeOwn("name")).toBe("One");
+        expect(tab.getAttributeOwn("nonexistent")).toBeUndefined();
+    });
+});

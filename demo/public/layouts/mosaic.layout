@@ -16,10 +16,11 @@
 				"children": [
 					{
 						"type": "tab",
-						"id": "3",
+						"id": "layout_json",
 						"tabsetClassName": "greenClass",
 						"name": "Layout JSON",
-						"component": "json"
+						"component": "json",
+						"icon": "images/data_object.svg"
 					}
 				],
 				"active": true
@@ -30,6 +31,7 @@
 				"children": [
 					{
 						"type": "tab",
+						"id": "wikipedia",
 						"name": "Wikipedia",
 						"component": "multitype",
 						"config": {
@@ -45,6 +47,7 @@
 				"children": [
 					{
 						"type": "tab",
+						"id": "editor",
 						"name": "Editor",
 						"tabsetClassName": "blueClass",
 						"component": "monaco"

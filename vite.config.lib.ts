@@ -1,7 +1,6 @@
 import { defineConfig, PluginOption, UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import pkg from './package.json';
+import pkg from './package.json' with { type: 'json' };
 
 // Banner content
 const banner = `/**
@@ -28,12 +27,13 @@ export default defineConfig({
   plugins: [react(), bannerPlugin()],
   build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
+      entry: `${import.meta.dirname}/src/index.ts`,
       name: 'index',
       fileName: 'index',
       formats: ['es'],
     },
     outDir: 'dist',
+    sourcemap: true,
     minify: false,
     rollupOptions: {
       external: [

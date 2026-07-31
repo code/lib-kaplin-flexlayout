@@ -51,10 +51,10 @@ FlexLayout is available on npm. Install it using:
 npm install flexlayout-react
 ```
 
-Import FlexLayout and its model in your modules:
+The package is ESM-only and must be consumed via `import` (it cannot be loaded with `require()`). Import FlexLayout and its model in your modules:
 
 ```javascript
-import { Layout, Model } from 'flexlayout-react';
+import { Layout, Model, Actions, DockLocation } from 'flexlayout-react';
 ```
 
 Include a theme. Choose from `alpha_light`, `alpha_dark`, `alpha_rounded`, `light`, `dark`, `underline`, `gray`, `rounded`, or `combined` (see the demo for examples):
@@ -151,9 +151,6 @@ The above code renders two tabsets horizontally, each containing a single tab th
 
 Note: The `<Layout>` component must be hosted in a container element (with CSS `position: absolute` or `relative`). The layout will fill the containing element.
 
-
-Try it now using [CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf)
-
 A simple TypeScript example can be found here:
 
 https://github.com/nealus/flexlayout-vite-example
@@ -173,7 +170,7 @@ The `layout` element is built using three types of nodes:
 
 The layout structure is defined with rows within rows that contain tabsets that themselves contain tabs.
 
-Within the demo app, you can view the layout structure by checking the 'Show layout' box. Rows are shown in blue, and tabsets in orange.
+Within the demo app, you can view the layout structure by checking the 'Structure' box. Rows are shown in blue, and tabsets in orange.
 
 ![FlexLayout Demo Showing Layout](screenshots/Screenshot_layout.png?raw=true "Demo showing layout")
 
@@ -187,13 +184,40 @@ Each node type has a defined set of required and optional attributes.
 
 Weights on rows and tabsets specify their relative size within the parent row. The absolute values do not matter, only their proportions (e.g., two tabsets with weights 30 and 70 would render the same as if they had weights 3 and 7).
 
-NOTE: The easiest way to create your initial layout JSON is to use the [demo](https://caplin.github.io/FlexLayout/demos/v0.10/demo/index.html) app. Modify an existing layout by dragging, dropping, and adding nodes, then press the 'print' button to print the JSON to the browser's developer console.
+NOTE: The easiest way to create your initial layout JSON is to use the [demo](https://caplin.github.io/FlexLayout/demos/v0.10/demo/index.html) app. Modify an existing layout by dragging, dropping, and adding nodes, then press the 'print' button to print the JSON to the browser's developer console. Use the Model Explorer panel to view and modify the attributes of the layout and its nodes, and use the render dropdown in the demo to blank out the panels (other than the Model Explorer) so you can focus on the layout.
 
 By changing global or node attributes, you can modify the layout's appearance and functionality. For example, setting `tabSetEnableTabStrip: false` in the global options would change the layout into a multi-splitter (without tabs or drag-and-drop):
 
 ```
  global: {tabSetEnableTabStrip:false},
 ```
+
+### Attribute inheritance from global options
+
+Node attributes inherit their default value from the corresponding global attribute, so you can set a value for all nodes of a type in one place and override it per-node. The global attribute is the node attribute prefixed with the node type: `tab` for tab attributes (e.g. `tabEnableClose`), `tabSet` for tabset attributes (e.g. `tabSetEnableDrag`), and `border` for border attributes (e.g. `borderSize`).
+
+For example, to make all tabs non-closeable but allow the tab with id `"persistent"` to be closed anyway:
+
+```json
+{
+    "global": { "tabEnableClose": false },
+    "layout": {
+        "type": "row",
+        "children": [
+            {
+                "type": "tabset",
+                "children": [
+                    { "type": "tab", "name": "One", "component": "placeholder" },
+                    { "type": "tab", "name": "Two", "component": "placeholder" },
+                    { "type": "tab", "id": "persistent", "name": "Persistent", "component": "placeholder", "enableClose": true }
+                ]
+            }
+        ]
+    }
+}
+```
+
+The "Persistent" tab's `enableClose: true` overrides the inherited global default of `false`; the other tabs keep the global value.
 
 ## Dynamically Changing the Theme
 
@@ -202,7 +226,7 @@ The `combined.css` theme includes all other themes and supports dynamic theme sw
 When using `combined.css`, add a `className` (in the form `flexlayout__theme_[theme-name]`) to the `div` containing the `<Layout>` to select the desired theme.
 
 For example: 
-```
+```tsx
     <div ref={containerRef} className="flexlayout__theme_alpha_light">
         <Layout model={model} factory={factory} />
     </div>
@@ -211,7 +235,7 @@ For example:
 Change the theme in code by changing the className on the containing div.
 
 For example:
-```
+```tsx
     containerRef.current!.className = "flexlayout__theme_alpha_dark"
 ```
 
@@ -231,7 +255,7 @@ Update the `renderValues` parameter as needed:
 
 For example:
 
-```
+```tsx
 onRenderTab = (node: TabNode, renderValues: ITabRenderValues) => {
     // renderValues.leading = <img style={{width:"1em", height:"1em"}}src="images/folder.svg"/>;
     // renderValues.content += " *";
@@ -256,7 +280,7 @@ Update the `renderValues` parameter as needed:
 
 For example:
 
-```
+```tsx
 onRenderTabSet = (node: (TabSetNode | BorderNode), renderValues: ITabSetRenderValues) => {
     renderValues.stickyButtons.push(
         <button
@@ -322,16 +346,16 @@ Once the model JSON has been loaded, all changes are applied through actions. In
 
 <img src="screenshots/Screenshot_action_log.png?raw=true" alt="Action Log" title="Action Log" />
 
-Apply actions using the `model.doAction()` method. This method takes a single argument created by one of the action generators (accessible via `FlexLayout.Actions.<actionName>`):
+Apply actions using the `model.doAction()` method. This method takes a single argument created by one of the action generators (accessible via the `Actions` import):
 
 [Actions Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/classes/Actions.html)
 
 ### Example
 
 ```js
-model.doAction(FlexLayout.Actions.addTab(
+model.doAction(Actions.addTab(
     {type:"tab", component:"grid", name:"a grid", id:"5"},
-    "1", FlexLayout.DockLocation.CENTER, 0));
+    "1", DockLocation.CENTER, 0));
 ```
 
 This example adds a new grid component to the center of the tabset with ID "1" at the first position (0). Use `-1` to add to the end of the tabs.
@@ -540,6 +564,14 @@ pnpm dev
 ```
 
 The `pnpm dev` command watches for changes in both FlexLayout and the Demo app, allowing you to see updates in your browser immediately.
+
+Run the unit tests once using:
+
+```bash
+pnpm test run
+```
+
+or in watch mode with `pnpm test`.
 
 Run the playwright tests interactively using:
 

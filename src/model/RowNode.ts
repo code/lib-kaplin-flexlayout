@@ -109,8 +109,10 @@ export class RowNode extends Node implements IDropTarget {
 
         for (let i = 0; i < index; i++) {
             const n = c[i] as TabSetNode | RowNode;
+            // clamp each child's effective max to its min: a contradictory min > max config would
+            // otherwise invert the combined bounds and freeze the splitter on a degenerate position
             p[0] += h ? n.getMinWidth() : n.getMinHeight();
-            q[0] += h ? n.getMaxWidth() : n.getMaxHeight();
+            q[0] += h ? Math.max(n.getMinWidth(), n.getMaxWidth()) : Math.max(n.getMinHeight(), n.getMaxHeight());
             if (i > 0) {
                 p[0] += ss;
                 q[0] += ss;
@@ -120,10 +122,17 @@ export class RowNode extends Node implements IDropTarget {
         for (let i = c.length - 1; i >= index; i--) {
             const n = c[i] as TabSetNode | RowNode;
             p[1] -= (h ? n.getMinWidth() : n.getMinHeight()) + ss;
-            q[1] -= (h ? n.getMaxWidth() : n.getMaxHeight()) + ss;
+            q[1] -= (h ? Math.max(n.getMinWidth(), n.getMaxWidth()) : Math.max(n.getMinHeight(), n.getMaxHeight())) + ss;
         }
 
         p = [Math.max(q[1], p[0]), Math.min(q[0], p[1])];
+
+        // the row cannot satisfy the combined child min/max constraints (e.g. the min sizes exceed
+        // the available space): return an ordered degenerate bound rather than lo > hi, which would
+        // make getBoundPosition collapse every position and poison the weight math
+        if (p[0] > p[1]) {
+            p = [p[0], p[0]];
+        }
 
         return p;
     }
@@ -157,6 +166,12 @@ export class RowNode extends Node implements IDropTarget {
         const c = this.getChildren();
 
         const sizes = [...initialSizes];
+
+        // a zero (unmeasured) row would divide by zero and emit Infinity/NaN weights; return an
+        // empty array so the ADJUST_WEIGHTS consumer leaves the current weights untouched
+        if (sum <= 0 || sizes.length === 0) {
+            return [];
+        }
 
         if (splitterPos < startPosition) {
             // moved left
@@ -269,24 +284,29 @@ export class RowNode extends Node implements IDropTarget {
         for (const child of this.children) {
             const c = child as RowNode | TabSetNode;
             c.calcMinMaxSize();
+            // clamp each child's max to at least its min so a contradictory min > max child cannot
+            // invert the accumulated row max below the accumulated min (consistent with the splitter
+            // bound math that reads these sizes)
+            const cMaxH = Math.max(c.getMinHeight(), c.getMaxHeight());
+            const cMaxW = Math.max(c.getMinWidth(), c.getMaxWidth());
             if (this.getOrientation() === Orientation.VERT) {
                 this.minHeight += c.getMinHeight();
-                this.maxHeight += c.getMaxHeight();
+                this.maxHeight += cMaxH;
                 if (!first) {
                     this.minHeight += this.model.getSplitterSize()!;
                     this.maxHeight += this.model.getSplitterSize()!;
                 }
                 this.minWidth = Math.max(this.minWidth, c.getMinWidth());
-                this.maxWidth = Math.min(this.maxWidth, c.getMaxWidth());
+                this.maxWidth = Math.min(this.maxWidth, cMaxW);
             } else {
                 this.minWidth += c.getMinWidth();
-                this.maxWidth += c.getMaxWidth();
+                this.maxWidth += cMaxW;
                 if (!first) {
                     this.minWidth += this.model.getSplitterSize()!;
                     this.maxWidth += this.model.getSplitterSize()!;
                 }
                 this.minHeight = Math.max(this.minHeight, c.getMinHeight());
-                this.maxHeight = Math.min(this.maxHeight, c.getMaxHeight());
+                this.maxHeight = Math.min(this.maxHeight, cMaxH);
             }
             first = false;
         }
@@ -519,6 +539,7 @@ export class RowNode extends Node implements IDropTarget {
 
     /** @internal */
     static getAttributeDefinitions() {
+        Model.ensureAttributePairing();
         return RowNode.attributeDefinitions;
     }
 

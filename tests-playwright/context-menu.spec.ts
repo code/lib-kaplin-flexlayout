@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 // The demo wires its context menu (onContextMenu) to the library's reusable showPopupMenu control
-// for the "newfeatures" layout. These tests exercise the generic control: it appears on right
+// for the "otherfeatures" layout. These tests exercise the generic control: it appears on right
 // click, is an accessible menu, and is fully keyboard operable.
 test.describe("reusable popup menu (demo context menu)", () => {
     const openMenu = async (page: import("@playwright/test").Page) => {

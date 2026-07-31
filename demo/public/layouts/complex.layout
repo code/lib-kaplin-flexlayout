@@ -16,13 +16,13 @@
 				"children": [
 					{
 						"type": "tab",
-						"id": "#7",
+						"id": "fx",
 						"name": "FX",
 						"component": "grid"
 					},
 					{
 						"type": "tab",
-						"id": "#8",
+						"id": "global",
 						"name": "Global",
 						"component": "grid"
 					},
@@ -94,7 +94,7 @@
 								"children": [
 									{
 										"type": "tab",
-										"id": "#10",
+										"id": "fi",
 										"name": "FI",
 										"component": "grid"
 									},
@@ -396,14 +396,14 @@
 			"children": [
 				{
 					"type": "tab",
-					"id": "#1",
+					"id": "activity_blotter",
 					"name": "Activity Blotter",
 					"component": "grid",
 					"enableClose": false
 				},
 				{
 					"type": "tab",
-					"id": "#2",
+					"id": "execution_blotter",
 					"name": "Execution Blotter",
 					"component": "grid",
 					"enableClose": false
@@ -502,7 +502,7 @@
 			"children": [
 				{
 					"type": "tab",
-					"id": "#3",
+					"id": "navigation",
 					"name": "Navigation",
 					"component": "grid",
 					"enableClose": false
@@ -577,7 +577,7 @@
 				},
 				{
 					"type": "tab",
-					"id": "#4",
+					"id": "options",
 					"name": "Options",
 					"component": "grid",
 					"enableClose": false

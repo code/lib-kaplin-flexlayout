@@ -137,6 +137,12 @@ export class Attributes {
         return lines.join("\n");
     }
 }
+/** @internal the possible values of an attribute, with an optional display label */
+export interface IAttributeValue {
+    value: any;
+    label: string;
+}
+
 /** @internal */
 export class Attribute {
     static NUMBER = "number";
@@ -154,6 +160,7 @@ export class Attribute {
     required: boolean;
     fixed: boolean;
     description?: string;
+    values?: IAttributeValue[];
 
     constructor(name: string, modelName: string | undefined, defaultValue: any, alwaysWriteJson?: boolean) {
         this.name = name;
@@ -172,6 +179,14 @@ export class Attribute {
         return this;
     }
 
+    /** @internal */
+    getEffectiveType() {
+        if (this.type !== "any") {
+            return this.type;
+        }
+        return this.pairedAttr?.type;
+    }
+
     setAlias(value: string) {
         this.alias = value;
         return this;
@@ -179,6 +194,25 @@ export class Attribute {
 
     setDescription(value: string) {
         this.description = value;
+    }
+
+    /** @internal */
+    setValues(values: Array<IAttributeValue | any>) {
+        this.values = values.map((v) => {
+            if (typeof v === "object" && v !== null && "value" in v) {
+                return { value: v.value, label: v.label !== undefined ? v.label : String(v.value) };
+            }
+            return { value: v, label: typeof v === "string" ? v.charAt(0).toUpperCase() + v.slice(1) : String(v) };
+        });
+        return this;
+    }
+
+    /** @internal */
+    getValues(): IAttributeValue[] | undefined {
+        if (this.values !== undefined) {
+            return this.values;
+        }
+        return this.pairedAttr?.values;
     }
 
     setRequired() {

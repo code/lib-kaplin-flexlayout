@@ -275,7 +275,7 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
             };
         }
         return;
-    }, [props.model, controller]);
+    }, [props.model, controller, layout]);
 
     // offscreen probes measured by updateLayoutMetrics; only the main layout measures them,
     // so only the main layout renders them
@@ -567,11 +567,101 @@ export class LayoutController {
             }
         }
 
+        if (action.isAdjusting() && (action.type === Actions.ADJUST_WEIGHTS || action.type === Actions.ADJUST_BORDER_SPLIT)) {
+            if (action.type === Actions.ADJUST_WEIGHTS) {
+                this.applyAdjustingWeights(action);
+            } else {
+                this.applyAdjustingBorderSplit(action);
+            }
+            if (this._props.onModelChange) {
+                this._props.onModelChange(this._props.model, action);
+            }
+            return;
+        }
+
         this.redrawLayout();
         if (this._props.onModelChange) {
             this._props.onModelChange(this._props.model, action);
         }
     };
+
+    // re-measure the dom (which re-layouts with the new geometry) and reposition the tab panels, then
+    // mount any content areas that gained a size
+    private applyMeasuredGeometry() {
+        this.syncLayoutMetrics();
+        this.positionTabPanels();
+        if (this.isReLayout()) {
+            this.redrawLayout();
+            this.setReLayout(false);
+        }
+    }
+
+    // apply an adjusting weight change without re-rendering the layout tree
+    applyAdjustingWeights(action: Action) {
+        const row = this._props.model.getNodeById(action.data.nodeId);
+        if (!(row instanceof RowNode)) {
+            this.redrawLayout();
+            return;
+        }
+        const weights = action.data.weights as number[] | undefined;
+        const children = row.getChildren();
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i];
+            if (typeof weights?.[i] !== "number" || !Number.isFinite(weights[i])) {
+                continue;
+            }
+            const kind: MeasurableKind = child instanceof RowNode ? "row" : "tabset";
+            const element = this._measurables.get(kind + ":" + child.getId())?.element;
+            if (!element) {
+                // the affected element is not registered with this controller (e.g. the row lives in a
+                // popout window): fall back to the normal re-render path rather than leaving stale geometry
+                this.redrawLayout();
+                return;
+            }
+            element.style.flexGrow = String(Math.max(1, weights[i] * 1000));
+        }
+
+        this.applyMeasuredGeometry();
+    }
+
+    // apply an adjusting border size change without re-rendering the layout tree
+    applyAdjustingBorderSplit(action: Action) {
+        const borderNode = this._props.model.getNodeById(action.data.node);
+        if (!(borderNode instanceof BorderNode)) {
+            this.redrawLayout();
+            return;
+        }
+
+        // overlay border panels are positioned in absolutely placed wrappers whose offsets depend on
+        // the sizes of the other open borders, so keep the full re-render path for them
+        if (borderNode.isOverlay()) {
+            this.redrawLayout();
+            return;
+        }
+
+        const element = this._measurables.get("bordercontent:" + borderNode.getId())?.element;
+        if (!element) {
+            // not registered with this controller (e.g. the border lives in a popout window): fall
+            // back to the normal re-render path rather than leaving stale geometry
+            this.redrawLayout();
+            return;
+        }
+
+        const size = borderNode.getSize();
+        if (borderNode.isHorizontal()) {
+            // LEFT / RIGHT borders have a fixed width
+            element.style.width = size + "px";
+            element.style.minWidth = borderNode.getMinSize() + "px";
+            element.style.maxWidth = borderNode.getMaxSize() + "px";
+        } else {
+            // TOP / BOTTOM borders have a fixed height
+            element.style.height = size + "px";
+            element.style.minHeight = borderNode.getMinSize() + "px";
+            element.style.maxHeight = borderNode.getMaxSize() + "px";
+        }
+
+        this.applyMeasuredGeometry();
+    }
 
     reorderComponents(components: Map<string, React.ReactNode>, ids: string[]) {
         const nextIds = ids.filter((id) => components.has(id));

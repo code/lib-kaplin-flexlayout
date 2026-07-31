@@ -1,8 +1,12 @@
+## 0.10.3 - 2026-08-04
+* **Added:** Two new panels to the demo: 'Model Explorer' and 'Theme'
+* **Improved:** Test coverage.
+* **Updated:** Dev Dependencies.
+
 ## 0.10.2 - 2026-07-29
 * **Updated:** the data-layout-path attribute in sublayout elements
 * **Added:** action for moving a floating panel
-* **Added:** isAdjusting() method to actions to allow intermediate dragging actions to be ignored in
-Action log and when implementing undo/redo.
+* **Added:** isAdjusting() method to actions to allow intermediate dragging actions to be ignored in Action log and when implementing undo/redo.
 * **Added:** undo/redo buttons to demo
 * **Updated:** Dev Dependencies.
 

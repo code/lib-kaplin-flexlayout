@@ -13,6 +13,7 @@
 				"children": [
 					{
 						"type": "tab",
+						"id": "tabbed_pane",
 						"name": "Tabbed Pane",
 						"component": "sub",
 						"config": {
@@ -61,6 +62,7 @@
 				"children": [
 					{
 						"type": "tab",
+						"id": "split_pane",
 						"name": "Split Pane",
 						"component": "sub",
 						"config": {

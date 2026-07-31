@@ -36,7 +36,9 @@ import * as Prism from "prismjs";
 import "prismjs/themes/prism-coy.css";
 import "../style/combined.scss";
 import "./styles.css";
-import { Attributes } from "./Attributes";
+import { TabProperties } from "./TabProperties";
+import { ModelExplorer } from "./ModelExplorer";
+import { ThemePanel } from "./ThemePanel";
 import { TabLayout } from "../src/view/TabLayout";
 
 const ContextExample = React.createContext("");
@@ -67,7 +69,7 @@ function App() {
     const [, setFontSize] = React.useState<string>("medium");
     const [realtimeResize, setRealtimeResize] = React.useState<boolean>(true);
     const [showLayout, setShowLayout] = React.useState<boolean>(false);
-    const [attrs, setAttrs] = React.useState<boolean>(false);
+    const [renderMode, setRenderMode] = React.useState<"examples" | "properties" | "blank">("examples");
 
     const [popoutClassName, setPopoutClassName] = React.useState<string>("flexlayout__theme_alpha_light");
 
@@ -80,6 +82,7 @@ function App() {
     // latest values to prevent closure problems
     const latestModel = React.useRef<Model | null>(model);
     const latestLayoutFile = React.useRef<string | null>(layoutFile);
+    const loadLayoutRef = React.useRef<(layoutName: string, reload?: boolean) => void>(() => {});
 
     // undo/redo fields
     const lastModelJson = React.useRef<string>("");
@@ -169,6 +172,10 @@ function App() {
         setJson(html);
     };
 
+    const error = (reason: string) => {
+        alert("Error loading json config file: " + loadingLayoutName.current + "\n" + reason);
+    };
+
     const loadLayout = (layoutName: string, reload?: boolean) => {
         if (layoutFile !== null) {
             save();
@@ -189,6 +196,10 @@ function App() {
         }
     };
 
+    React.useEffect(() => {
+        loadLayoutRef.current = loadLayout;
+    });
+
     // const allowDrop = (dragNode: (TabNode | TabSetNode), dropInfo: DropInfo) => {
     //     let dropNode = dropInfo.node;
 
@@ -202,10 +213,6 @@ function App() {
 
     //     return true;
     // }
-
-    const error = (reason: string) => {
-        alert("Error loading json config file: " + loadingLayoutName.current + "\n" + reason);
-    };
 
     React.useEffect(() => {
         // save layout when unloading page
@@ -225,10 +232,27 @@ function App() {
             Utils.downloadFile("layouts/" + layout + ".layout", load, error);
         }
 
-        // use to generate json typescript interfaces
-        // Model.toTypescriptInterfaces();
         return () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, []);
+
+    React.useEffect(() => {
+        // Ctrl+Alt+R restores the current layout from the file, so a layout that has been
+        // broken by attribute edits (e.g. via the model explorer) can always be recovered
+        const handleReset = (event: KeyboardEvent) => {
+            if (event.ctrlKey && event.altKey && event.key.toLowerCase() === "r") {
+                event.preventDefault();
+                const layoutName = latestLayoutFile.current;
+                if (layoutName != null) {
+                    loadLayoutRef.current(layoutName, true);
+                }
+            }
+        };
+        window.addEventListener("keydown", handleReset);
+
+        return () => {
+            window.removeEventListener("keydown", handleReset);
         };
     }, []);
 
@@ -296,12 +320,12 @@ function App() {
         setShowLayout(event.target.checked);
     };
 
-    const onAttrs = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setAttrs(event.target.checked);
+    const onRenderModeChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setRenderMode(event.target.value as "examples" | "properties" | "blank");
     };
 
     const onRenderDragRect = (content: React.ReactNode | undefined, _node?: Node, _json?: IJsonTabNode) => {
-        if (layoutFile === "newfeatures") {
+        if (layoutFile === "otherfeatures") {
             return (
                 <>
                     {content}
@@ -362,7 +386,7 @@ function App() {
             });
 
             // show dummy menu on new featurs layout for all types
-        } else if (layoutFile === "newfeatures") {
+        } else if (layoutFile === "otherfeatures") {
             items.push({ key: "option1", label: "Option 1" });
             items.push({ key: "option2", label: "Option 2" });
             contextMenuHideRef.current?.(); // close any menu already open
@@ -478,8 +502,14 @@ function App() {
         // node.setEventListener("visibility", function(p){console.log("visibility", node.getName(), p.visible);});
         // node.setEventListener("close", function(p){console.log("close", node.getName());});
 
-        if (attrs) {
-            return <Attributes node={node} />;
+        if (renderMode !== "examples") {
+            if (!node.getConfig()?.alwaysShowInDemo) {
+                if (renderMode === "properties") {
+                    return <TabProperties node={node} />;
+                } else {
+                    return <div style={{ width: "100%", height: "100%" }} />;
+                }
+            }
         }
 
         const component = node.getComponent();
@@ -554,7 +584,7 @@ function App() {
             } catch (e) {
                 console.log(e);
             }
-        } else if (component === "newfeatures") {
+        } else if (component === "otherfeatures") {
             return <NewFeatures />;
         } else if (component === "multitype") {
             try {
@@ -569,6 +599,10 @@ function App() {
             } catch (e) {
                 return <div>{String(e)}</div>;
             }
+        } else if (component === "theme") {
+            return <ThemePanel layoutApi={layoutRef} />;
+        } else if (component === "model_explorer") {
+            return <ModelExplorer node={node} />;
         } else if (component === "testing") {
             return <div className="tab_content">{node.getName()}</div>;
         } else if (component === "iframe") {
@@ -611,7 +645,7 @@ function App() {
         // renderValues.content = (<div>hello</div>);
         // renderValues.content += " *";
         // renderValues.leading = <img style={{width:"1em", height:"1em"}}src="images/folder.svg"/>;
-        if (layoutFile === "newfeatures" && node.getComponent() === "newfeatures") {
+        if (layoutFile === "otherfeatures" && node.getComponent() === "otherfeatures") {
             renderValues.buttons.push(createButton("Tab settings", "settingbtn", undefined, <SettingsIcon />));
         }
 
@@ -631,7 +665,7 @@ function App() {
 
     const onRenderTabSet = (node: TabSetNode | BorderNode, renderValues: ITabSetRenderValues) => {
         if (node instanceof TabSetNode) {
-            if (layoutFile === "newfeatures") {
+            if (layoutFile === "otherfeatures") {
                 const button = createButton(
                     "Menu for selected tab",
                     "menubtn",
@@ -646,7 +680,7 @@ function App() {
                 renderValues.leading = <div style={{ display: "flex", alignItems: "center", alignContent: "center", padding: 3 }}>{button}</div>;
             }
 
-            if (layoutFile === "newfeatures") {
+            if (layoutFile === "otherfeatures") {
                 renderValues.buttons.push(createButton("Tabset settings", "settingbtn", undefined, <SettingsIcon />));
             }
 
@@ -662,7 +696,7 @@ function App() {
         if (
             node instanceof BorderNode &&
             node.getSelected() !== -1 && // only when the border panel is showing
-            (layoutFile === "default" || layoutFile === "newfeatures" || layoutFile === "test_overlay")
+            (layoutFile === "default" || layoutFile === "otherfeatures" || layoutFile === "test_overlay")
         ) {
             // toggle between the split and overlay border types; the icon shows the current
             // mode: the panel splitting the layout, or floating over it
@@ -753,11 +787,11 @@ function App() {
                 realtimeResize={realtimeResize}
                 keyMap={{ focusTabToggle: "F6", focusNextTabset: "Ctrl+]", focusPreviousTabset: "Ctrl+[" }}
                 onContextMenu={
-                    layoutFile === "default" || layoutFile === "newfeatures" || layoutFile === "test_pinned" || layoutFile === "test_overlay" || layoutFile === "test_with_borders"
+                    layoutFile === "default" || layoutFile === "otherfeatures" || layoutFile === "test_pinned" || layoutFile === "test_overlay" || layoutFile === "test_with_borders"
                         ? onContextMenu
                         : undefined
                 }
-                onAuxMouseClick={layoutFile === "newfeatures" ? onAuxMouseClick : undefined}
+                onAuxMouseClick={layoutFile === "otherfeatures" ? onAuxMouseClick : undefined}
                 // icons={{
                 //     more: (node: (TabSetNode | BorderNode), hiddenTabs: { node: TabNode; index: number }[]) => {
                 //         return (<div style={{fontSize:".7em"}}>{hiddenTabs.length}</div>);
@@ -793,15 +827,15 @@ function App() {
             <ContextExample.Provider value="from context">
                 <div className="app">
                     <div className="toolbar" dir="ltr">
-                        <select className="toolbar_control" aria-label="Layout" onChange={onSelectLayout}>
+                        <select className="toolbar_control" aria-label="Layout" title="Choose the layout to render" onChange={onSelectLayout}>
                             <option value="default">Default</option>
-                            <option value="newfeatures">New Features</option>
                             <option value="simple">Simple</option>
                             <option value="mosaic">Mosaic Style</option>
                             <option value="sub">SubLayout</option>
                             <option value="complex">Complex</option>
+                            <option value="otherfeatures">Other Features</option>
                         </select>
-                        <button key="reloadbutton" className="toolbar_control " onClick={onReloadFromFile} style={{ marginLeft: 5 }}>
+                        <button key="reloadbutton" className="toolbar_control " onClick={onReloadFromFile} title="Reload layout from file (Ctrl+Alt+R)" style={{ marginLeft: 5 }}>
                             Reload
                         </button>
                         <button
@@ -834,13 +868,23 @@ function App() {
                         >
                             To-From JSON
                         </button>
-                        <span style={{ marginLeft: 5 }}>Realtime resize</span>
-                        <input name="realtimeResize" type="checkbox" aria-label="Realtime resize" checked={realtimeResize} onChange={onRealtimeResize} />
-                        <span style={{ marginLeft: 5 }}>Show layout</span>
-                        <input name="show layout" type="checkbox" aria-label="Show layout" checked={showLayout} onChange={onShowLayout} />
-                        <span style={{ marginLeft: 5 }}>Attributes</span>
-                        <input name="attrs" type="checkbox" aria-label="Attributes" checked={attrs} onChange={onAttrs} />
-                        <select className="toolbar_control" aria-label="Font size" style={{ marginLeft: 5 }} onChange={onFontSizeChange} defaultValue="medium">
+                        <label style={{ marginLeft: 10 }} title="Redraw the layout as splitters are dragged">
+                            Realtime resize
+                            <input name="realtimeResize" type="checkbox" checked={realtimeResize} onChange={onRealtimeResize} />
+                        </label>
+                        <label style={{ marginLeft: 10 }}>
+                            Structure
+                            <input name="show layout" type="checkbox" checked={showLayout} onChange={onShowLayout} />
+                        </label>
+                        <label style={{ marginLeft: 10 }}>
+                            Render
+                            <select className="toolbar_control" aria-label="Attributes" title="Render" style={{ marginLeft: 5 }} defaultValue="examples" onChange={onRenderModeChange}>
+                                <option value="examples">Examples</option>
+                                <option value="properties">Properties</option>
+                                <option value="blank">Blank</option>
+                            </select>
+                        </label>
+                        <select className="toolbar_control" aria-label="Font size" title="Font Size" style={{ marginLeft: 5 }} onChange={onFontSizeChange} defaultValue="medium">
                             <option value="xx-small">Size xx-small</option>
                             <option value="x-small">Size x-small</option>
                             <option value="small">Size small</option>
@@ -856,7 +900,7 @@ function App() {
                             <option value="25px">Size 25px</option>
                             <option value="30px">Size 30px</option>
                         </select>
-                        <select className="toolbar_control" aria-label="Theme" style={{ marginLeft: 5 }} defaultValue="alpha_light" onChange={onThemeChange}>
+                        <select className="toolbar_control" aria-label="Theme" title="Theme" style={{ marginLeft: 5 }} defaultValue="alpha_light" onChange={onThemeChange}>
                             <option value="alpha_light">Alpha Light</option>
                             <option value="alpha_dark">Alpha Dark</option>
                             <option value="alpha_rounded">Alpha Rounded</option>
@@ -875,7 +919,7 @@ function App() {
                             data-id="add-drag"
                             draggable={true}
                             style={{ height: "30px", marginLeft: 5, border: "none", outline: "none" }}
-                            title="Add tab by starting a drag on a draggable element"
+                            title="Drag from here to add a tab"
                             onDragStart={onDragStart}
                         >
                             Add Drag

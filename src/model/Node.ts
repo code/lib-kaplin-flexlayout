@@ -152,6 +152,15 @@ export abstract class Node {
         return val;
     }
 
+    /**
+     * Returns the value of the named attribute as set on this node, without falling back to the
+     * global model attribute. For an inherited attribute this is undefined unless the node
+     * overrides it, which can be used to detect an override.
+     */
+    getAttributeOwn(name: string) {
+        return this.attributes[name];
+    }
+
     /** @internal */
     forEachNode(fn: (node: Node, level: number) => void, level: number) {
         fn(this, level);
@@ -163,6 +172,8 @@ export abstract class Node {
 
     /** @internal */
     setPaths(path: string) {
+        this.path = path;
+
         let i = 0;
 
         for (const node of this.children) {

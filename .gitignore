@@ -14,3 +14,6 @@ style/*.css.map
 /blob-report/
 /playwright/.cache/
 .vscode/
+
+# Vitest coverage
+/coverage/

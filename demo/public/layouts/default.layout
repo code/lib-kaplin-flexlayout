@@ -16,72 +16,80 @@
 			"children": [
 				{
 					"type": "tab",
-					"id": "#0ae8e0fb-dba2-4b14-9d75-08781231479a",
-					"name": "Output",
-					"component": "grid",
-					"enableClose": false,
-					"icon": "images/bar_chart.svg"
-				},
-				{
-					"type": "tab",
-					"id": "#803a2efe-e507-4735-9c2a-46ce6042c1a2",
+					"id": "terminal",
 					"name": "Terminal",
 					"component": "xterm",
 					"enableClose": false,
 					"icon": "images/terminal.svg",
-					"enableScrollbars":false
+					"enableScrollbars": false
 				},
 				{
 					"type": "tab",
-					"id": "#9c1e5a84-2f7b-4d3a-8e60-5b48c7d2a913",
-					"name": "SubLayout",
+					"id": "sublayout_2",
+					"name": "SubLayout 2",
 					"subLayoutId": "sublayout2",
 					"enableClose": false,
-					"enableScrollbars":false
+					"icon": "images/layers.svg",
+					"enableScrollbars": false
 				},
 				{
 					"type": "tab",
-					"id": "#71f74dc6-345d-4833-b0f3-36a5d7fb58fa",
+					"id": "action_log",
 					"name": "Action Log",
-					"enableRenderOnDemand":false,
-					"component": "actionlog"
+					"component": "actionlog",
+					"icon": "images/history.svg",
+					"enableRenderOnDemand": false
 				},
 				{
 					"type": "tab",
-					"id": "#7bac972e-fd5f-4582-a511-4feede448394",
+					"id": "layout_json",
 					"name": "Layout JSON",
-					"component": "json"
+					"component": "json",
+					"icon": "images/data_object.svg"
 				}
 			]
 		},
 		{
 			"location": "left",
 			"type": "border",
+			"size": 400,
 			"children": [
 				{
 					"type": "tab",
-					"id": "#21c49854-be85-4e32-96c3-61962f71bc15",
-					"name": "Navigation",
-					"component": "user sublayout",
-					"subLayoutId": "sublayout1",
-					"altName": "The Navigation Tab",
-					"enableClose": true,
-					"icon": "images/folder.svg",
-					"enableScrollbars":false
+					"id": "model_explorer",
+					"name": "Model Explorer",
+					"component": "model_explorer",
+					"icon": "images/dns.svg",
+					"enableClose": false,
+					"enableScrollbars": false,
+					"config": { "alwaysShowInDemo": true }
 				}
 			]
 		},
 		{
 			"location": "right",
 			"type": "border",
+			"size": 260,
 			"children": [
 				{
 					"type": "tab",
-					"id": "#ec253996-0724-416b-a097-23f85a89afbe",
-					"name": "Options",
-					"component": "grid",
+					"id": "theme",
+					"name": "Theme",
+					"component": "theme",
 					"enableClose": false,
-					"icon": "images/settings.svg"
+					"icon": "images/settings.svg",
+					"config": { "alwaysShowInDemo": true }
+				},
+				{
+					"type": "tab",
+					"id": "sublayout_1",
+					"name": "SubLayout 1",
+					"component": "user sublayout",
+					"subLayoutId": "sublayout1",
+					"altName": "The Navigation Tab",
+					"enableClose": true,
+					"icon": "images/layers.svg",
+					"enableScrollbars": false
 				}
 			]
 		}
@@ -97,7 +105,7 @@
 				"children": [
 					{
 						"type": "tab",
-						"id": "#4fcdc630-6742-474a-9b67-cb40c36e2d00",
+						"id": "openlayers_map",
 						"name": "OpenLayers Map",
 						"component": "map",
 						"enablePopoutOverlay": true
@@ -116,12 +124,12 @@
 						"children": [
 							{
 								"type": "tab",
-								"id": "#a7dff07f-a37a-4d58-9853-7b91c465101c",
+								"id": "chartjs",
 								"name": "ChartJS",
 								"component": "chart",
+								"pinned": true,
 								"enableClose": false,
-								"enablePopoutOverlay": true,
-								"pinned": true
+								"enablePopoutOverlay": true
 							},
 							{
 								"type": "tab",
@@ -168,16 +176,16 @@
 						"children": [
 							{
 								"type": "tab",
-								"id": "#285406e5-6795-4e17-b10d-6ff8e512ba62",
+								"id": "aggrid",
 								"name": "AGGrid",
 								"component": "aggrid"
 							},
 							{
 								"type": "tab",
-								"id": "#f5b7a3c1-8e2d-4c6a-9d41-3b7e5a2c9f10",
+								"id": "editor",
 								"name": "Editor",
 								"component": "monaco",
-								"enableScrollbars":false
+								"enableScrollbars": false
 							}
 						]
 					}
@@ -195,7 +203,7 @@
 						"children": [
 							{
 								"type": "tab",
-								"id": "#0e23b4b3-498a-4625-a916-b1e6e19eaf3f",
+								"id": "wikipedia",
 								"name": "Wikipedia",
 								"component": "multitype",
 								"config": {
@@ -205,7 +213,7 @@
 							},
 							{
 								"type": "tab",
-								"id": "#31b3af95-2fc9-4511-8d5d-1e6255b92eae",
+								"id": "mui",
 								"name": "MUI",
 								"component": "mui",
 								"enablePopout": false
@@ -219,7 +227,7 @@
 						"children": [
 							{
 								"type": "tab",
-								"id": "#4784d2d4-24a4-4ef2-ac6e-7a3ea7b03ba3",
+								"id": "mui_grid",
 								"name": "MUI Grid",
 								"component": "muigrid",
 								"enablePopout": false

@@ -65,6 +65,10 @@ export class TabNode extends Node implements IDraggable {
         return this.getAttr("component") as string | undefined;
     }
 
+    getAltName() {
+        return this.getAttr("altName") as string | undefined;
+    }
+
     getWindowId(): string | undefined {
         const layout = this.getLayout();
         if (layout) {
@@ -201,6 +205,14 @@ export class TabNode extends Node implements IDraggable {
 
     getMaxHeight() {
         return this.getAttr("maxHeight") as number;
+    }
+
+    getBorderWidth() {
+        return this.getAttr("borderWidth") as number;
+    }
+
+    getBorderHeight() {
+        return this.getAttr("borderHeight") as number;
     }
 
     isVisible() {
@@ -396,6 +408,7 @@ export class TabNode extends Node implements IDraggable {
 
     /** @internal */
     static getAttributeDefinitions() {
+        Model.ensureAttributePairing();
         return TabNode.attributeDefinitions;
     }
 
@@ -416,8 +429,8 @@ export class TabNode extends Node implements IDraggable {
                 `the Id of the sub layout to render in this tab, defined in the subLayouts section of the model json (if
             component is also defined then use the <TabLayout> component in the factory to render the sublayout)`,
             );
-        attributeDefinitions.add("altName", undefined).setType(Attribute.STRING).setDescription(`if there is no name specifed then this value will be used in the overflow menu`);
-        attributeDefinitions.add("helpText", undefined).setType(Attribute.STRING).setDescription(`help text for the tab to be displayed upon tab hover.`);
+        attributeDefinitions.add("altName", undefined).setType(Attribute.STRING).setDescription(`the name used in the overflow menu when the tab has no name (e.g. an icon-only tab)`);
+        attributeDefinitions.add("helpText", undefined).setType(Attribute.STRING).setDescription(`help text for the tab to be displayed upon tab hover`);
         attributeDefinitions.add("config", undefined).setType("any").setDescription(`a place to hold json config for the hosted component`);
         attributeDefinitions
             .add("tabsetClassName", undefined)
@@ -433,42 +446,38 @@ export class TabNode extends Node implements IDraggable {
             Set via Actions.setTabPinned. Only applies to tabs in tabsets (not borders); pinned tabs should be
             listed first in the json`,
             );
-        attributeDefinitions.addInherited("enableClose", "tabEnableClose").setType(Attribute.BOOLEAN).setDescription(`allow user to close tab via close button`);
-        attributeDefinitions.addInherited("closeType", "tabCloseType").setType("ICloseType").setDescription(`see values in ICloseType`);
-        attributeDefinitions.addInherited("enableDrag", "tabEnableDrag").setType(Attribute.BOOLEAN).setDescription(`allow user to drag tab to new location`);
-        attributeDefinitions.addInherited("enableRename", "tabEnableRename").setType(Attribute.BOOLEAN).setDescription(`allow user to rename tabs by double clicking`);
-        attributeDefinitions.addInherited("className", "tabClassName").setType(Attribute.STRING).setDescription(`class applied to tab button`);
-        attributeDefinitions.addInherited("contentClassName", "tabContentClassName").setType(Attribute.STRING).setDescription(`class applied to tab content`);
-        attributeDefinitions.addInherited("icon", "tabIcon").setType(Attribute.STRING).setDescription(`the tab icon`);
-        attributeDefinitions.addInherited("enableRenderOnDemand", "tabEnableRenderOnDemand").setType(Attribute.BOOLEAN).setDescription(`whether to avoid rendering component until tab is visible`);
+        attributeDefinitions.addInherited("enableClose", "tabEnableClose").setDescription(`whether the tab can be closed by the user via its close button`);
+        attributeDefinitions
+            .addInherited("closeType", "tabCloseType")
+            .setDescription(
+                `when the tab's close button is active: Visible (default) active if selected or hovered (note: mobile doesnt support hovered), Always: always active, Selected only active on selected tab (clicking on the x button on a non-selected tab will just select it)`,
+            );
+        attributeDefinitions.addInherited("enableDrag", "tabEnableDrag").setDescription(`whether the user can drag the tab to a new location`);
+        attributeDefinitions.addInherited("enableRename", "tabEnableRename").setDescription(`whether the user can rename the tab by double clicking`);
+        attributeDefinitions.addInherited("className", "tabClassName").setDescription(`class applied to tab button`);
+        attributeDefinitions.addInherited("contentClassName", "tabContentClassName").setDescription(`class applied to tab content`);
+        attributeDefinitions.addInherited("icon", "tabIcon").setDescription(`the tab icon`);
+        attributeDefinitions.addInherited("enableRenderOnDemand", "tabEnableRenderOnDemand").setDescription(`whether to avoid rendering component until tab is visible`);
         attributeDefinitions
             .addInherited("enablePopout", "tabEnablePopout")
-            .setType(Attribute.BOOLEAN)
             .setAlias("enableFloat")
             .setDescription(`enable window popout (in popout capable browser), to show an icon in the tabset header also set the enablePopoutIcon attribute`);
-        attributeDefinitions
-            .addInherited("enablePopoutIcon", "tabEnablePopoutIcon")
-            .setType(Attribute.BOOLEAN)
-            .setDescription(`whether to show the popout icon in the tabset header if this tab enables popouts`);
+        attributeDefinitions.addInherited("enablePopoutIcon", "tabEnablePopoutIcon").setDescription(`whether to show the popout icon in the tabset header if this tab enables popouts`);
         attributeDefinitions
             .addInherited("enablePopoutFloatIcon", "tabEnablePopoutFloatIcon")
-            .setType(Attribute.BOOLEAN)
             .setDescription(`whether to show the popout float icon in the tabset header if this tab enables floating popouts`);
-        attributeDefinitions
-            .addInherited("enablePopoutOverlay", "tabEnablePopoutOverlay")
-            .setType(Attribute.BOOLEAN)
-            .setDescription(
-                `if this tab will not work correctly in a popout window when the main window is backgrounded (inactive)
+        attributeDefinitions.addInherited("enablePopoutOverlay", "tabEnablePopoutOverlay").setDescription(
+            `if this tab will not work correctly in a popout window when the main window is backgrounded (inactive)
             then enabling this option will gray out this tab`,
-            );
+        );
 
-        attributeDefinitions.addInherited("borderWidth", "tabBorderWidth").setType(Attribute.NUMBER).setDescription(`width when added to border, -1 will use border size`);
-        attributeDefinitions.addInherited("borderHeight", "tabBorderHeight").setType(Attribute.NUMBER).setDescription(`height when added to border, -1 will use border size`);
-        attributeDefinitions.addInherited("minWidth", "tabMinWidth").setType(Attribute.NUMBER).setDescription(`the min width of this tab`);
-        attributeDefinitions.addInherited("minHeight", "tabMinHeight").setType(Attribute.NUMBER).setDescription(`the min height of this tab`);
-        attributeDefinitions.addInherited("maxWidth", "tabMaxWidth").setType(Attribute.NUMBER).setDescription(`the max width of this tab`);
-        attributeDefinitions.addInherited("maxHeight", "tabMaxHeight").setType(Attribute.NUMBER).setDescription(`the max height of this tab`);
-        attributeDefinitions.addInherited("enableScrollbars", "tabEnableScrollbars").setType(Attribute.BOOLEAN).setDescription(`whether the tab will be hosted in a scrollable container`);
+        attributeDefinitions.addInherited("borderWidth", "tabBorderWidth").setDescription(`the width of this tab when shown in a border; -1 uses the border's default size`);
+        attributeDefinitions.addInherited("borderHeight", "tabBorderHeight").setDescription(`the height of this tab when shown in a border; -1 uses the border's default size`);
+        attributeDefinitions.addInherited("minWidth", "tabMinWidth").setDescription(`the minimum width (in px) of this tab`);
+        attributeDefinitions.addInherited("minHeight", "tabMinHeight").setDescription(`the minimum height (in px) of this tab`);
+        attributeDefinitions.addInherited("maxWidth", "tabMaxWidth").setDescription(`the maximum width (in px) of this tab`);
+        attributeDefinitions.addInherited("maxHeight", "tabMaxHeight").setDescription(`the maximum height (in px) of this tab`);
+        attributeDefinitions.addInherited("enableScrollbars", "tabEnableScrollbars").setDescription(`whether the tab will be hosted in a scrollable container`);
 
         return attributeDefinitions;
     }

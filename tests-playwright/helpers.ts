@@ -125,6 +125,40 @@ export async function dragToEdge(page: Page, from: Locator, edgeIndex: number) {
     await page.mouse.up();
 }
 
+// drags a draggable element from one page/window to a target in another page/window (e.g. from the
+// main layout into a popout window, or back) using synthetic drag events: HTML5 drag and drop cannot
+// be driven with the mouse across separate browser windows. dragstart is dispatched on the source
+// element, then dragenter/dragover/drop on the target page's layout root.
+export async function dragAcrossWindows(source: Locator, targetPage: Page, target: Locator, loc: Location) {
+    const fr = await source.boundingBox();
+    const tr = await target.boundingBox();
+
+    if (!fr || !tr) throw new Error("Could not get bounding boxes");
+
+    const cf = getLocation(fr, Location.CENTER);
+    const ct = getLocation(tr, loc);
+
+    await source.evaluate(
+        (el, { x, y }: { x: number; y: number }) => {
+            const dt = new DataTransfer();
+            el.dispatchEvent(new DragEvent("dragstart", { bubbles: true, cancelable: true, dataTransfer: dt, clientX: x, clientY: y }));
+        },
+        { x: cf.x, y: cf.y },
+    );
+
+    const targetLayout = targetPage.locator(".flexlayout__layout").first();
+    await targetLayout.evaluate(
+        (el, { x, y }: { x: number; y: number }) => {
+            const dt = new DataTransfer();
+            const opts = (xx: number, yy: number) => ({ bubbles: true, cancelable: true, dataTransfer: dt, clientX: xx, clientY: yy });
+            el.dispatchEvent(new DragEvent("dragenter", opts(x, y)));
+            el.dispatchEvent(new DragEvent("dragover", opts(x, y)));
+            el.dispatchEvent(new DragEvent("drop", opts(x, y)));
+        },
+        { x: ct.x, y: ct.y },
+    );
+}
+
 export async function dragSplitter(page: Page, from: Locator, upDown: boolean, distance: number) {
     const fr = await from.boundingBox();
     if (!fr) throw new Error("Could not get bounding box for splitter");

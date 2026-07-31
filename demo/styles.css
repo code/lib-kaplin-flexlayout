@@ -180,3 +180,300 @@ button.reset-btn {
     cursor: pointer;
     outline: inherit;
 }
+
+/* Theme panel (Theme tab) */
+.theme-panel {
+    height: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    overflow: auto;
+    font-size: 13px;
+    color: var(--color-text);
+    background-color: var(--color-base);
+}
+
+.theme-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-2);
+}
+
+.theme-panel-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.theme-panel h3 {
+    margin: 14px 0 2px;
+    font-size: 14px;
+}
+
+.theme-panel h4 {
+    margin: 10px 0 2px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-5);
+    background-color: var(--color-1);
+}
+
+.theme-panel-note {
+    margin-bottom: 6px;
+    font-size: 11px;
+    color: var(--color-5);
+}
+
+.theme-panel-group {
+    margin-bottom: 4px;
+}
+
+.theme-panel-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+}
+
+.theme-panel-label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-text);
+}
+
+.theme-panel-row input[type="color"] {
+    width: 44px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--color-3);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.theme-panel-row input[type="range"] {
+    flex: 1;
+    max-width: 200px;
+    min-width: 50px;
+    accent-color: var(--color-tab-selected);
+}
+
+.theme-panel-value {
+    min-width: 38px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-5);
+}
+
+.theme-panel-row button,
+.theme-panel-reset-all {
+    border: 1px solid var(--color-3);
+    background-color: var(--color-2);
+    color: var(--color-text);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.theme-panel-row button:hover:not(:disabled),
+.theme-panel-reset-all:hover:not(:disabled) {
+    background-color: var(--color-3);
+}
+
+.theme-panel-row button:disabled,
+.theme-panel-reset-all:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* Attributes panel (Attributes tab) */
+.attrs-tree {
+    height: 100%;
+    box-sizing: border-box;
+    padding: 4px 0;
+    overflow: auto;
+    font-size: 15px;
+    color: var(--color-text);
+    background-color: var(--color-base);
+}
+
+.attrs-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    white-space: nowrap;
+    cursor: default;
+    user-select: none;
+}
+
+.attrs-tree-row.selectable:hover {
+    background-color: var(--color-2);
+}
+
+.attrs-tree-row.selected {
+    background-color: var(--color-tab-selected-background);
+    color: var(--color-tab-selected);
+}
+
+.attrs-tree-caret {
+    flex: 0 0 20px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.attrs-tree-caret.empty {
+    visibility: hidden;
+}
+
+.attrs-tree-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.attrs-editor {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    font-size: 13px;
+    color: var(--color-text);
+    background-color: var(--color-base);
+}
+
+.attrs-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--color-2);
+}
+
+.attrs-editor-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.attrs-editor-btn,
+.attrs-editor-row button {
+    border: 1px solid var(--color-3);
+    background-color: var(--color-2);
+    color: var(--color-text);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.attrs-editor-btn:hover:not(:disabled),
+.attrs-editor-row button:hover:not(:disabled) {
+    background-color: var(--color-3);
+}
+
+.attrs-editor-btn:disabled,
+.attrs-editor-row button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.attrs-editor-body {
+    flex: 1;
+    overflow: auto;
+    padding: 6px 8px;
+}
+
+.attrs-editor-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    text-align: center;
+    color: var(--color-5);
+}
+
+.attrs-editor-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+}
+
+.attrs-editor-label {
+    flex: 0 0 42%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-text);
+}
+
+.attrs-editor-control {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.attrs-editor-control input[type="text"],
+.attrs-editor-control input[type="number"],
+.attrs-editor-control select {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--color-3);
+    border-radius: 4px;
+    background-color: var(--color-2);
+    color: var(--color-text);
+    padding: 2px 4px;
+    font-size: 12px;
+}
+
+.attrs-editor-control input[type="checkbox"] {
+    accent-color: var(--color-tab-selected);
+}
+
+.attrs-editor-inherited {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: var(--color-5);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.attrs-editor-inherited.active {
+    color: var(--color-text);
+}
+
+.attrs-json-control {
+    width: 100%;
+    min-width: 0;
+}
+
+.attrs-json-control textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    border: 1px solid var(--color-3);
+    border-radius: 4px;
+    background-color: var(--color-2);
+    color: var(--color-text);
+    font-family: monospace;
+    font-size: 11px;
+    padding: 3px 4px;
+}
+
+.attrs-json-error {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #d0453e;
+}

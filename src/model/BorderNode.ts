@@ -164,15 +164,23 @@ export class BorderNode extends Node implements IDropTarget {
         return json;
     }
 
+    isAutoSelectTabWhenOpen() {
+        return this.getAttr("autoSelectTabWhenOpen") as boolean;
+    }
+
+    isAutoSelectTabWhenClosed() {
+        return this.getAttr("autoSelectTabWhenClosed") as boolean;
+    }
+
     /** @internal */
     isAutoSelectTab(whenOpen?: boolean) {
         if (whenOpen == null) {
             whenOpen = this.getSelected() !== -1;
         }
         if (whenOpen) {
-            return this.getAttr("autoSelectTabWhenOpen") as boolean;
+            return this.isAutoSelectTabWhenOpen();
         } else {
-            return this.getAttr("autoSelectTabWhenClosed") as boolean;
+            return this.isAutoSelectTabWhenClosed();
         }
     }
 
@@ -205,7 +213,6 @@ export class BorderNode extends Node implements IDropTarget {
         this.contentRect = r;
     }
 
-    /** @internal */
     isEnableDrop() {
         return this.getAttr("enableDrop") as boolean;
     }
@@ -364,12 +371,17 @@ export class BorderNode extends Node implements IDropTarget {
     }
 
     /** @internal */
-    getSplitterBounds(index: number, useMinSize: boolean = false) {
+    getSplitterBounds(useMinSize: boolean = false) {
         const pBounds = [0, 0];
-        const minSize = useMinSize ? this.getMinSize() : 0;
-        const maxSize = useMinSize ? this.getMaxSize() : 99999;
         const rootRow = this.model.getRootRow(Model.MAIN_LAYOUT_ID)!;
         const innerRect = rootRow.getRect();
+        // before the first measure pass the root row rect is empty: return a locked bound rather
+        // than clamping against negative inner-rect edges (which would freeze the splitter)
+        if (innerRect.width === 0 && innerRect.height === 0) {
+            return pBounds;
+        }
+        const minSize = useMinSize ? this.getMinSize() : 0;
+        const maxSize = useMinSize ? this.getMaxSize() : 99999;
         const splitterSize = this.model.getSplitterSize()!;
         if (this.location === DockLocation.TOP) {
             pBounds[0] = this.tabHeaderRect!.getBottom() + minSize;
@@ -397,7 +409,7 @@ export class BorderNode extends Node implements IDropTarget {
 
     /** @internal */
     calculateSplit(splitter: BorderNode, splitterPos: number) {
-        const pBounds = this.getSplitterBounds(splitterPos);
+        const pBounds = this.getSplitterBounds();
         if (this.location === DockLocation.BOTTOM || this.location === DockLocation.RIGHT) {
             return Math.max(0, pBounds[1] - splitterPos);
         } else {
@@ -412,6 +424,7 @@ export class BorderNode extends Node implements IDropTarget {
 
     /** @internal */
     static getAttributeDefinitions() {
+        Model.ensureAttributePairing();
         return BorderNode.attributeDefinitions;
     }
 
@@ -424,6 +437,7 @@ export class BorderNode extends Node implements IDropTarget {
         attributeDefinitions
             .add("borderType", "split")
             .setType(Attribute.STRING)
+            .setValues(["split", "overlay"])
             .setDescription(
                 `the border display type: 'split' splits the main layout to make room when a tab is selected; 'overlay' shows
             the selected tab's panel as an overlay on top of the main layout area, and the tab is deselected
@@ -434,27 +448,18 @@ export class BorderNode extends Node implements IDropTarget {
         attributeDefinitions.add("show", true).setType(Attribute.BOOLEAN).setDescription(`show/hide this border`);
         attributeDefinitions.add("config", undefined).setType("any").setDescription(`a place to hold json config used in your own code`);
 
-        attributeDefinitions.addInherited("enableDrop", "borderEnableDrop").setType(Attribute.BOOLEAN).setDescription(`whether tabs can be dropped into this border`);
-        attributeDefinitions.addInherited("className", "borderClassName").setType(Attribute.STRING).setDescription(`class applied to tab button`);
-        attributeDefinitions
-            .addInherited("autoSelectTabWhenOpen", "borderAutoSelectTabWhenOpen")
-            .setType(Attribute.BOOLEAN)
-            .setDescription(`whether to select new/moved tabs in border when the border is already open`);
-        attributeDefinitions
-            .addInherited("autoSelectTabWhenClosed", "borderAutoSelectTabWhenClosed")
-            .setType(Attribute.BOOLEAN)
-            .setDescription(`whether to select new/moved tabs in border when the border is currently closed`);
-        attributeDefinitions.addInherited("size", "borderSize").setType(Attribute.NUMBER).setDescription(`size of the tab area when selected`);
-        attributeDefinitions.addInherited("minSize", "borderMinSize").setType(Attribute.NUMBER).setDescription(`the minimum size of the tab area`);
-        attributeDefinitions.addInherited("maxSize", "borderMaxSize").setType(Attribute.NUMBER).setDescription(`the maximum size of the tab area`);
-        attributeDefinitions
-            .addInherited("enableAutoHide", "borderEnableAutoHide")
-            .setType(Attribute.BOOLEAN)
-            .setDescription(
-                `hide border if it has zero tabs; not related to the borderType 'overlay' mode (Visual Studio
+        attributeDefinitions.addInherited("enableDrop", "borderEnableDrop").setDescription(`whether tabs can be dropped into this border`);
+        attributeDefinitions.addInherited("className", "borderClassName").setDescription(`class applied to the border container`);
+        attributeDefinitions.addInherited("autoSelectTabWhenOpen", "borderAutoSelectTabWhenOpen").setDescription(`whether to select new/moved tabs in border when the border is already open`);
+        attributeDefinitions.addInherited("autoSelectTabWhenClosed", "borderAutoSelectTabWhenClosed").setDescription(`whether to select new/moved tabs in border when the border is currently closed`);
+        attributeDefinitions.addInherited("size", "borderSize").setDescription(`size of the tab area when selected`);
+        attributeDefinitions.addInherited("minSize", "borderMinSize").setDescription(`the minimum size of the tab area`);
+        attributeDefinitions.addInherited("maxSize", "borderMaxSize").setDescription(`the maximum size of the tab area`);
+        attributeDefinitions.addInherited("enableAutoHide", "borderEnableAutoHide").setDescription(
+            `hide border if it has zero tabs; not related to the borderType 'overlay' mode (Visual Studio
             style auto hide), see the borderType attribute`,
-            );
-        attributeDefinitions.addInherited("enableTabScrollbar", "borderEnableTabScrollbar").setType(Attribute.BOOLEAN).setDescription(`whether to show a mini scrollbar for the tabs`);
+        );
+        attributeDefinitions.addInherited("enableTabScrollbar", "borderEnableTabScrollbar").setDescription(`whether to show a mini scrollbar for the tabs`);
         return attributeDefinitions;
     }
 }

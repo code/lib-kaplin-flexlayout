@@ -15,23 +15,24 @@
 			"children": [
 				{
 					"type": "tab",
-					"id": "#6eebf157-b04f-42a8-acd6-18ab2eb286ff",
+					"id": "output",
 					"name": "Output",
 					"component": "grid",
 					"enableClose": false
 				},
 				{
 					"type": "tab",
-					"id": "#984349f2-0807-4689-b702-656bf1cb9515",
+					"id": "terminal",
 					"name": "Terminal",
 					"component": "grid",
 					"enableClose": false
 				},
 				{
 					"type": "tab",
-					"id": "#c2117846-46a3-4c93-a32c-992a351b1301",
+					"id": "layout_json",
 					"name": "Layout JSON",
-					"component": "json"
+					"component": "json",
+					"icon": "images/data_object.svg"
 				}
 			]
 		},
@@ -41,14 +42,14 @@
 			"children": [
 				{
 					"type": "tab",
-					"id": "#0a7988f1-0cfb-4420-a2a3-8aa8af12684f",
+					"id": "navigation",
 					"name": "Navigation",
 					"component": "grid",
 					"enableClose": false
 				},
 				{
 					"type": "tab",
-					"id": "#ab2da468-e13f-4925-b15a-388c00186737",
+					"id": "with_border_sizes",
 					"name": "With border sizes",
 					"component": "grid",
 					"enableClose": false,
@@ -63,7 +64,7 @@
 			"children": [
 				{
 					"type": "tab",
-					"id": "#c2a459f2-314a-4da6-a18d-8a00d8957a3d",
+					"id": "options",
 					"name": "Options",
 					"component": "grid",
 					"enableClose": false
@@ -82,15 +83,15 @@
 				"children": [
 					{
 						"type": "tab",
-						"id": "#8fcab2f4-23f8-49d7-ae82-f87a9c261200",
+						"id": "new",
 						"name": "New",
 						"helpText": "this tab has helpText defined",
-						"component": "newfeatures",
+						"component": "otherfeatures",
 						"icon": "images/article.svg"
 					},
 					{
 						"type": "tab",
-						"id": "#a97509a3-8139-4980-9a45-7ca2418edfd8",
+						"id": "two",
 						"name": "Two",
 						"component": "grid"
 					},
@@ -131,13 +132,13 @@
 				"children": [
 					{
 						"type": "tab",
-						"id": "#65210db1-663f-4f98-95cc-1c39953ed2d1",
+						"id": "form",
 						"name": "Form",
 						"component": "simpleform"
 					},
 					{
 						"type": "tab",
-						"id": "#9d820148-547a-431d-9793-be67ad973b86",
+						"id": "five",
 						"name": "Five",
 						"component": "grid",
 						"borderWidth": 500

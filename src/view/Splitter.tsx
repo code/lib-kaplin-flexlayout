@@ -57,7 +57,7 @@ export const Splitter = (props: ISplitterProps) => {
         enablePointerOnIFrames(false, controller.getCurrentDocument()!);
         startDrag(event.currentTarget.ownerDocument, event, onDragMove, onDragEnd, onDragCancel);
 
-        pBounds.current = node.getSplitterBounds(index, true);
+        pBounds.current = node instanceof BorderNode ? node.getSplitterBounds(true) : node.getSplitterBounds(index);
         const rootdiv = controller.getRootDiv();
         outlineDiv.current = controller.getCurrentDocument()!.createElement("div");
         outlineDiv.current.style.flexDirection = horizontal ? "row" : "column";
@@ -104,6 +104,11 @@ export const Splitter = (props: ISplitterProps) => {
                 controller.doAction(Actions.adjustBorderSplit(node.getId(), size));
             } else {
                 const initials = node.getSplitterInitials(index);
+                // an unmeasured row (all zero rects) cannot be split: skip rather than emitting
+                // Infinity/NaN weights from a division by the zero sum
+                if (initials.sum <= 0) {
+                    return;
+                }
                 const bounds = node.getSplitterBounds(index);
                 const pos = Math.max(bounds[0], Math.min(bounds[1], initials.startPosition + delta));
                 const weights = node.calculateSplit(index, pos, initials.initialSizes, initials.sum, initials.startPosition);
@@ -167,6 +172,11 @@ export const Splitter = (props: ISplitterProps) => {
                     controller.doAction(Actions.adjustBorderSplit(node.getId(), pos).setAdjusting(adjusting));
                 } else {
                     const init = initalSizes.current;
+                    // an unmeasured row (all zero rects) cannot be split: skip rather than emitting
+                    // Infinity/NaN weights from a division by the zero sum
+                    if (init.sum <= 0) {
+                        return;
+                    }
                     const weights = node.calculateSplit(index, value, init.initialSizes, init.sum, init.startPosition);
                     controller.doAction(Actions.adjustWeights(node.getId(), weights).setAdjusting(adjusting));
                 }

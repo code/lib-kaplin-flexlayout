@@ -542,6 +542,7 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
 
     /** @internal */
     static getAttributeDefinitions() {
+        Model.ensureAttributePairing();
         return TabSetNode.attributeDefinitions;
     }
 
@@ -551,23 +552,25 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         attributeDefinitions.add("type", TabSetNode.TYPE, true).setType(Attribute.STRING).setFixed();
         attributeDefinitions.add("id", undefined).setType(Attribute.STRING).setDescription(`the unique id of the tab set, if left undefined a uuid will be assigned`);
         attributeDefinitions.add("weight", 100).setType(Attribute.NUMBER).setDescription(`relative weight for sizing of this tabset in parent row`);
-        attributeDefinitions.add("selected", 0).setType(Attribute.NUMBER).setDescription(`index of selected/visible tab in tabset`);
-        attributeDefinitions.add("name", undefined).setType(Attribute.STRING);
+        attributeDefinitions.add("selected", 0).setType(Attribute.NUMBER).setDescription(`index of selected/visible tab in tabset; -1 means no tab selected`);
+        attributeDefinitions.add("name", undefined).setType(Attribute.STRING).setDescription(`an accessible label for the tab strip (used as the tablist's aria-label; not displayed visually)`);
         attributeDefinitions.add("config", undefined).setType("any").setDescription(`a place to hold json config used in your own code`);
 
-        attributeDefinitions.addInherited("enableDeleteWhenEmpty", "tabSetEnableDeleteWhenEmpty").setDescription(`whether to delete this tabset when is has no tabs`);
-        attributeDefinitions.addInherited("enableDrop", "tabSetEnableDrop").setDescription(`allow user to drag tabs into this tabset`);
-        attributeDefinitions.addInherited("enableDrag", "tabSetEnableDrag").setDescription(`allow user to drag tabs out this tabset`);
-        attributeDefinitions.addInherited("enableDivide", "tabSetEnableDivide").setDescription(`allow user to drag tabs to region of this tabset, splitting into new tabset`);
-        attributeDefinitions.addInherited("enableMaximize", "tabSetEnableMaximize").setDescription(`allow user to maximize tabset to fill view via maximize button`);
-        attributeDefinitions.addInherited("enableClose", "tabSetEnableClose").setDescription(`can this tabset be closed`);
+        attributeDefinitions.addInherited("enableDeleteWhenEmpty", "tabSetEnableDeleteWhenEmpty").setDescription(`whether to delete this tabset when it has no tabs`);
+        attributeDefinitions.addInherited("enableDrop", "tabSetEnableDrop").setDescription(`whether tabs can be dropped into this tabset`);
+        attributeDefinitions.addInherited("enableDrag", "tabSetEnableDrag").setDescription(`whether the user can drag tabs out of this tabset`);
+        attributeDefinitions.addInherited("enableDivide", "tabSetEnableDivide").setDescription(`whether dropping on an edge of this tabset splits it to create a new tabset`);
+        attributeDefinitions.addInherited("enableMaximize", "tabSetEnableMaximize").setDescription(`whether the tabset can be maximized to fill the layout via the maximize button`);
+        attributeDefinitions.addInherited("enableClose", "tabSetEnableClose").setDescription(`whether this tabset can be closed`);
         attributeDefinitions.addInherited("enableCloseButton", "tabSetEnableCloseButton").setDescription(`if the tabset can be closed then show a close button`);
         attributeDefinitions
             .addInherited("enableSingleTabStretch", "tabSetEnableSingleTabStretch")
             .setDescription(`if the tabset has only a single tab then stretch the single tab to fill area and display in a header style`);
 
         attributeDefinitions.addInherited("classNameTabStrip", "tabSetClassNameTabStrip").setDescription(`a class name to apply to the tab strip`);
-        attributeDefinitions.addInherited("enableTabStrip", "tabSetEnableTabStrip").setDescription(`enable tab strip and allow multiple tabs in this tabset`);
+        attributeDefinitions
+            .addInherited("enableTabStrip", "tabSetEnableTabStrip")
+            .setDescription(`when enabled the tabset shows a tab strip and can host multiple tabs; when disabled the strip is hidden`);
         attributeDefinitions.addInherited("minWidth", "tabSetMinWidth").setDescription(`minimum width (in px) for this tabset`);
         attributeDefinitions.addInherited("minHeight", "tabSetMinHeight").setDescription(`minimum height (in px) for this tabset`);
         attributeDefinitions.addInherited("maxWidth", "tabSetMaxWidth").setDescription(`maximum width (in px) for this tabset`);
@@ -575,13 +578,10 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
 
         attributeDefinitions.addInherited("enableTabWrap", "tabSetEnableTabWrap").setDescription(`wrap tabs onto multiple lines`);
         attributeDefinitions.addInherited("tabLocation", "tabSetTabLocation").setDescription(`the location of the tabs either top or bottom`);
-        attributeDefinitions.addInherited("autoSelectTab", "tabSetAutoSelectTab").setType(Attribute.BOOLEAN).setDescription(`whether to select new/moved tabs in tabset`);
-        attributeDefinitions
-            .addInherited("enableActiveIcon", "tabSetEnableActiveIcon")
-            .setType(Attribute.BOOLEAN)
-            .setDescription(`whether the active icon (*) should be displayed when the tabset is active`);
+        attributeDefinitions.addInherited("autoSelectTab", "tabSetAutoSelectTab").setDescription(`whether to select new/moved tabs in tabset`);
+        attributeDefinitions.addInherited("enableActiveIcon", "tabSetEnableActiveIcon").setDescription(`whether the active icon (*) should be displayed when the tabset is active`);
 
-        attributeDefinitions.addInherited("enableTabScrollbar", "tabSetEnableTabScrollbar").setType(Attribute.BOOLEAN).setDescription(`whether to show a mini scrollbar for the tabs`);
+        attributeDefinitions.addInherited("enableTabScrollbar", "tabSetEnableTabScrollbar").setDescription(`whether to show a mini scrollbar for the tabs`);
 
         return attributeDefinitions;
     }
