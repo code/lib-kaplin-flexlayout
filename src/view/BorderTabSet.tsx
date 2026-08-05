@@ -36,8 +36,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
 
     const icons = controller.getIcons();
 
-    // close an open overflow menu if this border unmounts (e.g. removed by an external doAction);
-    // otherwise showPopup's document listener + overlay + portal would leak
+    // cleanup: close overflow menu on unmount to prevent listener/portal leak
     React.useEffect(() => () => hideOverflowRef.current?.(), []);
 
     const { userControlledPositionRef, onScroll, onScrollPointerDown, hiddenTabs, onMouseWheel, isDockStickyButtons, isShowHiddenTabs } = useTabOverflow(
@@ -50,9 +49,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
         controller.getClassName(CLASSES.FLEXLAYOUT__BORDER_BUTTON),
     );
 
-    // register with the layout's central measure pass via a callback ref: it fires whenever
-    // react attaches/detaches the element, including remounts the component cannot know about
-    // (e.g. moving into the maximize portal), unlike an effect
+    // callback ref: fires on attach/detach including remounts, unlike an effect
     const setSelfRef = React.useCallback(
         (element: HTMLDivElement | null) => {
             selfRef.current = element;
@@ -156,9 +153,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
             renderState.overflowPosition = stickyButtons.length;
         }
 
-        // the sticky buttons bar renders after the tablist element, not inside it: a tablist
-        // may only contain tab children (the bar still sits directly after the last tab, in
-        // the same scrolling row)
+        // sticky bar outside tablist (tablist may only contain tab children)
         if (stickyButtons.length > 0) {
             if (isDockStickyButtons) {
                 buttons = [...stickyButtons, ...buttons];
@@ -199,8 +194,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
             buttons.splice(
                 Math.min(renderState.overflowPosition, buttons.length),
                 0,
-                // toolbar buttons carry an explicit tabindex: Safari only includes elements
-                // with an explicit tabindex in the tab order (native buttons are skipped)
+                // explicit tabindex: Safari skips native buttons in tab order
                 <button
                     key="overflowbutton"
                     tabIndex={0}
@@ -329,8 +323,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
                 >
                     <div
                         style={innerStyle}
-                        // while one of this border's tabs shows its rename textbox, the strip is
-                        // a plain container (see the matching comment in TabSet)
+                        // drop tablist role during rename
                         role={controller.getEditingTab()?.getParent() === borderNode ? undefined : "tablist"}
                         aria-orientation={
                             controller.getEditingTab()?.getParent() !== borderNode && (borderNode.getLocation() === DockLocation.LEFT || borderNode.getLocation() === DockLocation.RIGHT)

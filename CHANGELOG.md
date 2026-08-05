@@ -1,3 +1,13 @@
+## 0.10.4 - 2026-08-09
+* **Added:** `ContextMenuBuilder` for building context menu items.
+* **Added:** New `useUndo` React hook that encapsulates undo/redo for a model. 
+* **Added:** `renderPopoutContent`, `onPopoutOpen` and `onPopoutClose` Layout props for styling popout windows.
+* **Fixed:** css-in-js styles (emotion/MUI, styled-components) not appearing in popout windows in production builds; CSSOM-inserted rules are now copied into popouts.
+* **Added:** `Actions.group` that batches multiple actions together.
+* **Added:** New tab attribute `enablePin`.
+* **Added:** `Model.addChangeListener()` now accepts a `ModelChangeListener` object with optional `onBeforeAction` and `onAfterAction` callbacks. The existing function form is kept for backwards compatibility. 
+* **Added:** `TabNode.getWindow()` and `TabNode.getDocument()`
+
 ## 0.10.3 - 2026-08-04
 * **Added:** Two new panels to the demo: 'Model Explorer' and 'Theme'
 * **Improved:** Test coverage.

@@ -50,6 +50,7 @@
 						"id": "editor",
 						"name": "Editor",
 						"tabsetClassName": "blueClass",
+						"enableScrollbars": false,
 						"component": "monaco"
 					}
 				]

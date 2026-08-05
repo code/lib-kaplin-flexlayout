@@ -63,7 +63,7 @@ export const BorderButton = (props: IBorderButtonProps) => {
         }
     };
 
-    // move focus into the tab content: the first focusable element, or the panel itself
+    // focus the first focusable element in the tab content, or the panel
     const focusTabContent = () => {
         const doc = selfRef.current!.ownerDocument;
         const focusPanel = () => focusFirstIn(doc.getElementById(domId("flexlayout-tab-", tabNode.getId())));
@@ -134,9 +134,7 @@ export const BorderButton = (props: IBorderButtonProps) => {
 
     const editing = controller.getEditingTab() === tabNode;
 
-    // register with the layout's central measure pass via a callback ref: it fires whenever
-    // react attaches/detaches the element, including remounts the component cannot know
-    // about, unlike an effect
+    // callback ref: fires on attach/detach including remounts, unlike an effect
     const setSelfRef = React.useCallback(
         (element: HTMLDivElement | null) => {
             selfRef.current = element;
@@ -151,7 +149,7 @@ export const BorderButton = (props: IBorderButtonProps) => {
         }
     }, [editing]);
 
-    // while editing, end the edit on any pointer down outside the textbox
+    // end the edit on any pointer down outside the textbox
     React.useEffect(() => {
         if (editing) {
             const body = controller.getCurrentDocument()!.body;
@@ -230,9 +228,7 @@ export const BorderButton = (props: IBorderButtonProps) => {
     if (tabNode.isCloseable()) {
         const closeTitle = controller.i18nName(I18nLabel.Close_Tab);
         renderState.buttons.push(
-            // hidden from assistive technology: it is a pointer affordance for the tab's
-            // close shortcut (advertised via aria-keyshortcuts), not a tab stop (per the
-            // APG tabs pattern, tab elements should not contain interactive children)
+            // aria-hidden: pointer-only close button, not a tab stop (APG tabs pattern)
             <div
                 key="close"
                 data-layout-path={path + "/button/close"}
@@ -247,22 +243,18 @@ export const BorderButton = (props: IBorderButtonProps) => {
         );
     }
 
-    // advertise the tab's keyboard operations to assistive technology; composed from the
-    // resolved keymap so the advertised shortcuts always match the configured bindings
+    // aria-keyshortcuts from the resolved keymap
     const ariaKeyshortcuts = [toAriaKeyShortcuts(keyMap.focusTabToggle), tabNode.isCloseable() ? toAriaKeyShortcuts(keyMap.closeTab) : undefined].filter(Boolean).join(" ") || undefined;
 
     return (
         <div
             ref={setSelfRef}
             id={domId("flexlayout-tabbutton-", tabNode.getId())}
-            // while the rename textbox is showing, the element is a plain container for it, not
-            // a tab (a tab role must not contain interactive children); it stays programmatically
-            // focusable so the end of the edit can return focus to it
+            // drop tab role during rename (tab must not contain interactive children)
             role={editing ? undefined : "tab"}
             aria-selected={editing ? undefined : selected}
             aria-controls={editing ? undefined : domId("flexlayout-tab-", tabNode.getId())}
-            // an explicit name: the subtree contains the close adornment, which must not leak
-            // into the tab's computed name
+            // explicit name to exclude the close button from the accessible name
             aria-label={editing ? undefined : renderState.name}
             aria-keyshortcuts={editing ? undefined : ariaKeyshortcuts}
             tabIndex={editing ? -1 : isTabbable() ? 0 : -1}

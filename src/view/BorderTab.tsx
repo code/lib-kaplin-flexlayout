@@ -17,9 +17,7 @@ export function BorderTab(props: IBorderTabProps) {
     const { controller, borderNode, show } = props;
     const selfRef = React.useRef<HTMLDivElement>(null);
 
-    // register with the layout's central measure pass via a callback ref: it fires whenever
-    // react attaches/detaches the element, including remounts the component cannot know about
-    // (e.g. moving into the maximize portal), unlike an effect
+    // callback ref: fires on attach/detach including remounts, unlike an effect
     const setSelfRef = React.useCallback(
         (element: HTMLDivElement | null) => {
             selfRef.current = element;

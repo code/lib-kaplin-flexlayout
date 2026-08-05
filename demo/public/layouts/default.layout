@@ -215,8 +215,13 @@
 								"type": "tab",
 								"id": "mui",
 								"name": "MUI",
-								"component": "mui",
-								"enablePopout": false
+								"component": "mui"
+							},
+							{
+								"type": "tab",
+								"id": "styledcomp",
+								"name": "Styled Components",
+								"component": "styledcomp"
 							}
 						]
 					},
@@ -229,8 +234,7 @@
 								"type": "tab",
 								"id": "mui_grid",
 								"name": "MUI Grid",
-								"component": "muigrid",
-								"enablePopout": false
+								"component": "muigrid"
 							}
 						]
 					}

@@ -6,7 +6,7 @@ import { Rect } from "./Rect";
 import { IDraggable } from "./IDraggable";
 import { IJsonBorderNode, IJsonRowNode, IJsonTabNode, IJsonTabSetNode } from "./IJsonModel";
 import { Model } from "./Model";
-import { Layout } from "./Layout";
+import { ModelLayout } from "./ModelLayout";
 
 export abstract class Node {
     /** @internal */
@@ -103,7 +103,7 @@ export abstract class Node {
     }
 
     /** @internal */
-    getLayout(): Layout {
+    getLayout(): ModelLayout {
         if (this.parent) {
             return this.parent.getLayout();
         }
@@ -112,6 +112,25 @@ export abstract class Node {
 
     getLayoutRef() {
         return this.getLayout().getController()!.getLayoutRef();
+    }
+
+    /**
+     * Get the browser window that this node is currently rendered in.
+     * This is the main window for nodes in the main layout and the popout window
+     * for nodes rendered inside a popout. Returns undefined before the layout has
+     * been mounted.
+     */
+    getWindow(): Window | undefined {
+        return this.getLayout().getWindow();
+    }
+
+    /**
+     * Get the document that this node is currently rendered in (the document of
+     * the main window or of a popout window). Returns undefined before the layout
+     * has been mounted.
+     */
+    getDocument(): Document | undefined {
+        return this.getWindow()?.document;
     }
 
     setEventListener(event: NodeEventType, callback: (params: any) => void) {

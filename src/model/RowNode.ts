@@ -13,13 +13,13 @@ import { DefaultMax, DefaultMin, Model } from "./Model";
 import { Node } from "./Node";
 import { TabSetNode } from "./TabSetNode";
 import { canDockToLayout } from "../view/Utils";
-import { Layout } from "./Layout";
+import { ModelLayout } from "./ModelLayout";
 
 export class RowNode extends Node implements IDropTarget {
     static readonly TYPE = "row";
 
     /** @internal */
-    static fromJson(json: IJsonRowNode, model: Model, layout: Layout) {
+    static fromJson(json: IJsonRowNode, model: Model, layout: ModelLayout) {
         const newLayoutNode = new RowNode(model, json);
 
         if (json.children != null) {
@@ -41,7 +41,7 @@ export class RowNode extends Node implements IDropTarget {
     private static attributeDefinitions: Attributes = RowNode.createAttributeDefinitions();
 
     /** @internal */
-    private layout?: Layout;
+    private layout?: ModelLayout;
     /** @internal */
     private minHeight: number;
     /** @internal */
@@ -88,7 +88,7 @@ export class RowNode extends Node implements IDropTarget {
     }
 
     /** @internal */
-    setLayout(layout: Layout) {
+    setLayout(layout: ModelLayout) {
         this.layout = layout;
     }
 

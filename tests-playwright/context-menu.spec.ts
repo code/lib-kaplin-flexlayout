@@ -1,8 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 // The demo wires its context menu (onContextMenu) to the library's reusable showPopupMenu control
-// for the "otherfeatures" layout. These tests exercise the generic control: it appears on right
-// click, is an accessible menu, and is fully keyboard operable.
+// via the prebuilt node context items (getNodeContextMenuItems). These tests exercise the generic
+// control: it appears on right click, is an accessible menu, and is fully keyboard operable.
+//
+// For tab "One" in test_with_borders (global tabEnablePopout defaults to false) the prebuilt menu
+// omits the not-allowed options by default. Its tabset has a single tab, so no bulk close actions
+// are offered: Pin, Rename, [divider], Close.
 test.describe("reusable popup menu (demo context menu)", () => {
     const openMenu = async (page: import("@playwright/test").Page) => {
         await page.goto("/demo?layout=test_with_borders");
@@ -18,7 +22,7 @@ test.describe("reusable popup menu (demo context menu)", () => {
         const menu = page.locator(".flexlayout__popup_menu");
         await expect(menu).toHaveAttribute("role", "menu");
         await expect(page.locator('[role="menuitem"]')).toHaveCount(3);
-        await expect(page.locator('[role="menuitem"]').first()).toHaveText("Rename");
+        await expect(page.locator('[role="menuitem"]').first()).toHaveText("Pin");
         // first item is focused on open
         await expect(page.locator('[role="menuitem"]').first()).toBeFocused();
     });
@@ -28,8 +32,7 @@ test.describe("reusable popup menu (demo context menu)", () => {
         // the divider is a separator, not a menuitem, so it is not counted among the 3 items
         await expect(page.locator('.flexlayout__popup_menu [role="separator"]')).toHaveCount(1);
         await expect(page.locator('[role="menuitem"]')).toHaveCount(3);
-        // ArrowDown twice from the first item: the second press skips the divider (after "Pin") and
-        // lands on the next item; Enter still selects (via the focused-element click path)
+        // ArrowDown twice from the first item skips the divider, landing on Close; Enter selects
         await expect(page.locator('[role="menuitem"]').first()).toBeFocused();
         await page.keyboard.press("ArrowDown");
         await expect(page.locator('[role="menuitem"]').nth(1)).toBeFocused();
@@ -63,7 +66,7 @@ test.describe("reusable popup menu (demo context menu)", () => {
         await expect(page.locator('[role="menuitem"]').nth(2)).toBeFocused();
         await page.waitForTimeout(600); // let the type-ahead buffer reset
         await page.keyboard.press("p"); // -> "Pin"
-        await expect(page.locator('[role="menuitem"]').nth(1)).toBeFocused();
+        await expect(page.locator('[role="menuitem"]').nth(0)).toBeFocused();
     });
 
     test("Rename opens the inline edit, Close removes the tab", async ({ page }) => {
@@ -90,5 +93,26 @@ test.describe("reusable popup menu (demo context menu)", () => {
         await expect(page.locator(".flexlayout__popup_menu")).toBeVisible();
         await page.mouse.click(5, 5);
         await expect(page.locator(".flexlayout__popup_menu")).toHaveCount(0);
+    });
+
+    test("Show in Explorer is offered on other tabs and without a stray leading divider on the Model Explorer", async ({ page }) => {
+        await page.goto("/demo?layout=default");
+        await expect(page.locator(".flexlayout__tab_button").first()).toBeVisible();
+
+        // a regular tab offers the Show in Explorer item
+        await page.locator(".flexlayout__tab_button").first().click({ button: "right" });
+        await expect(page.locator(".flexlayout__popup_menu")).toBeVisible();
+        await expect(page.getByRole("menuitem", { name: "Show in Explorer", exact: true })).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(page.locator(".flexlayout__popup_menu")).toHaveCount(0);
+
+        // the Model Explorer tab has no other menu items, so its Show in Explorer entry appears
+        // alone - without the stray leading divider that separated it from the omitted items
+        await expect(page.locator(".flexlayout__border_button", { hasText: "Model Explorer" })).toBeVisible();
+        await page.locator(".flexlayout__border_button", { hasText: "Model Explorer" }).click({ button: "right" });
+        await expect(page.locator(".flexlayout__popup_menu")).toBeVisible();
+        await expect(page.getByRole("menuitem", { name: "Show in Explorer", exact: true })).toBeVisible();
+        await expect(page.locator('[role="menuitem"]')).toHaveCount(1);
+        await expect(page.locator('.flexlayout__popup_menu [role="separator"]')).toHaveCount(0);
     });
 });

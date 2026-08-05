@@ -119,6 +119,7 @@ export enum CLASSES {
     FLEXLAYOUT__POPUP_MENU_CONTAINER = "flexlayout__popup_menu_container",
     FLEXLAYOUT__POPUP_MENU_ITEM = "flexlayout__popup_menu_item",
     FLEXLAYOUT__POPUP_MENU_ITEM__SELECTED = "flexlayout__popup_menu_item--selected",
+    FLEXLAYOUT__POPUP_MENU_ITEM__DISABLED = "flexlayout__popup_menu_item--disabled",
     FLEXLAYOUT__POPUP_MENU_DIVIDER = "flexlayout__popup_menu_divider",
     FLEXLAYOUT__POPUP_MENU = "flexlayout__popup_menu",
 

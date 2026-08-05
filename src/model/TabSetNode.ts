@@ -9,7 +9,7 @@ import { BorderNode } from "./BorderNode";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
 import { IJsonTabSetNode, ITabSetAttributes } from "./IJsonModel";
-import { Layout } from "./Layout";
+import { ModelLayout } from "./ModelLayout";
 import { Model } from "./Model";
 import { Node } from "./Node";
 import { RowNode } from "./RowNode";
@@ -20,7 +20,7 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
     static readonly TYPE = "tabset";
 
     /** @internal */
-    static fromJson(json: IJsonTabSetNode, model: Model, layout: Layout) {
+    static fromJson(json: IJsonTabSetNode, model: Model, layout: ModelLayout) {
         const newLayoutNode = new TabSetNode(model, json);
 
         if (json.children != null) {
@@ -32,7 +32,6 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         if (newLayoutNode.children.length === 0) {
             newLayoutNode.setSelected(-1);
         } else if (newLayoutNode.getSelected() >= newLayoutNode.children.length) {
-            // clamp an out of range selected index from the json
             newLayoutNode.setSelected(newLayoutNode.children.length - 1);
         }
 
@@ -257,9 +256,7 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         this.calculatedMinHeight += this.tabStripRect.height;
         this.calculatedMaxHeight += this.tabStripRect.height;
 
-        // contradictory attributes (e.g. a tab with maxWidth < minWidth) can drive the calculated
-        // max below the min; keep max >= min so getSplitterBounds / calculateSplit are not fed
-        // inverted bounds
+        // clamp max >= min to prevent inverted bounds from contradictory attributes
         this.calculatedMaxWidth = Math.max(this.calculatedMaxWidth, this.calculatedMinWidth);
         this.calculatedMaxHeight = Math.max(this.calculatedMaxHeight, this.calculatedMinHeight);
     }
@@ -267,11 +264,10 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
     /** @internal */
     canMaximize() {
         if (this.isEnableMaximize()) {
-            // always allow maximize toggle if already maximized
             if (this.getModel().getMaximizedTabset(this.getLayoutId()) === this) {
                 return true;
             }
-            // only one tabset, so disable
+            // single tabset: disable maximize
             if (this.getParent() === this.getModel().getRootRow(this.getLayoutId()) && this.getModel().getRootRow(this.getLayoutId())!.getChildren().length === 1) {
                 return false;
             }

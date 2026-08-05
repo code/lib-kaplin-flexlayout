@@ -3,9 +3,7 @@ import { IGlobalAttributes, IJsonRect, IJsonRowNode, IJsonTabNode, IRowAttribute
 import { ILayoutType } from "./IJsonModel";
 import { Rect } from "./Rect";
 
-/**
- * The Action creator class for FlexLayout model actions
- */
+/** Action creators for FlexLayout model mutations. */
 export class Actions {
     static ADD_TAB = "FlexLayout_AddTab";
     static DELETE_TAB = "FlexLayout_DeleteTab";
@@ -29,6 +27,19 @@ export class Actions {
     static MOVE_FLOAT = "FlexLayout_MoveFloat";
 
     static CREATE_SUBLAYOUT = "FlexLayout_CreateSubLayout";
+
+    static GROUP = "FlexLayout_Group";
+
+    /**
+     * Groups multiple actions into a single {@link GroupAction}. When performed, the model applies
+     * the contained actions in sequence between a single `onBeforeAction`/`onAfterAction` listener
+     * pair, so the batch is a single undo step and a single entry in an action log.
+     * @param actions the actions to perform together, in order
+     * @returns {GroupAction} the group action
+     */
+    static group(actions: Action[]): GroupAction {
+        return new GroupAction(actions);
+    }
 
     /**
      * Adds a tab node to the given tabset node
@@ -280,5 +291,25 @@ export class Action {
 
     isAdjusting(): boolean {
         return this.adjusting;
+    }
+
+    /** serializes the action for display/logging as a plain {type, data} object */
+    toJSON() {
+        return { type: this.type, data: this.data };
+    }
+}
+
+/**
+ * A batch of actions that the model applies together between a single `onBeforeAction` /
+ * `onAfterAction` listener pair. Create with {@link Actions.group}. The `data` field holds the
+ * contained actions, so an action log can show the batch as a json array of the individual actions.
+ */
+export class GroupAction extends Action {
+    /** the actions to perform, in order */
+    actions: Action[];
+
+    constructor(actions: Action[]) {
+        super(Actions.GROUP, actions as unknown as Record<string, any>);
+        this.actions = actions;
     }
 }

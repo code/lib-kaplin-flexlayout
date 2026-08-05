@@ -1,5 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-import { checkBorderTab, drag, dragSplitter, findAllTabSets, findPath, findTabButton, Location } from "./helpers";
+import { checkBorderTab, drag, dragSplitter, findAllTabSets, findPath, findTabButton, Location, waitForBox } from "./helpers";
 
 // layout test_overlay: left border is borderType overlay (tab left1), top/bottom/right are
 // default borders; main layout has tabsets One, Two, Three
@@ -11,8 +11,7 @@ const SPLIT_TITLE = "Split border (toggle to overlay)";
 const OVERLAY_TITLE = "Overlay border (toggle to split)";
 
 const mainBox = async (page: Page) => {
-    const box = await findPath(page, "/ts0").boundingBox();
-    if (!box) throw new Error("no bounding box for /ts0");
+    const box = await waitForBox(findPath(page, "/ts0"), "/ts0");
     return { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) };
 };
 
@@ -57,10 +56,10 @@ test.describe("overlay borders", () => {
         // the splitter must sit above the panel and still resize it (regression: after a runtime
         // toggle the border content was re-measured from a stale element, covering the splitter)
         const panel = findPath(page, "/border/bottom/t0");
-        const beforeResize = await panel.boundingBox();
+        const beforeResize = await waitForBox(panel, "border panel");
         await dragSplitter(page, findPath(page, "/border/bottom/s-1"), true, -100);
-        const afterResize = await panel.boundingBox();
-        expect(Math.round(afterResize!.height - beforeResize!.height)).toBeGreaterThan(50);
+        const afterResize = await waitForBox(panel, "border panel");
+        expect(Math.round(afterResize.height - beforeResize.height)).toBeGreaterThan(50);
 
         // toggling back to split while the panel is open splits the layout live
         await bottom.getByTitle(OVERLAY_TITLE).click();
@@ -137,19 +136,19 @@ test.describe("overlay borders", () => {
         await findTabButton(page, "/border/left", 0).click();
         const panel = findPath(page, "/border/left/t0");
         await expect(panel).toBeVisible();
-        const before = await panel.boundingBox();
+        const before = await waitForBox(panel, "border panel");
 
         await dragSplitter(page, findPath(page, "/border/left/s-1"), false, 100);
-        const after = await panel.boundingBox();
-        expect(Math.round(after!.width - before!.width)).toBeGreaterThan(50);
+        const after = await waitForBox(panel, "border panel");
+        expect(Math.round(after.width - before.width)).toBeGreaterThan(50);
 
         // close via outside click, reopen: the size persists
         await findPath(page, "/ts1/t0").click();
         await expect(panel).not.toBeVisible();
         await findTabButton(page, "/border/left", 0).click();
         await expect(panel).toBeVisible();
-        const reopened = await panel.boundingBox();
-        expect(Math.round(reopened!.width)).toEqual(Math.round(after!.width));
+        const reopened = await waitForBox(panel, "border panel");
+        expect(Math.round(reopened.width)).toEqual(Math.round(after.width));
     });
 
     test("overlay mode works for all four border locations", async ({ page }) => {
@@ -203,29 +202,31 @@ test.describe("overlay borders", () => {
         await findTabButton(page, "/border/bottom", 0).click();
         await findTabButton(page, "/border/left", 0).click();
 
-        const leftPanel = await findPath(page, "/border/left/t0").boundingBox();
-        const bottomPanel = await findPath(page, "/border/bottom/t0").boundingBox();
+        const leftPanel = await waitForBox(findPath(page, "/border/left/t0"), "left panel");
+        const bottomPanel = await waitForBox(findPath(page, "/border/bottom/t0"), "bottom panel");
 
         // same geometry as default borders: the bottom panel spans the full width and the left
         // panel (and its splitter) stops above it
-        expect(bottomPanel!.x).toBeLessThanOrEqual(leftPanel!.x);
-        expect(Math.round(leftPanel!.y + leftPanel!.height)).toBeLessThanOrEqual(Math.round(bottomPanel!.y) + 1);
+        expect(bottomPanel.x).toBeLessThanOrEqual(leftPanel.x);
+        expect(Math.round(leftPanel.y + leftPanel.height)).toBeLessThanOrEqual(Math.round(bottomPanel.y) + 1);
 
-        const leftSplitter = await findPath(page, "/border/left/s-1").boundingBox();
-        expect(Math.round(leftSplitter!.height)).toEqual(Math.round(leftPanel!.height));
+        const leftSplitter = await waitForBox(findPath(page, "/border/left/s-1"), "left splitter");
+        expect(Math.round(leftSplitter.height)).toEqual(Math.round(leftPanel.height));
     });
 
-    test("border strip and border tabs have no context menu (the toolbar button toggles the type)", async ({ page }) => {
-        // right click an empty part of the strip itself: no menu
+    test("border strip shows a border type context menu; border tabs get the tab menu", async ({ page }) => {
+        // right click an empty part of the strip itself: menu with the border type toggle
         const strip = findPath(page, "/border/bottom");
-        const stripBox = await strip.boundingBox();
-        await strip.click({ button: "right", position: { x: stripBox!.width / 2, y: stripBox!.height / 2 } });
-        await expect(page.locator(".flexlayout__popup_menu")).toHaveCount(0);
+        const stripBox = await waitForBox(strip, "border strip");
+        await strip.click({ button: "right", position: { x: stripBox.width / 2, y: stripBox.height / 2 } });
+        await expect(page.locator(".flexlayout__popup_menu")).toBeVisible();
+        // the bottom border is 'split', so the item offers to switch to overlay
+        await expect(page.getByRole("menuitem", { name: "Overlay", exact: true })).toBeVisible();
 
-        // right click a border tab: tab menu without any border type item
+        // right click a border tab: tab menu without any border type item or rename (not allowed)
         await findTabButton(page, "/border/bottom", 0).click({ button: "right" });
         await expect(page.locator(".flexlayout__popup_menu")).toBeVisible();
         await expect(page.getByRole("menuitem", { name: "Overlay Border", exact: true })).toHaveCount(0);
-        await expect(page.getByRole("menuitem", { name: "Rename", exact: true })).toBeVisible();
+        await expect(page.getByRole("menuitem", { name: "Rename", exact: true })).toHaveCount(0);
     });
 });

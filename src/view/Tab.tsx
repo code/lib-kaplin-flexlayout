@@ -46,8 +46,20 @@ export const Tab = (props: ITabProps) => {
 
     React.useLayoutEffect(() => {
         const element = tabNode.getMoveableElement();
+        // the element may still belong to a closed popout window's document; adopt it so its
+        // subtree is laid out and observed by the live document
+        const currentDocument = selfRef.current!.ownerDocument;
+        const adopted = element.ownerDocument !== currentDocument;
+        if (adopted) {
+            currentDocument.adoptNode(element);
+        }
         if (element.parentElement !== selfRef.current) {
             selfRef.current!.appendChild(element);
+        }
+        if (adopted) {
+            // full redraw so document-scoped observers (nested <Layout>/sublayout ResizeObservers)
+            // rebind and re-measure; a light redraw would not reach component-tab content
+            controller.redrawLayoutAndTabContent();
         }
 
         // keep scroll position

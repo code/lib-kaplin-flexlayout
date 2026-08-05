@@ -2,7 +2,7 @@ import * as React from "react";
 // import { createPortal } from 'react-dom';
 import { CLASSES } from "./CSSClassNames";
 import { LayoutController } from "./layout/LayoutInternal";
-import { Layout } from "../model/Layout";
+import { ModelLayout } from "../model/ModelLayout";
 import { Rect } from "../model/Rect";
 import { startDrag, getPageMetrics } from "./Utils";
 import { Actions } from "../model/Actions";
@@ -21,9 +21,9 @@ enum FloatWindowResizeDirection {
 /** @internal */
 export interface IFloatWindowProps {
     controller: LayoutController;
-    layout: Layout;
+    layout: ModelLayout;
     zIndex: number;
-    onCloseLayout: (layout: Layout) => void;
+    onCloseLayout: (layout: ModelLayout) => void;
 }
 
 const RESIZE_ZINDEX = 10;
@@ -72,7 +72,6 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
                 boundaryRect = new Rect(0, 0, layoutRect.width, layoutRect.height);
             } else {
                 const page = getPageMetrics(win);
-                // Use Math.max to ensure the boundary covers at least the visible window
                 const width = Math.max(page.fullWidth, win.innerWidth);
                 const height = Math.max(page.fullHeight, win.innerHeight);
                 boundaryRect = new Rect(-layoutRect.x, -layoutRect.y, width, height);

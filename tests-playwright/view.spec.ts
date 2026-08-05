@@ -1,5 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-import { checkBorderTab, checkTab, checkTabButton, drag, dragSplitter, dragToEdge, dragWithOffset, findAllTabSets, findPath, findTabButton, Location } from "./helpers";
+import { checkBorderTab, checkTab, checkTabButton, drag, dragSplitter, dragToEdge, dragWithOffset, findAllTabSets, findPath, findTabButton, Location, waitForBox } from "./helpers";
 import { CLASSES } from "../src/view/CSSClassNames";
 
 /*
@@ -551,8 +551,8 @@ test.describe("Splitters", () => {
         const e1 = findPath(page, "/ts1");
         const e2 = findPath(page, "/ts0");
 
-        const w1 = (await e1.boundingBox())?.width ?? 0;
-        const w2 = (await e2.boundingBox())?.width ?? 0;
+        const w1 = (await waitForBox(e1, "/ts1")).width;
+        const w2 = (await waitForBox(e2, "/ts0")).width;
 
         expect(w2 - w1).toBeGreaterThan(99);
     });
@@ -563,7 +563,7 @@ test.describe("Splitters", () => {
         await dragSplitter(page, from, false, -100); // 100px back
 
         const e1 = findPath(page, "/ts1");
-        const w1 = (await e1.boundingBox())?.width ?? 0;
+        const w1 = (await waitForBox(e1, "/ts1")).width;
 
         expect(Math.abs(w1 - 100)).toBeLessThan(2);
     });
@@ -574,7 +574,7 @@ test.describe("Splitters", () => {
         await dragSplitter(page, from, false, 100); // 100px back
 
         const e1 = findPath(page, "/ts0");
-        const w1 = (await e1.boundingBox())?.width ?? 0;
+        const w1 = (await waitForBox(e1, "/ts0")).width;
 
         expect(Math.abs(w1 - 100)).toBeLessThan(2);
     });
@@ -599,8 +599,8 @@ test.describe("Splitters", () => {
             const e1 = findPath(page, "/r0/ts1");
             const e2 = findPath(page, "/r0/ts0");
 
-            const h1 = (await e1.boundingBox())?.height ?? 0;
-            const h2 = (await e2.boundingBox())?.height ?? 0;
+            const h1 = (await waitForBox(e1, "/r0/ts1")).height;
+            const h2 = (await waitForBox(e2, "/r0/ts0")).height;
 
             expect(h2 - h1).toBeGreaterThan(99);
         });
@@ -611,7 +611,7 @@ test.describe("Splitters", () => {
             await dragSplitter(page, from, true, -100); // 100px back
 
             const e1 = findPath(page, "/r0/ts1");
-            const h1 = (await e1.boundingBox())?.height ?? 0;
+            const h1 = (await waitForBox(e1, "/r0/ts1")).height;
 
             expect(Math.abs(h1 - 130)).toBeLessThan(10);
         });
@@ -622,7 +622,7 @@ test.describe("Splitters", () => {
             await dragSplitter(page, from, true, 100); // 100px back
 
             const e1 = findPath(page, "/r0/ts0");
-            const h1 = (await e1.boundingBox())?.height ?? 0;
+            const h1 = (await waitForBox(e1, "/r0/ts0")).height;
 
             expect(Math.abs(h1 - 130)).toBeLessThan(10);
         });
@@ -638,7 +638,7 @@ test.describe("Maximize methods", () => {
     test("maximize tabset using max button", async ({ page }) => {
         // regression: the maximized tabset's dom remounts (portal), so the measure pass must
         // re-register its elements or the tab panel stays at the pre-maximize size
-        const panelBefore = await findPath(page, "/ts1/t0").boundingBox();
+        const panelBefore = await waitForBox(findPath(page, "/ts1/t0"), "/ts1/t0");
 
         await findPath(page, "/ts1/button/max").click();
         await expect(findPath(page, "/ts0")).toBeHidden();
@@ -841,26 +841,26 @@ test.describe("Extended layout2", () => {
         let from = findPath(page, "/s0");
         await dragSplitter(page, from, false, -1000);
         const ts0 = findPath(page, "/ts0");
-        const w1 = await ts0.boundingBox();
-        expect(Math.abs(w1!.width - 100)).toBeLessThan(2);
+        const w1 = await waitForBox(ts0, "/ts0");
+        expect(Math.abs(w1.width - 100)).toBeLessThan(2);
 
         from = findPath(page, "/s1");
         await dragSplitter(page, from, false, 1000);
         const ts0c2 = findPath(page, "/r2/ts0");
-        const w2 = await ts0c2.boundingBox();
-        expect(Math.abs(w2!.width - 100)).toBeLessThan(2);
+        const w2 = await waitForBox(ts0c2, "/r2/ts0");
+        expect(Math.abs(w2.width - 100)).toBeLessThan(2);
 
         from = findPath(page, "/r2/s0");
         await dragSplitter(page, from, true, -1000);
         const ts0c2height = findPath(page, "/r2/ts0");
-        const h1 = await ts0c2height.boundingBox();
-        expect(Math.abs(h1!.height - 130)).toBeLessThan(10);
+        const h1 = await waitForBox(ts0c2height, "/r2/ts0");
+        expect(Math.abs(h1.height - 130)).toBeLessThan(10);
 
         from = findPath(page, "/r2/s0");
         await dragSplitter(page, from, true, 1000);
         const ts1 = findPath(page, "/r2/ts1");
-        const h2 = await ts1.boundingBox();
-        expect(Math.abs(h2!.height - 130)).toBeLessThan(10);
+        const h2 = await waitForBox(ts1, "/r2/ts1");
+        expect(Math.abs(h2.height - 130)).toBeLessThan(10);
     });
 
     test("check border top min size", async ({ page }) => {
@@ -868,8 +868,8 @@ test.describe("Extended layout2", () => {
         const from = findPath(page, "/border/top/s-1");
         await dragSplitter(page, from, true, -1000);
         const t0 = findPath(page, "/border/top/t0");
-        const h1 = await t0.boundingBox();
-        expect(Math.abs(h1!.height - 100)).toBeLessThan(2);
+        const h1 = await waitForBox(t0, "/border/top/t0");
+        expect(Math.abs(h1.height - 100)).toBeLessThan(2);
     });
 
     test("check border bottom min size", async ({ page }) => {
@@ -877,8 +877,8 @@ test.describe("Extended layout2", () => {
         const from = findPath(page, "/border/bottom/s-1");
         await dragSplitter(page, from, true, 1000);
         const t0 = findPath(page, "/border/bottom/t0");
-        const h1 = await t0.boundingBox();
-        expect(Math.abs(h1!.height - 100)).toBeLessThan(2);
+        const h1 = await waitForBox(t0, "/border/bottom/t0");
+        expect(Math.abs(h1.height - 100)).toBeLessThan(2);
     });
 
     test("check border left min size", async ({ page }) => {
@@ -886,8 +886,8 @@ test.describe("Extended layout2", () => {
         const from = findPath(page, "/border/left/s-1");
         await dragSplitter(page, from, false, -1000);
         const t0 = findPath(page, "/border/left/t0");
-        const w1 = await t0.boundingBox();
-        expect(Math.abs(w1!.width - 100)).toBeLessThan(2);
+        const w1 = await waitForBox(t0, "/border/left/t0");
+        expect(Math.abs(w1.width - 100)).toBeLessThan(2);
     });
 
     test("check border right min size", async ({ page }) => {
@@ -895,8 +895,8 @@ test.describe("Extended layout2", () => {
         const from = findPath(page, "/border/right/s-1");
         await dragSplitter(page, from, false, 1000);
         const t0 = findPath(page, "/border/right/t0");
-        const w1 = await t0.boundingBox();
-        expect(Math.abs(w1!.width - 100)).toBeLessThan(2);
+        const w1 = await waitForBox(t0, "/border/right/t0");
+        expect(Math.abs(w1.width - 100)).toBeLessThan(2);
     });
 
     test("tabset close", async ({ page }) => {

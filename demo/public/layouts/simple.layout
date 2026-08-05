@@ -49,6 +49,7 @@
 						"id": "editor",
 						"name": "Editor",
 						"component": "monaco",
+						"enableScrollbars": false,
 						"icon": "images/article.svg"
 					}
 				]

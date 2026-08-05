@@ -111,9 +111,10 @@ test.describe("pinned tabs", () => {
         // unpin PinOne: it moves to the start of the unpinned group
         await findTabButton(page, "/ts0", 0).click({ button: "right" });
         await expect(page.locator(".flexlayout__popup_menu")).toBeVisible();
-        // a pinned tab is not closeable, so its menu has no Close item (or divider)
+        // a pinned tab is not closeable, so its Close item is omitted; the bulk close actions
+        // (closeAll/closeRight/closeOthers) remain and keep a single divider group
         await expect(page.getByRole("menuitem", { name: "Close", exact: true })).toHaveCount(0);
-        await expect(page.locator('.flexlayout__popup_menu [role="separator"]')).toHaveCount(0);
+        await expect(page.locator('.flexlayout__popup_menu [role="separator"]')).toHaveCount(1);
         await page.getByRole("menuitem", { name: "Unpin", exact: true }).click();
         await checkOrder(page, "/ts0", ["PinTwo", "Three", "PinOne", "Four"]);
         await expect(findPath(page, "/ts0/tb2/button/pin")).toHaveCount(0);

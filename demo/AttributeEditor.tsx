@@ -9,6 +9,10 @@ const getAttrDescription = (attr: Attribute): string | undefined => {
     return attr.description || attr.pairedAttr?.description;
 };
 
+// attributes that must not be defaulted or cleared by the editor: a tab's name (which falls back to
+// "unnamed tab" when unset) and component (which is required for the factory to render the tab)
+const isProtectedAttr = (attrName: string): boolean => attrName === "name" || attrName === "component";
+
 interface IEditorTarget {
     label: string;
     node?: Node;
@@ -21,6 +25,9 @@ interface IAttrRow {
     hasOverride: boolean;
     inherited: boolean;
     readOnly: boolean;
+    // whether the built-in "Default" action makes sense for this attribute; a tab's name and
+    // component are required for it to render sensibly, so defaulting them would break the tab
+    canDefault: boolean;
 }
 
 const resolveTarget = (model: Model, selectedId: string): IEditorTarget | undefined => {
@@ -40,18 +47,19 @@ const getAttrRows = (model: Model, target: IEditorTarget): IAttrRow[] => {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((attr) => {
             const readOnly = attr.name === "id";
+            const canDefault = !isProtectedAttr(attr.name);
             if (target.node === undefined) {
                 const value = model.getAttribute(attr.name);
-                return { attr, value, hasOverride: value !== attr.defaultValue, inherited: false, readOnly };
+                return { attr, value, hasOverride: value !== attr.defaultValue, inherited: false, readOnly, canDefault };
             }
             const node = target.node;
             const value = node.getAttr(attr.name);
             if (attr.modelName !== undefined) {
                 // an inherited attribute is overridden only if the node has its own value
                 const hasOverride = node.getAttributeOwn(attr.name) !== undefined;
-                return { attr, value, hasOverride, inherited: true, readOnly };
+                return { attr, value, hasOverride, inherited: true, readOnly, canDefault };
             }
-            return { attr, value, hasOverride: value !== attr.defaultValue, inherited: false, readOnly };
+            return { attr, value, hasOverride: value !== attr.defaultValue, inherited: false, readOnly, canDefault };
         });
 };
 
@@ -100,11 +108,12 @@ const findBaselineNode = (baseline: IJsonModel, node: Node): any => {
 };
 
 // builds the json that resets a node to its built-in defaults: own attributes use their default
-// value, inherited attributes are cleared (an explicit undefined) so they fall back to the global value
+// value, inherited attributes are cleared (an explicit undefined) so they fall back to the global
+// value. A tab's id/name/component are left untouched - clearing them would break the tab.
 const buildDefaultNodeJson = (node: Node): Record<string, any> => {
     const json: Record<string, any> = {};
     for (const attr of node.getAttributeDefinitions().getAttributes()) {
-        if (attr.fixed) {
+        if (attr.fixed || attr.name === "id" || isProtectedAttr(attr.name)) {
             continue;
         }
         json[attr.name] = attr.modelName !== undefined ? undefined : attr.defaultValue;
@@ -125,14 +134,23 @@ const buildDefaultGlobalJson = (): Record<string, any> => {
 
 // builds the json that restores a node to the values it had in the loaded layout: attributes that
 // were set in the layout are restored, attributes that were left at their default are cleared (so
-// inherited attributes fall back to the global value and own attributes use their built-in default)
+// inherited attributes fall back to the global value and own attributes use their built-in default).
+// A tab's name/component are only ever set to a value present in the loaded layout - they are never
+// cleared by a reset.
 const buildResetNodeJson = (node: Node, baselineJson: any): Record<string, any> => {
     const json: Record<string, any> = {};
     for (const attr of node.getAttributeDefinitions().getAttributes()) {
-        if (attr.fixed) {
+        if (attr.fixed || attr.name === "id") {
             continue;
         }
-        if (baselineJson !== undefined && Object.prototype.hasOwnProperty.call(baselineJson, attr.name) && baselineJson[attr.name] !== undefined) {
+        const baselineHasValue = baselineJson !== undefined && Object.prototype.hasOwnProperty.call(baselineJson, attr.name) && baselineJson[attr.name] !== undefined;
+        if (isProtectedAttr(attr.name)) {
+            if (baselineHasValue) {
+                json[attr.name] = baselineJson[attr.name];
+            }
+            continue;
+        }
+        if (baselineHasValue) {
             json[attr.name] = baselineJson[attr.name];
         } else if (attr.modelName !== undefined) {
             // an explicit undefined removes an override so the global/inherited value is used again
@@ -341,7 +359,12 @@ const AttrRow = ({ row, canResetDefault, canResetReset, onCommit, onResetDefault
             >
                 Reset
             </button>
-            <button className="attrs-editor-default" title={"Set " + row.attr.name + " to its default value"} onClick={() => onResetDefault(row)} disabled={!canResetDefault || row.readOnly}>
+            <button
+                className="attrs-editor-default"
+                title={"Set " + row.attr.name + " to its default value"}
+                onClick={() => onResetDefault(row)}
+                disabled={!canResetDefault || row.readOnly || !row.canDefault}
+            >
                 Default
             </button>
         </div>
@@ -365,7 +388,7 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
     const baselineJson = target ? (target.node === undefined ? baseline?.global : baseline ? findBaselineNode(baseline, target.node) : undefined) : undefined;
 
     // how many attributes are not at their built-in default (top-level Default button count)
-    const defaultCount = rows.filter((r) => r.hasOverride && !r.readOnly).length;
+    const defaultCount = rows.filter((r) => r.hasOverride && !r.readOnly && r.canDefault).length;
 
     // whether the attribute's own value differs from the value it had in the loaded layout
     const isChangedSinceLoad = (row: IAttrRow): boolean => !valuesEqual(getCurrentOwnValue(model, target!, row.attr), getBaselineValue(baselineJson, row.attr));
@@ -386,7 +409,7 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
 
     // restores a single attribute to its built-in default
     const resetRowToDefault = (row: IAttrRow) => {
-        if (!target) {
+        if (!target || isProtectedAttr(row.attr.name)) {
             return;
         }
         if (target.node === undefined) {
@@ -404,6 +427,9 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
             return;
         }
         const baselineValue = getBaselineValue(baselineJson, row.attr);
+        if (isProtectedAttr(row.attr.name) && baselineValue === undefined) {
+            return; // never clear a tab's name/component
+        }
         if (target.node === undefined) {
             model.doAction(Actions.updateModelAttributes({ [row.attr.name]: baselineValue } as any));
         } else {

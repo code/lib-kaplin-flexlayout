@@ -239,6 +239,22 @@ For example:
     containerRef.current!.className = "flexlayout__theme_alpha_dark"
 ```
 
+## Overriding Theme Variables
+
+All themeable values (`--color-*`, `--font-*`, `--splitter-size`, `--tab-button-radius`, etc.) are CSS custom properties defined in `style/_themes.scss`. Each one is defined as `var(--flexlayout-<name>, <theme default>)` — so the theme default applies unless the matching global `--flexlayout-<name>` variable is defined, in which case that value is used everywhere (float windows, sublayouts, and popout windows included).
+
+To restyle the whole layout without rebuilding the scss, set the global variable on a common ancestor (e.g. `:root` or the div wrapping the `<Layout>`):
+
+```css
+:root {
+    --flexlayout-color-1: #90a4ae;                 /* base color, feeds derived colors */
+    --flexlayout-color-tabset-background: #ffffff;  /* or override a specific value */
+    --flexlayout-splitter-size: 10px;
+}
+```
+
+Override a `--flexlayout-<name>` variable and every theme uses it; leave it unset and each theme keeps its own default (so theme switching is unaffected). The single-theme stylesheets (`light.css`, `dark.css`, etc.) work the same way — a global override reaches every layout on the page, including float windows.
+
 ## Customizing Tabs
 
 You can use the `<Layout>` prop `onRenderTab` to customize tab rendering:
@@ -338,7 +354,31 @@ import { I18nLabel } from "flexlayout-react";
 />
 ```
 
-Tab names, help text and menu items are application content and are localized by the application. The `lang` and `dir` attributes of the page are copied to popout window documents automatically.
+## Context Menu
+
+Use the `ContextMenuBuilder` to build a custom menu, choosing which options to show, interleaving your own entries and placing dividers, then show it with `showPopupMenu` from a right-click handler:
+
+```tsx
+import { showPopupMenu, ContextMenuBuilder } from "flexlayout-react";
+
+const onContextMenu = (node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent) => {
+    event.preventDefault();
+    const items = new ContextMenuBuilder(node)
+        .add("rename")
+        .addCustom({ key: "my-command", label: "My Command", onSelect: () => doThing() })
+        .add("pin")
+        .addDivider()
+        .add("close")
+        .build();
+    showPopupMenu({
+        anchor: { x: event.clientX, y: event.clientY },
+        items,
+        onClose: () => {},
+    });
+};
+
+<Layout model={model} factory={factory} onContextMenu={onContextMenu} />
+```
 
 ## Model Actions
 
@@ -363,6 +403,29 @@ This example adds a new grid component to the center of the tabset with ID "1" a
 Note: You can retrieve the ID of a node (e.g., the node returned by the `addTab` action) using `node.getId()`. If an ID wasn't assigned when the node was created, one will be generated for you in the form `#<uuid>` (e.g., `#0c459064-8dee-444e-8636-eb9ab910fb27`).
 
 Note: You can intercept actions resulting from GUI changes before they are applied by implementing the `onAction` callback property of the `Layout`.
+
+### Undo / redo
+
+The `useUndo` React hook encapsulates undo/redo for a model. It owns the model state, records an undo snapshot before each mutation (so an entire drag gesture collapses into a single step), and replaces the model on undo/redo via `Model.fromJson`, keeping mounted tab content intact:
+
+```javascript
+function App() {
+    const { model, setModel, undo, redo, canUndo, canRedo, undoCount, redoCount } = useUndo(Model.fromJson(initialJson));
+
+    return (
+        <>
+            <Layout model={model} factory={factory} />
+            <button onClick={undo} disabled={!canUndo} title={"undo (" + undoCount + ")"}>Undo</button>
+            <button onClick={redo} disabled={!canRedo} title={"redo (" + redoCount + ")"}>Redo</button>
+        </>
+    );
+}
+```
+
+Notes:
+- The model can be passed lazily (a function evaluated once), or omitted and loaded later: `const { model, setModel, ... } = useUndo();` then `setModel(Model.fromJson(json))`.
+- `setModel(model)` replaces the model and clears the history; pass `false` as a second argument to keep the history (e.g. for an in-place round-trip of the same model). Use `reset()` to clear the history without replacing the model.
+- Options: `maxBufferSize` (default 100) and `ignoreActionTypes` (default `[Actions.SET_ACTIVE_TABSET]`) - actions whose types are listed do not create undo steps.
 
 ## Optional Layout Props
 
@@ -435,7 +498,15 @@ Tabs can be rendered into external browser windows (useful for multi-monitor set
 
 Popout windows require an additional HTML page, `popout.html`, hosted at the same location as the main page (you can copy this from the demo app). The `popout.html` acts as the host for the popped-out tab, and the main page's styles are copied into it at runtime.
 
-Because popout windows render into a different document, any code using global `document` or `window` objects (e.g., for event listeners) will not function correctly. Instead, you must use the `document` or `window` of the popout. To obtain these, use the following methods on an element rendered within the popout (such as a ref):
+Because popout windows render into a different document, any code using global `document` or `window` objects (e.g., for event listeners) will not function correctly. Instead, you must use the `document` or `window` of the popout. The simplest way to obtain them is from the tab node, which knows which window it is currently rendered in (the main window or a popout window):
+
+```javascript
+// inside the factory, node is the TabNode being rendered
+const currentDocument = node.getDocument();
+const currentWindow = node.getWindow();
+```
+
+Alternatively, from an element rendered within the popout (such as a ref), use the element's `ownerDocument`:
 
 ```javascript
 const currentDocument = selfRef.current.ownerDocument;
@@ -445,6 +516,40 @@ In this example, `selfRef` is a React ref to the top-level element in the tab be
 
 Note: Libraries may support popout windows by allowing you to specify the document to use; for example, see the `getDocument()` callback in ag-Grid at https://www.ag-grid.com/javascript-grid-callbacks/
 
+### Rebuilding components that move between windows
+
+Some controls (monaco, ag-Grid, charts, maps, ...) bind their listeners, popups and tooltips to the document (or window) they were created in. When a tab is popped out or docked back, its React component instance survives but the document it renders into changes, so such a control can end up bound to the wrong document.
+
+The reliable fix is to rebuild the component when the document it is rendered in changes, carrying any state over in a ref. The demo's monaco tab shows the pattern: the editor is re-keyed (remounted) whenever the wrapper element's `ownerDocument` changes, and the edited text is carried across rebuilds via a ref:
+
+```javascript
+function MyComponent() {
+    const containerRef = React.useRef(null); // the tab's wrapper element
+    const editorDocument = React.useRef(null); // document captured at last mount
+    const valueRef = React.useRef(initialValue); // state to carry across rebuilds
+    const [seed, setSeed] = React.useState(0); // key for the current instance
+
+    React.useEffect(() => {
+        const target = containerRef.current;
+        if (!target) return;
+        if (editorDocument.current !== target.ownerDocument) {
+            if (editorDocument.current !== null) {
+                setSeed((n) => n + 1); // remount into the new document
+            }
+            editorDocument.current = target.ownerDocument;
+        }
+    });
+
+    return (
+        <div ref={containerRef} style={{ height: "100%", width: "100%" }}>
+            <MyControl key={seed} defaultValue={valueRef.current} />
+        </div>
+    );
+}
+```
+
+The initial `ownerDocument` capture is skipped so the component is not needlessly rebuilt on first mount. If the component cannot be rebuilt (for example it holds state that is expensive to recreate), the `enableWindowReMount` attribute forces the whole tab to remount when it is popped out or docked back; use `onRenderTab`/`onAction` or a save/visibility listener to persist state.
+
 ### Limitations of Popout Windows
 
 Note this section only applies to window based popouts, not floating panels.
@@ -453,19 +558,40 @@ Note this section only applies to window based popouts, not floating panels.
 * **Event Listeners**: You must use the popout's window/document when adding listeners (e.g., `popoutDocument.addEventListener(...)`).
 * **Timer Throttling**: Timers may throttle when the main window is in the background. Use web workers for high-precision timing if needed.
 * **Third-Party Libraries**: Controls that rely on the global `document` for event listeners or visibility tracking may require modification.
-* **Resize Observers**: May stay attached to the main window; alternative resize handling might be necessary.
 * **Browser Zoom**: Popouts may not size or position correctly when the browser is zoomed (e.g., at 50% zoom).
 * **States**: Popouts cannot reload in maximized or minimized states.
 * **State Preservation**: While FlexLayout maintains React state when moving tabs between windows, you can use the `enableWindowReMount` attribute to force a component to re-mount.
 
 See this article about using React portals in this way: https://dev.to/noriste/the-challenges-of-rendering-an-openlayers-map-in-a-popup-through-react-2elh
 
+### Styling Popout Windows with CSS-in-JS
+
+The main page's `<style>`/`<link>` elements are copied into the popout document at runtime. This works for CSS files and for css-in-js libraries that write their rules as text (e.g. Emotion in development), but **not** for rules inserted through the CSSOM `sheet.insertRule()` API — which is what Emotion ("speedy" mode) and styled-components use in production builds. Those rules leave the `<style>` element's `textContent` empty, so a cloned `<style>` would be blank.
+
+Two mechanisms are provided to get css-in-js styles into popouts:
+
+1. **Runtime CSSOM copy (default, works for all css-in-js).** The style copy reads `sheet.cssRules` and rebuilds them in the popout, so rules that were inserted via `insertRule` are captured too. The copied css-in-js tags are then re-synced whenever their rules change while a popout is open (a short poll covers insertions that the MutationObserver cannot see). This is what makes MUI/Emotion tabs style correctly in popouts in production builds with no extra code.
+
+2. **`renderPopoutContent` prop.** Wraps the content rendered into a popout window, giving access to the popout's `window`/`document` so you can provide css-in-js providers that inject directly into the popout document:
+
+```tsx
+<Layout
+    model={model}
+    factory={factory}
+    renderPopoutContent={({ children, popoutDocument }) => (
+        <StyleSheetManager target={popoutDocument.head}>{children}</StyleSheetManager>
+    )}
+/>
+```
+
+The demo's `PopoutStyleProvider` shows this pattern for styled-components (Emotion's `CacheProvider` cannot target a separate window: tabs keep their React fiber when they move to a popout, so components never re-render under a new cache, and Emotion creates its `<style>` tags with the global document). The `onPopoutOpen`/`onPopoutClose` props are also available if you need to run styling-specific setup or teardown when a popout window opens or closes.
+
 ### Popout Windows in Secure Environments
 
 Deployments with strict security headers need the following for popout windows to work:
 
 * **Same origin**: `popout.html` must be served from the same origin as the main page. The popout document runs no scripts of its own; it is driven entirely by the main window's JavaScript, which requires script access to the popout document.
-* **Content Security Policy (style-src)**: the main page's stylesheets are copied into the popout document at runtime. `<link rel="stylesheet">` elements work provided their URLs are allowed by the `style-src` of the response serving `popout.html`. Inline `<style>` elements (as injected by CSS-in-JS libraries such as Emotion or styled-components, or by Vite in dev mode) are blocked by a nonce/hash based `style-src`, since the copied elements cannot carry a valid nonce for the popout document — prefer real CSS files for anything rendered in popouts.
+* **Content Security Policy (style-src)**: the main page's stylesheets are copied into the popout document at runtime. `<link rel="stylesheet">` elements work provided their URLs are allowed by the `style-src` of the response serving `popout.html`. Inline `<style>` elements (as injected by CSS-in-JS libraries such as Emotion or styled-components, or by Vite in dev mode) are blocked by a nonce/hash based `style-src`, since the copied elements cannot carry a valid nonce for the popout document — the runtime CSSOM copy described in [Styling Popout Windows with CSS-in-JS](#styling-popout-windows-with-css-in-js) makes css-in-js work in popouts when the policy allows it; under a nonce/hash based `style-src`, prefer real CSS files for anything rendered in popouts.
 * **Cross-origin isolation (COOP/COEP)**: if the main page is served with `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` headers (e.g. for `SharedArrayBuffer`), `popout.html` must be served with compatible headers, otherwise the browser severs the connection between the windows and popouts cannot function. Set the `supportsPopout` prop to `false` to disable popouts explicitly where they cannot be supported.
 * **Popup blockers and sandboxed frames**: if `window.open` is blocked (popup blocker, or a sandboxed iframe without `allow-popups`) the popout degrades gracefully to a floating panel. Note that when a saved layout containing popouts is restored on page load, the `window.open` happens without a user gesture and is typically blocked — the popouts become floating panels unless the user has allowed popups for the site.
 * **Trusted Types**: the library uses no HTML string injection sinks and is compatible with `require-trusted-types-for 'script'`.
@@ -573,11 +699,13 @@ pnpm test run
 
 or in watch mode with `pnpm test`.
 
-Run the playwright tests interactively using:
+Run the playwright tests once using:
 
 ```bash
 pnpm playwright
 ```
+
+or interactively in the playwright ui with `pnpm playwright:ui`.
 
 <img src="screenshots/PlaywrightUI.png?raw=true" alt="PlaywrightUI" title="PlaywrightUI screenshot"/>
 

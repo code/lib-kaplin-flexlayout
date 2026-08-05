@@ -1,13 +1,16 @@
 export * from "./view/Layout";
 export * from "./view/TabLayout";
 export * from "./view/PopupMenu";
+export * from "./view/ContextMenuBuilder";
 
 export * from "./view/layout/LayoutTypes";
 export * from "./view/Icons";
 export * from "./view/I18nLabel";
 export * from "./view/CSSClassNames";
+export * from "./view/useUndo";
 
 export * from "./model/Model";
+export * from "./model/ModelLayout";
 export * from "./model/Node";
 export * from "./model/RowNode";
 export * from "./model/TabSetNode";

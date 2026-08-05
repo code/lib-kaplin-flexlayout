@@ -81,6 +81,13 @@ const METRIC_VARS: IMetricDef[] = [
 
 const ALL_VARS = [...COLOR_VARS.map((c) => c.varName), ...METRIC_VARS.map((m) => m.varName)];
 
+// overrides are written to the global --flexlayout-<name> variables (every theme variable is
+// defined as `var(--flexlayout-<name>, <theme default>)`), which resolve at their point of use and
+// so reach every nested layout (float windows, sublayouts) and, via the layout root's inline style
+// sync, popout windows. The layout root is the target: it is an ancestor of all in-document layouts
+// and is the element whose inline styles are copied into popout windows.
+const toGlobalVar = (varName: string): string => "--flexlayout-" + varName.slice(2);
+
 const getLayoutElement = (layoutApi: React.RefObject<ILayoutApi | null>): HTMLElement | null => layoutApi.current?.getRootDiv() ?? null;
 
 // normalizes any css color (named colors, hex shorthands, rgb()/rgba(), etc.) to its canonical
@@ -137,7 +144,7 @@ export const ThemePanel = ({ layoutApi }: IThemePanelProps) => {
         const el = getLayoutElement(layoutApi);
         if (!el) return;
         for (const [varName, value] of Object.entries(overrides)) {
-            el.style.setProperty(varName, value);
+            el.style.setProperty(toGlobalVar(varName), value);
         }
     }, [overrides, layoutApi]);
 
@@ -150,41 +157,32 @@ export const ThemePanel = ({ layoutApi }: IThemePanelProps) => {
     const applyOverride = (varName: string, value: string) => {
         const el = getLayoutElement(layoutApi);
         if (!el) return;
-        el.style.setProperty(varName, value);
+        el.style.setProperty(toGlobalVar(varName), value);
         setOverrides((prev) => ({ ...prev, [varName]: value }));
-        if (varName === "--splitter-size") {
-            layoutApi.current?.redraw(); // resizes the tabs to match the new splitter size
-        }
     };
 
     const resetVar = (varName: string) => {
         const el = getLayoutElement(layoutApi);
         if (!el) return;
-        el.style.removeProperty(varName);
+        el.style.removeProperty(toGlobalVar(varName));
         setOverrides((prev) => {
             const next = { ...prev };
             delete next[varName];
             return next;
         });
-        if (varName === "--splitter-size") {
-            layoutApi.current?.redraw();
-        }
     };
 
     const resetAll = () => {
         const el = getLayoutElement(layoutApi);
         if (!el) return;
         for (const varName of ALL_VARS) {
-            el.style.removeProperty(varName);
+            el.style.removeProperty(toGlobalVar(varName));
         }
         setOverrides({});
-        if ("--splitter-size" in overrides) {
-            layoutApi.current?.redraw();
-        }
     };
 
     const printCss = () => {
-        const lines = Object.entries(overrides).map(([varName, value]) => `    ${varName}: ${value};`);
+        const lines = Object.entries(overrides).map(([varName, value]) => `    ${toGlobalVar(varName)}: ${value};`);
         const css = `/* FlexLayout theme overrides */\n.flexlayout__layout {\n${lines.join("\n")}\n}`;
         console.log(css);
     };

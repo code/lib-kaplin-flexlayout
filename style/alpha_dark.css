@@ -1,65 +1,65 @@
 .flexlayout__layout {
-  --color-text: white;
-  --color-background: black;
-  --color-base: #121212;
-  --color-1: #1c1c1c;
-  --color-2: #383838;
-  --color-3: #404040;
-  --color-4: #525252;
-  --color-5: #737373;
-  --color-6: #a3a3a3;
-  --color-drag1: #93c5fd;
-  --color-drag2: #6ee7b7;
-  --color-drag1-background: rgba(147, 197, 253, 0.15);
-  --color-drag2-background: rgba(110, 231, 183, 0.1);
-  --font-size: medium;
-  --font-family: system-ui, -apple-system, Arial, sans-serif;
-  --font-weight: 500;
-  --splitter-size: 8px;
-  --splitter-active-size: 8px;
-  --splitter-handle-visibility: hidden;
-  --color-overflow: gray;
-  --color-icon: gray;
-  --color-focus: #93c5fd;
-  --color-tabset-background: var(--color-1);
-  --color-tabset-background-selected: var(--color-1);
-  --color-tabset-background-maximized: var(--color-1);
-  --color-tabset-divider-line: var(--color-2);
-  --color-border-tab-content: var(--color-1);
-  --color-border-background: var(--color-1);
-  --color-border-divider-line: var(--color-2);
-  --color-tab-content: var(--color-background);
-  --color-tab-selected: #e5e7eb;
-  --color-tab-selected-background: var(--color-background);
-  --color-tab-unselected: var(--color-5);
-  --color-tab-unselected-background: transparent;
-  --color-tab-textbox: var(--color-text);
-  --color-tab-textbox-background: var(--color-background);
-  --color-border-tab-selected: #e5e7eb;
-  --color-border-tab-selected-background: var(--color-background);
-  --color-border-tab-unselected: var(--color-5);
-  --color-border-tab-unselected-background: var(--color-1);
-  --color-splitter: var(--color-1);
-  --color-splitter-hover: var(--color-3);
-  --color-splitter-drag: var(--color-4);
-  --color-splitter-handle: var(--color-3);
-  --color-drag-rect-border: var(--color-3);
-  --color-drag-rect-background: var(--color-background);
-  --color-drag-rect: var(--color-text);
-  --color-popup-border: var(--color-2);
-  --color-popup-unselected: var(--color-text);
-  --color-popup-unselected-background: var(--color-background);
-  --color-popup-selected: #f9fafb;
-  --color-popup-selected-background: var(--color-1);
-  --color-edge-marker: var(--color-3);
-  --color-edge-icon: gray;
-  --color-mini-scroll-indicator: rgba(255, 255, 255, 0.1);
-  --color-mini-scroll-indicator-hovered: rgba(255, 255, 255, 0.3);
-  --size-mini-scroll-indicator: 4px;
-  --color-toolbar-button-hover: var(--color-2);
-  --tab-button-radius: 10px;
-  --border-button-radius: 5px;
-  --color-float-window-header-background: var(--color-tabset-background);
+  --color-text: var(--flexlayout-color-text, white);
+  --color-background: var(--flexlayout-color-background, black);
+  --color-base: var(--flexlayout-color-base, #121212);
+  --color-1: var(--flexlayout-color-1, #1c1c1c);
+  --color-2: var(--flexlayout-color-2, #383838);
+  --color-3: var(--flexlayout-color-3, #404040);
+  --color-4: var(--flexlayout-color-4, #525252);
+  --color-5: var(--flexlayout-color-5, #737373);
+  --color-6: var(--flexlayout-color-6, #a3a3a3);
+  --color-drag1: var(--flexlayout-color-drag1, #93c5fd);
+  --color-drag2: var(--flexlayout-color-drag2, #6ee7b7);
+  --color-drag1-background: var(--flexlayout-color-drag1-background, rgba(147, 197, 253, 0.15));
+  --color-drag2-background: var(--flexlayout-color-drag2-background, rgba(110, 231, 183, 0.1));
+  --font-size: var(--flexlayout-font-size, medium);
+  --font-family: var(--flexlayout-font-family, system-ui, -apple-system, Arial, sans-serif);
+  --font-weight: var(--flexlayout-font-weight, 500);
+  --splitter-size: var(--flexlayout-splitter-size, 8px);
+  --splitter-active-size: var(--flexlayout-splitter-active-size, 8px);
+  --splitter-handle-visibility: var(--flexlayout-splitter-handle-visibility, hidden);
+  --color-overflow: var(--flexlayout-color-overflow, gray);
+  --color-icon: var(--flexlayout-color-icon, gray);
+  --color-focus: var(--flexlayout-color-focus, #93c5fd);
+  --color-tabset-background: var(--flexlayout-color-tabset-background, var(--color-1));
+  --color-tabset-background-selected: var(--flexlayout-color-tabset-background-selected, var(--color-1));
+  --color-tabset-background-maximized: var(--flexlayout-color-tabset-background-maximized, var(--color-1));
+  --color-tabset-divider-line: var(--flexlayout-color-tabset-divider-line, var(--color-2));
+  --color-border-tab-content: var(--flexlayout-color-border-tab-content, var(--color-1));
+  --color-border-background: var(--flexlayout-color-border-background, var(--color-1));
+  --color-border-divider-line: var(--flexlayout-color-border-divider-line, var(--color-2));
+  --color-tab-content: var(--flexlayout-color-tab-content, var(--color-background));
+  --color-tab-selected: var(--flexlayout-color-tab-selected, #e5e7eb);
+  --color-tab-selected-background: var(--flexlayout-color-tab-selected-background, var(--color-background));
+  --color-tab-unselected: var(--flexlayout-color-tab-unselected, var(--color-5));
+  --color-tab-unselected-background: var(--flexlayout-color-tab-unselected-background, transparent);
+  --color-tab-textbox: var(--flexlayout-color-tab-textbox, var(--color-text));
+  --color-tab-textbox-background: var(--flexlayout-color-tab-textbox-background, var(--color-background));
+  --color-border-tab-selected: var(--flexlayout-color-border-tab-selected, #e5e7eb);
+  --color-border-tab-selected-background: var(--flexlayout-color-border-tab-selected-background, var(--color-background));
+  --color-border-tab-unselected: var(--flexlayout-color-border-tab-unselected, var(--color-5));
+  --color-border-tab-unselected-background: var(--flexlayout-color-border-tab-unselected-background, var(--color-1));
+  --color-splitter: var(--flexlayout-color-splitter, var(--color-1));
+  --color-splitter-hover: var(--flexlayout-color-splitter-hover, var(--color-3));
+  --color-splitter-drag: var(--flexlayout-color-splitter-drag, var(--color-4));
+  --color-splitter-handle: var(--flexlayout-color-splitter-handle, var(--color-3));
+  --color-drag-rect-border: var(--flexlayout-color-drag-rect-border, var(--color-3));
+  --color-drag-rect-background: var(--flexlayout-color-drag-rect-background, var(--color-background));
+  --color-drag-rect: var(--flexlayout-color-drag-rect, var(--color-text));
+  --color-popup-border: var(--flexlayout-color-popup-border, var(--color-2));
+  --color-popup-unselected: var(--flexlayout-color-popup-unselected, var(--color-text));
+  --color-popup-unselected-background: var(--flexlayout-color-popup-unselected-background, var(--color-background));
+  --color-popup-selected: var(--flexlayout-color-popup-selected, #f9fafb);
+  --color-popup-selected-background: var(--flexlayout-color-popup-selected-background, var(--color-1));
+  --color-edge-marker: var(--flexlayout-color-edge-marker, var(--color-3));
+  --color-edge-icon: var(--flexlayout-color-edge-icon, gray);
+  --color-mini-scroll-indicator: var(--flexlayout-color-mini-scroll-indicator, rgba(255, 255, 255, 0.1));
+  --color-mini-scroll-indicator-hovered: var(--flexlayout-color-mini-scroll-indicator-hovered, rgba(255, 255, 255, 0.3));
+  --size-mini-scroll-indicator: var(--flexlayout-size-mini-scroll-indicator, 4px);
+  --color-toolbar-button-hover: var(--flexlayout-color-toolbar-button-hover, var(--color-2));
+  --tab-button-radius: var(--flexlayout-tab-button-radius, 10px);
+  --border-button-radius: var(--flexlayout-border-button-radius, 5px);
+  --color-float-window-header-background: var(--flexlayout-color-float-window-header-background, var(--color-tabset-background));
 }
 
 /*
@@ -719,6 +719,11 @@
   background-color: var(--color-tab-selected-background);
   color: var(--color-tab-selected);
 }
+.flexlayout__popup_menu_item--disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
 @media (hover: hover) {
   .flexlayout__popup_menu_item:hover {
     background-color: var(--color-6);
@@ -882,10 +887,10 @@
   height: 100%;
 }
 .flexlayout__tabset-selected {
-  --tab-divider-bg: var(--color-tabset-background-selected);
+  --tab-divider-bg: var(--flexlayout-tab-divider-bg, var(--color-tabset-background-selected));
 }
 .flexlayout__tabset-maximized {
-  --tab-divider-bg: var(--color-tabset-background-maximized);
+  --tab-divider-bg: var(--flexlayout-tab-divider-bg, var(--color-tabset-background-maximized));
 }
 .flexlayout__tabset_tabbar_outer_top .flexlayout__tabset_tab_divider_selected_before .flexlayout__tabset_tab_divider_inner {
   border-bottom-right-radius: var(--tab-button-radius);

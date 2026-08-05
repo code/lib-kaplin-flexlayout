@@ -1,5 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-import { dragSplitter } from "./helpers";
+import { dragSplitter, waitForBox } from "./helpers";
 
 // Realtime splitter drag regression tests. With realtimeResize on (the demo default), a drag
 // dispatches an ADJUST_WEIGHTS / ADJUST_BORDER_SPLIT action per pointermove; the optimized path in
@@ -62,7 +62,7 @@ test("realtime row drag keeps weights finite and removes the drag outline", asyn
     await gotoLayout(page, "rt_small", bigLayout());
     const splitter = page.locator('[data-layout-path="/s0"]');
     await splitter.waitFor();
-    const sr = (await splitter.boundingBox())!;
+    const sr = await waitForBox(splitter, "/s0");
 
     const result = await page.evaluate(
         ({ cx, cy }) => {
@@ -95,7 +95,7 @@ test("realtime row drag to the edge still fills the row (weight conservation)", 
     await gotoLayout(page, "rt_edge", bigLayout());
     const splitter = page.locator('[data-layout-path="/s0"]');
     await splitter.waitFor();
-    const sr = (await splitter.boundingBox())!;
+    const sr = await waitForBox(splitter, "/s0");
 
     // drag far past the min-size bound; the splitter must clamp and the weights must stay finite
     await page.evaluate(

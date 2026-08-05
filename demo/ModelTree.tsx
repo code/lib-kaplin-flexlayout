@@ -69,13 +69,45 @@ export const buildTreeItems = (model: Model): ITreeItem[] => {
     return items;
 };
 
+// ids of the tree wrappers and node ancestors that must be expanded to reveal a node id: for a
+// border node/tab the "borders" branch, otherwise the parent chain plus the layout branch
+// ("layout" or "sublayout:<id>" under "sublayouts") the node belongs to
+export const getAncestorIds = (model: Model, nodeId: string): string[] => {
+    const node = model.getNodeById(nodeId);
+    if (node === undefined) {
+        return [];
+    }
+    if (node instanceof BorderNode) {
+        return ["borders"];
+    }
+    const ids: string[] = [];
+    let parent = node.getParent();
+    while (parent !== undefined) {
+        ids.push(parent.getId());
+        if (parent instanceof BorderNode) {
+            ids.push("borders");
+            return ids;
+        }
+        parent = parent.getParent();
+    }
+    const layoutId = node.getLayout().getLayoutId();
+    if (layoutId === Model.MAIN_LAYOUT_ID) {
+        ids.push("layout");
+    } else {
+        ids.push("sublayout:" + layoutId, "sublayouts");
+    }
+    return ids;
+};
+
 export interface IModelTreeProps {
     model: Model;
     selectedId: string;
     onSelect: (id: string) => void;
+    /** when set, expands the tree so the node with this id becomes visible (e.g. from "Show in Explorer") */
+    revealId?: string | null;
 }
 
-export function ModelTree({ model, selectedId, onSelect }: IModelTreeProps) {
+export function ModelTree({ model, selectedId, onSelect, revealId }: IModelTreeProps) {
     const items = buildTreeItems(model);
 
     const [expanded, setExpanded] = React.useState<Set<string>>(() => {
@@ -102,8 +134,34 @@ export function ModelTree({ model, selectedId, onSelect }: IModelTreeProps) {
         });
     };
 
+    // reveal the requested node by expanding its ancestors; tracked in a ref so repeated reveals
+    // of the same id (or a user collapsing a branch afterwards) do not fight the user's toggles
+    const revealed = React.useRef<string | null>(null);
+    React.useEffect(() => {
+        if (revealId == null || revealId === revealed.current) {
+            return;
+        }
+        revealed.current = revealId;
+        setExpanded((prev) => {
+            const next = new Set(prev);
+            for (const id of getAncestorIds(model, revealId)) {
+                next.add(id);
+            }
+            return next;
+        });
+    }, [model, revealId]);
+
+    // keep the selected row in view (e.g. when selected via "Show in Explorer"); keyed on the
+    // expanded set too because the reveal effect above only materialises the row on the render
+    // after the one that changed selectedId. useLayoutEffect so the scroll applies before paint.
+    // nearest-scroll so the tree container scrolls without moving the page/layout around.
+    const treeRef = React.useRef<HTMLDivElement>(null);
+    React.useLayoutEffect(() => {
+        treeRef.current?.querySelector(".attrs-tree-row.selected")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }, [selectedId, expanded]);
+
     return (
-        <div className="attrs-tree">
+        <div ref={treeRef} className="attrs-tree">
             {items.map((item) => (
                 <TreeRow key={item.id} item={item} depth={0} selectedId={selectedId} expanded={expanded} onToggle={toggle} onSelect={onSelect} />
             ))}

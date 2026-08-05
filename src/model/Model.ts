@@ -5,6 +5,7 @@ import { DropInfo } from "./DropInfo";
 import { Rect } from "./Rect";
 import { Action } from "./Actions";
 import { Actions } from "./Actions";
+import { GroupAction } from "./Actions";
 import { BorderNode } from "./BorderNode";
 import { BorderSet } from "./BorderSet";
 import { IDraggable } from "./IDraggable";
@@ -16,12 +17,25 @@ import { RowNode } from "./RowNode";
 import { TabNode } from "./TabNode";
 import { TabSetNode } from "./TabSetNode";
 import { randomUUID } from "./Utils";
-import { Layout } from "./Layout";
+import { ModelLayout } from "./ModelLayout";
 
 /** @internal */
 export const DefaultMin = 1;
 /** @internal */
 export const DefaultMax = 99999;
+
+/**
+ * A change listener that observes the model around each action. Register it with
+ * `Model.addChangeListener`. Both callbacks are optional; `onBeforeAction` is called with the
+ * action before the model applies it (useful for cheap snapshots), `onAfterAction` after it
+ * has been applied.
+ */
+export interface ModelChangeListener {
+    /** called with the action before the model applies it */
+    onBeforeAction?: (action: Action) => void;
+    /** called with the action after the model has applied it */
+    onAfterAction?: (action: Action) => void;
+}
 
 /**
  * Class containing the Tree of Nodes used by the FlexLayout component
@@ -54,15 +68,15 @@ export class Model {
     /** @internal */
     private attributes: Record<string, any>;
     /** @internal */
-    private layouts: Map<string, Layout>;
+    private layouts: Map<string, ModelLayout>;
     /** @internal */
     private borders: BorderSet;
     /** @internal */
-    private changeListeners: ((action: Action) => void)[];
+    private changeListeners: (ModelChangeListener | ((action: Action) => void))[];
     /** @internal */
     private idMap: Map<string, Node>;
     /** @internal */
-    private mainLayout: Layout;
+    private mainLayout: ModelLayout;
     /** @internal */
     private adoptedFromModel?: Model;
     /** @internal */
@@ -80,12 +94,12 @@ export class Model {
      */
     protected constructor() {
         this.attributes = {};
-        this.layouts = new Map<string, Layout>();
+        this.layouts = new Map<string, ModelLayout>();
         this.borders = new BorderSet(this);
         this.idMap = new Map();
         this.changeListeners = [];
         this.nextSubLayoutId = 1;
-        this.mainLayout = new Layout(Model.MAIN_LAYOUT_ID, 0, "window", Rect.empty());
+        this.mainLayout = new ModelLayout(Model.MAIN_LAYOUT_ID, 0, "window", Rect.empty());
         this.layouts.set(Model.MAIN_LAYOUT_ID, this.mainLayout);
         this.splitterSize = 8;
     }
@@ -97,6 +111,31 @@ export class Model {
      * @returns added Node for Actions.addTab, layoutId for createPopout
      */
     doAction(action: Action): any {
+        // notify onBeforeAction listeners (legacy function-form listeners have no before phase)
+        for (const listener of [...this.changeListeners]) {
+            if (typeof listener !== "function") {
+                listener.onBeforeAction?.(action);
+            }
+        }
+        const returnVal = this.applyAction(action);
+
+        this.updateIdMap();
+        // iterate a copy: listeners may remove themselves during dispatch (e.g. React unmount)
+        for (const listener of [...this.changeListeners]) {
+            if (typeof listener === "function") {
+                listener(action);
+            } else {
+                listener.onAfterAction?.(action);
+            }
+        }
+
+        return returnVal;
+    }
+
+    /** @internal apply a single action to the node tree without notifying change listeners.
+     *  A {@link GroupAction} applies its contained actions in a loop here, between the single
+     *  onBeforeAction/onAfterAction listener pair dispatched by {@link doAction}. */
+    private applyAction(action: Action): any {
         let returnVal = undefined;
         switch (action.type) {
             case Actions.ADD_TAB: {
@@ -160,7 +199,7 @@ export class Model {
                     const layoutId = randomUUID();
                     const type = action.data.type || "window";
 
-                    const layout = new Layout(layoutId, this.getNextSubLayoutId(), type, oldLayout.getToExportRectFunction()(node.getRect(), type));
+                    const layout = new ModelLayout(layoutId, this.getNextSubLayoutId(), type, oldLayout.getToExportRectFunction()(node.getRect(), type));
                     const json = {
                         type: "row",
                     };
@@ -184,7 +223,7 @@ export class Model {
                     const popoutRect = parent.getContentRect();
                     const oldLayout = node.getLayout()!;
                     const type = action.data.type || "window";
-                    const layout = new Layout(layoutId, this.getNextSubLayoutId(), type, oldLayout.getToExportRectFunction()(popoutRect, type));
+                    const layout = new ModelLayout(layoutId, this.getNextSubLayoutId(), type, oldLayout.getToExportRectFunction()(popoutRect, type));
                     const tabsetId = randomUUID();
                     const json: IJsonRowNode = {
                         type: "row",
@@ -303,6 +342,10 @@ export class Model {
                 if (node instanceof TabNode && node.getParent() instanceof TabSetNode) {
                     const parent = node.getParent() as TabSetNode;
                     const pinned = action.data.pinned === true;
+                    // a tab with enablePin disabled cannot be pinned via the action (unpinning is always allowed)
+                    if (pinned && !node.isEnablePin()) {
+                        break;
+                    }
                     if (node.isPinned() !== pinned) {
                         const selectedNode = parent.getSelectedNode(); // restore by identity after the move
                         node.setPinned(pinned);
@@ -328,7 +371,7 @@ export class Model {
 
             case Actions.CREATE_SUBLAYOUT: {
                 const layoutId = randomUUID();
-                const layout = new Layout(layoutId, this.getNextSubLayoutId(), action.data.type || "window", Rect.fromJson(action.data.rect));
+                const layout = new ModelLayout(layoutId, this.getNextSubLayoutId(), action.data.type || "window", Rect.fromJson(action.data.rect));
                 const row = RowNode.fromJson(action.data.layout, this, layout);
                 layout.setRootRow(row);
                 this.layouts.set(layoutId, layout);
@@ -365,16 +408,16 @@ export class Model {
                 break;
             }
 
+            case Actions.GROUP: {
+                const group = action as GroupAction;
+                for (const sub of group.actions) {
+                    this.applyAction(sub);
+                }
+                break;
+            }
+
             default:
                 break;
-        }
-
-        this.updateIdMap();
-
-        // iterate a copy: a listener may remove itself (or others) during dispatch (common on
-        // React unmount), which would otherwise splice the live array mid-loop and skip a listener
-        for (const listener of [...this.changeListeners]) {
-            listener(action);
         }
 
         return returnVal;
@@ -469,17 +512,8 @@ export class Model {
     }
 
     /**
-     * Loads the model from the given json object.
-     *
-     * Note: the recommended way to change an existing layout is to mutate the current model via
-     * actions (`model.doAction(...)`), which updates the layout incrementally and preserves view
-     * state.
-     * @param json the json model to load
-     * @param previousModel optional model currently in use by the layout; when given, tabs with
-     * matching ids adopt the previous model's view state (mounted tab contents, scroll positions),
-     * so the layout updates in place without remounting the tab contents. Use when replacing an
-     * existing layout's model with a modified copy of its json.
-     * @returns {Model} a new Model object
+     * Load a model from JSON.
+     * @param previousModel optional; when given, matching tabs adopt its view state (no remount).
      */
     static fromJson(json: IJsonModel, previousModel?: Model) {
         Model.ensureAttributePairing();
@@ -495,7 +529,7 @@ export class Model {
         if (subLayouts) {
             for (const layoutId in subLayouts) {
                 const layoutJson = subLayouts[layoutId];
-                const layout = Layout.fromJson(layoutJson, model, layoutId);
+                const layout = ModelLayout.fromJson(layoutJson, model, layoutId);
                 model.layouts.set(layoutId, layout);
             }
         }
@@ -585,11 +619,20 @@ export class Model {
         this.onCreateTabSet = onCreateTabSet;
     }
 
-    addChangeListener(listener: (action: Action) => void) {
+    /**
+     * Register a change listener (ModelChangeListener or legacy function).
+     * Fires for every action, including direct `model.doAction` calls.
+     */
+    addChangeListener(listener: ModelChangeListener | ((action: Action) => void)) {
         this.changeListeners.push(listener);
     }
 
-    removeChangeListener(listener: (action: Action) => void) {
+    /**
+     * Removes a listener previously registered with `addChangeListener` (either a function or a
+     * `ModelChangeListener` object)
+     * @param listener the listener to remove
+     */
+    removeChangeListener(listener: ModelChangeListener | ((action: Action) => void)) {
         const pos = this.changeListeners.findIndex((l) => l === listener);
         if (pos !== -1) {
             this.changeListeners.splice(pos, 1);
@@ -774,6 +817,7 @@ export class Model {
         attributeDefinitions.add("tabEnablePopoutOverlay", false).setType(Attribute.BOOLEAN);
         attributeDefinitions.add("tabEnableDrag", true).setType(Attribute.BOOLEAN);
         attributeDefinitions.add("tabEnableRename", true).setType(Attribute.BOOLEAN);
+        attributeDefinitions.add("tabEnablePin", true).setType(Attribute.BOOLEAN);
         attributeDefinitions.add("tabContentClassName", undefined).setType(Attribute.STRING);
         attributeDefinitions.add("tabClassName", undefined).setType(Attribute.STRING);
         attributeDefinitions.add("tabIcon", undefined).setType(Attribute.STRING);

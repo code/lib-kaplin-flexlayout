@@ -1,5 +1,36 @@
 import { expect, Page, Locator } from "@playwright/test";
 
+export type Box = { x: number; y: number; width: number; height: number };
+
+/**
+ * Wait until `locator` has a real (non-null) bounding box and the box is stable (two consecutive
+ * polls agree), then return it. boundingBox() returns null for an element that is attached but not
+ * yet laid out (zero size or hidden), which happens transiently after a reload or a drag that
+ * reshapes the layout. Requiring two stable measurements avoids catching a brief flicker during a
+ * re-measure, so the returned box reflects the settled layout.
+ */
+export async function waitForBox(locator: Locator, label: string): Promise<Box> {
+    let last: Box | null = null;
+    let stable = false;
+    await expect
+        .poll(
+            async () => {
+                const box = await locator.boundingBox().catch(() => null);
+                stable =
+                    box !== null && last !== null && Math.abs(box.x - last.x) < 1 && Math.abs(box.y - last.y) < 1 && Math.abs(box.width - last.width) < 1 && Math.abs(box.height - last.height) < 1;
+                last = box;
+                return stable;
+            },
+            {
+                timeout: 15000,
+                message: `timed out waiting for a stable bounding box for ${label}`,
+            },
+        )
+        .toBe(true);
+    if (!last) throw new Error(`Could not get bounding box for ${label}`);
+    return last;
+}
+
 export const findAllTabSets = (page: Page) => {
     return page.locator(".flexlayout__tabset");
 };
@@ -75,53 +106,54 @@ function getLocation(rect: { x: number; y: number; width: number; height: number
 }
 
 export async function drag(page: Page, from: Locator, to: Locator, loc: Location) {
-    const fr = await from.boundingBox();
-    const tr = await to.boundingBox();
-
-    if (!fr || !tr) throw new Error("Could not get bounding boxes");
+    const fr = await waitForBox(from, "drag source");
+    const tr = await waitForBox(to, "drag target");
 
     const cf = getLocation(fr, Location.CENTER);
     const ct = getLocation(tr, loc);
 
     await page.mouse.move(cf.x, cf.y);
     await page.mouse.down();
+    await page.waitForTimeout(50); // let the native drag start before moving
     await page.mouse.move(ct.x, ct.y, { steps: 10 });
+    await page.waitForTimeout(50); // let dragover register before the drop
     await page.mouse.up();
 }
 
 export async function dragWithOffset(page: Page, from: Locator, to: Locator, loc: Location, offsetX: number, offsetY: number) {
-    const fr = await from.boundingBox();
-    const tr = await to.boundingBox();
-
-    if (!fr || !tr) throw new Error("Could not get bounding boxes");
+    const fr = await waitForBox(from, "drag source");
+    const tr = await waitForBox(to, "drag target");
 
     const cf = getLocation(fr, Location.CENTER);
     const ct = getLocation(tr, loc);
 
     await page.mouse.move(cf.x, cf.y);
     await page.mouse.down();
+    await page.waitForTimeout(50); // let the native drag start before moving
     await page.mouse.move(ct.x + offsetX, ct.y + offsetY, { steps: 10 });
+    await page.waitForTimeout(50); // let dragover register before the drop
     await page.mouse.up();
 }
 
 export async function dragToEdge(page: Page, from: Locator, edgeIndex: number) {
-    const fr = await from.boundingBox();
-    if (!fr) throw new Error("Could not get bounding box for source");
+    const fr = await waitForBox(from, "drag source");
 
     const cf = { x: fr.x + fr.width / 2, y: fr.y + fr.height / 2 };
 
     await page.mouse.move(cf.x, cf.y);
     await page.mouse.down();
+    await page.waitForTimeout(50); // let the native drag start before moving
     await page.mouse.move(cf.x + 10, cf.y + 10); // start move to make edges show
     const edgeRects = page.locator(".flexlayout__edge_rect");
     const edge = edgeRects.nth(edgeIndex);
-    const tr = await edge.boundingBox();
-    if (!tr) throw new Error("Could not get bounding box for edge");
+    // the edge rects appear asynchronously after the drag starts, so wait for one
+    const tr = await waitForBox(edge, `edge rect ${edgeIndex}`);
 
     const ct = { x: tr.x + tr.width / 2, y: tr.y + tr.height / 2 };
 
     // await page.mouse.move((cf.x + ct.x) / 2, (cf.y + ct.y) / 2);
     await page.mouse.move(ct.x, ct.y, { steps: 10 });
+    await page.waitForTimeout(50); // let dragover register before the drop
     await page.mouse.up();
 }
 
@@ -130,10 +162,8 @@ export async function dragToEdge(page: Page, from: Locator, edgeIndex: number) {
 // be driven with the mouse across separate browser windows. dragstart is dispatched on the source
 // element, then dragenter/dragover/drop on the target page's layout root.
 export async function dragAcrossWindows(source: Locator, targetPage: Page, target: Locator, loc: Location) {
-    const fr = await source.boundingBox();
-    const tr = await target.boundingBox();
-
-    if (!fr || !tr) throw new Error("Could not get bounding boxes");
+    const fr = await waitForBox(source, "cross-window drag source");
+    const tr = await waitForBox(target, "cross-window drag target");
 
     const cf = getLocation(fr, Location.CENTER);
     const ct = getLocation(tr, loc);
@@ -160,8 +190,7 @@ export async function dragAcrossWindows(source: Locator, targetPage: Page, targe
 }
 
 export async function dragSplitter(page: Page, from: Locator, upDown: boolean, distance: number) {
-    const fr = await from.boundingBox();
-    if (!fr) throw new Error("Could not get bounding box for splitter");
+    const fr = await waitForBox(from, "splitter");
 
     const cf = { x: fr.x + fr.width / 2, y: fr.y + fr.height / 2 };
     const ct = { x: cf.x + (upDown ? 0 : distance), y: cf.y + (upDown ? distance : 0) };

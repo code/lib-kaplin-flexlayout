@@ -2,6 +2,7 @@ import * as React from "react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ModuleRegistry, ClientSideRowModelModule } from "ag-grid-community";
+import type { TabNode } from "../src/index";
 
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
@@ -13,7 +14,13 @@ interface IRow {
     electric: boolean;
 }
 
-export const AGGridExample = (props: { theme?: string }) => {
+export const AGGridExample = (props: { theme?: string; node?: TabNode }) => {
+    // ag-grid binds to the global document by default; when the tab is popped out into a
+    // separate window this would attach its listeners to the wrong document, so point it at
+    // the document this tab is actually rendered in (see the "Popout Windows" section of the
+    // README for the node.getWindow()/getDocument() methods used here).
+    const getDocument = () => props.node?.getWindow()?.document ?? document;
+
     // Row Data: The data to be displayed.
     const [rowData] = React.useState<IRow[]>([
         { make: "Tesla", model: "Model Y", price: 64950, electric: true },
@@ -32,7 +39,7 @@ export const AGGridExample = (props: { theme?: string }) => {
 
     return (
         <div className={gridTheme} style={{ height: "100%" }}>
-            <AgGridReact rowData={rowData} columnDefs={colDefs} />
+            <AgGridReact getDocument={getDocument} rowData={rowData} columnDefs={colDefs} />
         </div>
     );
 };

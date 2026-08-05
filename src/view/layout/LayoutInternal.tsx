@@ -6,6 +6,7 @@ import { Rect } from "../../model/Rect";
 import { CLASSES } from "../CSSClassNames";
 import { Action } from "../../model/Actions";
 import { Actions } from "../../model/Actions";
+import { GroupAction } from "../../model/Actions";
 import { BorderNode } from "../../model/BorderNode";
 import { IJsonTabNode } from "../../model/IJsonModel";
 import { Model } from "../../model/Model";
@@ -19,7 +20,7 @@ import { Overlay } from "../Overlay";
 import { Row } from "../Row";
 import { Tab } from "../Tab";
 import { domId, enablePointerOnIFrames, isDesktop, copyInlineStyles, matchesKey, resolveKeyMap, Utils_dragging } from "../Utils";
-import { Layout as ModelLayout } from "../../model/Layout";
+import { ModelLayout } from "../../model/ModelLayout";
 import { TabContentRenderer } from "../TabContentRenderer";
 import { DragDropManager } from "./DragDropManager";
 import { EdgeIndicators } from "./EdgeIndicators";
@@ -126,20 +127,12 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
             controller.setReLayout(false);
         }
 
-        // if this layout's element was adopted into a different document during this commit (a tab
-        // containing a sublayout moved between windows), the document-scoped listeners are still
-        // bound to the old document (its resize observer dies with a closed popout window, leaving
-        // this layout blind to container resizes) - re-run them against the new document
+        // re-bind document-scoped listeners if the element moved to a different document
         if (layoutRef.current && controller.getCurrentDocument() !== undefined && controller.getCurrentDocument() !== layoutRef.current.ownerDocument) {
             setDocumentVersion((v) => v + 1);
         }
 
-        // verify after paint: css applied late in the commit (fonts, transitions, newly mounted
-        // elements) can skew the measurements above; re-measure and re-position imperatively so
-        // any difference heals on the next frame rather than waiting for the next render.
-        // Only needed when this commit's measure saw geometry movement - when nothing moved the
-        // css was already stable, and the second full dom read/write pass would be wasted (the
-        // common case for non-geometry renders such as tab selection or button state changes)
+        // post-paint heal: re-measure after css settles (fonts, transitions) to fix jitter
         if (changed) {
             const win = layoutRef.current?.ownerDocument.defaultView ?? window;
             const raf = win.requestAnimationFrame(() => {
@@ -163,24 +156,31 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
         controller.setCurrentDocument(currentDocument);
         controller.setCurrentWindow(currentWindow);
 
-        // Resize Observer
-        // runs synchronously: ResizeObserver fires after browser layout but before paint, so
-        // re-measuring and re-positioning the tab panels here keeps them consistent with the
-        // flex-resized rows/tabsets in the same frame. deferring this behind rAF/render would
-        // paint a frame with the panels at their old geometry (visible as jitter/scrollbar
-        // flashes in sublayouts, whose only resize signal is this observer). the render that
-        // updateRect schedules can safely land later - the geometry is already correct.
-        // only deeper elements are written, so this cannot re-trigger this observer's target
+        // ResizeObserver: re-measure before paint to keep panels in sync with flex-resized rows
         const resizeObserver = new currentWindow.ResizeObserver(() => {
             controller.updateRect();
             controller.syncLayoutMetrics();
             controller.positionTabPanels();
+            // css-driven changes (e.g. font size) also change the measured border bar size, which is
+            // only re-measured here (updateLayoutMetrics is a no-op for non-main layouts)
+            controller.updateLayoutMetrics();
             if (controller.isReLayout()) {
                 controller.redrawLayout();
                 controller.setReLayout(false);
             }
         });
         resizeObserver.observe(layoutRef.current!);
+        // watch the measured elements too, so css-driven geometry changes (font size, theme metrics)
+        // re-measure and re-position the imperatively laid-out panels
+        controller.setGeometryResizeObserver(resizeObserver);
+        // and the offscreen measurement probes themselves, so a splitter size / border bar size
+        // change re-measures even if no tabset happens to resize around it (e.g. borders-only layout)
+        if (findBorderBarSizeRef.current) {
+            resizeObserver.observe(findBorderBarSizeRef.current);
+        }
+        if (findSplitterSizeRef.current) {
+            resizeObserver.observe(findSplitterSizeRef.current);
+        }
 
         // Resize Listener
         const resizeListener = () => {
@@ -189,7 +189,7 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
 
         currentWindow.addEventListener("resize", resizeListener);
 
-        // visibility listener on main document; registered once (by the main layout) and redraws all layouts
+        // visibility listener (main layout only, redraws all layouts)
         const visibilityChange = () => {
             for (const [_, modelLayout] of controller.getProps().model.getLayouts()) {
                 const layout = modelLayout.getController();
@@ -201,21 +201,19 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
 
         if (controller.isMainLayout()) {
             document.addEventListener("visibilitychange", visibilityChange);
-            // close open overlay border panels on a pointer down in the main layout area
-            // (capture phase, since splitters and toolbar buttons stop propagation)
+            // capture-phase pointerdown to close open overlay borders
             currentDocument.addEventListener("pointerdown", controller.onOverlayBorderPointerDown, true);
-            // Escape closes an open overlay border panel (bubble phase, so content that handles
-            // Escape itself can stop propagation and keep the panel open)
+            // Escape to close overlay borders (bubble phase)
             currentDocument.addEventListener("keydown", controller.onOverlayBorderKeyDown);
         }
 
-        // tabset cycling keys work document-wide within each layout window (bubble phase, so
-        // content that handles the key itself keeps it)
+        // tabset cycling keys (document-wide per layout window)
         if (controller.isMainLayout() || controller.getLayout()?.getType() === "window") {
             currentDocument.addEventListener("keydown", controller.onTabsetNavKeyDown);
         }
 
         return () => {
+            controller.setGeometryResizeObserver(undefined);
             resizeObserver.disconnect();
             currentWindow.removeEventListener("resize", resizeListener);
             document.removeEventListener("visibilitychange", visibilityChange);
@@ -223,8 +221,7 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
             currentDocument.removeEventListener("keydown", controller.onOverlayBorderKeyDown);
             currentDocument.removeEventListener("keydown", controller.onTabsetNavKeyDown);
         };
-        // documentVersion (not the render-time ownerDocument, which misses adoption during this
-        // commit's effects) re-runs this when the element moves to another document
+        // documentVersion re-runs when the element moves to another document
     }, [controller, documentVersion]);
 
     // keep window popouts styles updated
@@ -269,16 +266,16 @@ export const LayoutInternal = React.forwardRef<LayoutController, ILayoutInternal
         controller.setLayout(layout);
 
         if (controller.isMainLayout()) {
-            currentModel.addChangeListener(controller.onModelChange);
+            const changeListener = { onAfterAction: controller.onModelChange };
+            currentModel.addChangeListener(changeListener);
             return () => {
-                currentModel.removeChangeListener(controller.onModelChange);
+                currentModel.removeChangeListener(changeListener);
             };
         }
         return;
     }, [props.model, controller, layout]);
 
-    // offscreen probes measured by updateLayoutMetrics; only the main layout measures them,
-    // so only the main layout renders them
+    // offscreen probes for updateLayoutMetrics (main layout only)
     const metrics = controller.isMainLayout() ? (
         <div className={controller.getClassName(CLASSES.FLEXLAYOUT__LAYOUT_METRICS)}>
             <div key="findBorderBarSize" ref={findBorderBarSizeRef} className={controller.getClassName(CLASSES.FLEXLAYOUT__BORDER_SIZER)}>
@@ -380,13 +377,14 @@ export class LayoutController {
     private _popoutWindowName: string;
     private _cachedLayoutDOMRect: Rect | undefined;
     private _reLayout: boolean;
-    // intentionally separate maps: _measurables holds the elements whose geometry is measured
-    // INTO the model (syncLayoutMetrics); _tabPanels holds the tab panel elements positioned
-    // FROM those measured rects (positionTabPanels) - a panel is never itself measured
+    // _measurables: geometry measured into the model; _tabPanels: positioned from those rects
     private _measurables: Map<string, { kind: MeasurableKind; node: Node; element: HTMLElement }> = new Map();
     private _tabPanels: Map<string, { node: TabNode; element: HTMLElement }> = new Map();
     private _lastRect: Rect = Rect.empty();
     private _lastSplitterSize: number = 8;
+    // watches the measured elements so css-driven geometry changes (e.g. a font-size or theme
+    // change altering the tabstrip height without resizing the layout root) re-measure the layout
+    private _geometryResizeObserver: ResizeObserver | undefined;
 
     constructor(
         props: ILayoutInternalProps,
@@ -560,10 +558,16 @@ export class LayoutController {
     };
 
     onModelChange = (action: Action) => {
-        if (action.type == Actions.DELETE_TAB && this._state.showHiddenBorder !== DockLocation.CENTER) {
-            const borderNode = this._props.model.getBorderSet().getBorderMap().get(this._state.showHiddenBorder);
-            if (borderNode!.getChildren().length === 0) {
-                this._setState({ showHiddenBorder: DockLocation.CENTER });
+        // a GroupAction applies its contained actions in one model pass, so check each sub-action
+        // for the same state resets a bare action would trigger
+        const subActions = action instanceof GroupAction ? action.actions : [action];
+        for (const sub of subActions) {
+            if (sub.type == Actions.DELETE_TAB && this._state.showHiddenBorder !== DockLocation.CENTER) {
+                const borderNode = this._props.model.getBorderSet().getBorderMap().get(this._state.showHiddenBorder);
+                if (borderNode!.getChildren().length === 0) {
+                    this._setState({ showHiddenBorder: DockLocation.CENTER });
+                    break;
+                }
             }
         }
 
@@ -585,8 +589,7 @@ export class LayoutController {
         }
     };
 
-    // re-measure the dom (which re-layouts with the new geometry) and reposition the tab panels, then
-    // mount any content areas that gained a size
+    // re-measure, reposition panels, and mount any newly sized content areas
     private applyMeasuredGeometry() {
         this.syncLayoutMetrics();
         this.positionTabPanels();
@@ -596,7 +599,6 @@ export class LayoutController {
         }
     }
 
-    // apply an adjusting weight change without re-rendering the layout tree
     applyAdjustingWeights(action: Action) {
         const row = this._props.model.getNodeById(action.data.nodeId);
         if (!(row instanceof RowNode)) {
@@ -613,8 +615,7 @@ export class LayoutController {
             const kind: MeasurableKind = child instanceof RowNode ? "row" : "tabset";
             const element = this._measurables.get(kind + ":" + child.getId())?.element;
             if (!element) {
-                // the affected element is not registered with this controller (e.g. the row lives in a
-                // popout window): fall back to the normal re-render path rather than leaving stale geometry
+                // not registered (e.g. row in a popout window): fall back to re-render path
                 this.redrawLayout();
                 return;
             }
@@ -624,7 +625,6 @@ export class LayoutController {
         this.applyMeasuredGeometry();
     }
 
-    // apply an adjusting border size change without re-rendering the layout tree
     applyAdjustingBorderSplit(action: Action) {
         const borderNode = this._props.model.getNodeById(action.data.node);
         if (!(borderNode instanceof BorderNode)) {
@@ -632,8 +632,7 @@ export class LayoutController {
             return;
         }
 
-        // overlay border panels are positioned in absolutely placed wrappers whose offsets depend on
-        // the sizes of the other open borders, so keep the full re-render path for them
+        // overlay borders need full re-render (their position depends on other open borders)
         if (borderNode.isOverlay()) {
             this.redrawLayout();
             return;
@@ -641,20 +640,17 @@ export class LayoutController {
 
         const element = this._measurables.get("bordercontent:" + borderNode.getId())?.element;
         if (!element) {
-            // not registered with this controller (e.g. the border lives in a popout window): fall
-            // back to the normal re-render path rather than leaving stale geometry
+            // not registered: fall back to re-render path
             this.redrawLayout();
             return;
         }
 
         const size = borderNode.getSize();
         if (borderNode.isHorizontal()) {
-            // LEFT / RIGHT borders have a fixed width
             element.style.width = size + "px";
             element.style.minWidth = borderNode.getMinSize() + "px";
             element.style.maxWidth = borderNode.getMaxSize() + "px";
         } else {
-            // TOP / BOTTOM borders have a fixed height
             element.style.height = size + "px";
             element.style.minHeight = borderNode.getMinSize() + "px";
             element.style.maxHeight = borderNode.getMaxSize() + "px";
@@ -876,23 +872,41 @@ export class LayoutController {
     // components register the elements whose geometry feeds the model (measured centrally in syncLayoutMetrics)
     registerMeasurable(node: Node, kind: MeasurableKind, element: HTMLElement | null) {
         const key = kind + ":" + node.getId();
+        const prev = this._measurables.get(key);
         if (element) {
             this._measurables.set(key, { kind, node, element });
         } else {
             this._measurables.delete(key);
         }
+        // css-driven geometry changes (e.g. a font-size or theme change) do not resize the layout
+        // root, so also watch the measured elements and re-measure when they resize; tab buttons are
+        // excluded since their overflow is handled separately
+        if (kind !== "tabbutton") {
+            if (prev) {
+                this._geometryResizeObserver?.unobserve(prev.element);
+            }
+            if (element) {
+                this._geometryResizeObserver?.observe(element);
+            }
+        }
     }
 
-    // measure all registered elements in one batched pass (all reads, no dom writes between them)
-    // and write the results into the model; runs in the layout effect after every commit
-    // returns true when any measured rect changed in this pass (used to skip the post-paint
-    // heal pass when the css was already stable at commit time)
+    /** @internal sets the ResizeObserver that watches the measured elements; observes any already
+     *  registered elements (e.g. those registered before this observer was created) */
+    setGeometryResizeObserver(observer: ResizeObserver | undefined) {
+        this._geometryResizeObserver = observer;
+        if (observer) {
+            for (const { kind, element } of this._measurables.values()) {
+                if (kind !== "tabbutton") {
+                    observer.observe(element);
+                }
+            }
+        }
+    }
+
+    // batch-measure all registered elements and write rects into the model; returns true on change
     syncLayoutMetrics(): boolean {
-        // drop the cached layout-origin rect so this pass reads a fresh one: getBoundingClientRect
-        // below subtracts it, and the origin can move between passes (e.g. the page scrolls between
-        // the commit and the deferred raf re-measure). it still caches across children within this
-        // one pass. previously the cache was only invalidated during render, so the raf pass reused
-        // a stale origin and mispositioned the panels by the scroll delta for a frame.
+        // invalidate cached origin (page may scroll between passes); per-pass caching is preserved
         this._cachedLayoutDOMRect = undefined;
         let changed = false;
         for (const { kind, node, element } of this._measurables.values()) {
@@ -949,7 +963,7 @@ export class LayoutController {
                         borderNode.setContentRect(rect);
                         changed = true;
                         if (!hadSize && rect.height > 0) {
-                            this.setReLayout(true); // see tabsetcontent note
+                            this.setReLayout(true);
                         }
                     }
                     break;
@@ -1178,7 +1192,7 @@ export class LayoutController {
             return this._cachedLayoutDOMRect;
         }
 
-        // must get on demand, since page may have scrolled
+        // get fresh rect on demand (page may have scrolled)
         if (this._layoutRef.current) {
             this._cachedLayoutDOMRect = Rect.fromDomRect(this._layoutRef.current.getBoundingClientRect());
             return this._cachedLayoutDOMRect;
@@ -1226,8 +1240,7 @@ export class LayoutController {
     getScreenRect(inRect: Rect) {
         const rect = inRect.clone();
         const layoutRect = this.getDomRect();
-        // measure the window chrome so the popout opens over the tab's screen position; under zoom
-        // outer can be less than inner (or otherwise implausible), fall back to typical sizes
+        // measure window chrome; fall back to typical sizes under zoom
         const measuredNavHeight = this._currentWindow!.outerHeight - this._currentWindow!.innerHeight;
         const measuredNavWidth = this._currentWindow!.outerWidth - this._currentWindow!.innerWidth;
         const navHeight = measuredNavHeight >= 0 && measuredNavHeight <= 200 ? measuredNavHeight : 60;
@@ -1320,7 +1333,7 @@ export class LayoutController {
 
     showOverlay(show: boolean) {
         if (this._showOverlay === show) {
-            return; // avoid a re-render and a full-document iframe sweep per call (called on every pointermove during drags)
+            return; // avoid re-render and iframe sweep (called on every pointermove during drags)
         }
         this._showOverlay = show;
         this.setState({ showOverlay: show });

@@ -171,6 +171,10 @@ export class TabNode extends Node implements IDraggable {
         return this.getAttr("enableRename") as boolean;
     }
 
+    isEnablePin() {
+        return this.getAttr("enablePin") as boolean;
+    }
+
     isEnableWindowReMount() {
         return this.getAttr("enableWindowReMount") as boolean;
     }
@@ -354,8 +358,7 @@ export class TabNode extends Node implements IDraggable {
 
     /** @internal */
     adoptViewState(old: TabNode) {
-        // carry over the view state so the mounted tab content is kept when a model is replaced
-        // via Model.fromJson with a previous model
+        // carry view state to keep mounted tab content on model replacement
         this.moveableElement = old.moveableElement;
         old.moveableElement = null;
         this.tabStamp = old.tabStamp;
@@ -454,6 +457,7 @@ export class TabNode extends Node implements IDraggable {
             );
         attributeDefinitions.addInherited("enableDrag", "tabEnableDrag").setDescription(`whether the user can drag the tab to a new location`);
         attributeDefinitions.addInherited("enableRename", "tabEnableRename").setDescription(`whether the user can rename the tab by double clicking`);
+        attributeDefinitions.addInherited("enablePin", "tabEnablePin").setDescription(`whether the user can pin/unpin the tab via the context menu`);
         attributeDefinitions.addInherited("className", "tabClassName").setDescription(`class applied to tab button`);
         attributeDefinitions.addInherited("contentClassName", "tabContentClassName").setDescription(`class applied to tab content`);
         attributeDefinitions.addInherited("icon", "tabIcon").setDescription(`the tab icon`);

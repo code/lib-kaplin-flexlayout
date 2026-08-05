@@ -14,4 +14,17 @@ export enum I18nLabel {
     Splitter = "Resize",
     Error_rendering_component = "Error rendering component",
     Error_rendering_component_retry = "Retry",
+    // labels for the prebuilt node context menu items (see getNodeContextMenuItems)
+    Menu_Rename = "Rename",
+    Menu_Pin = "Pin",
+    Menu_Unpin = "Unpin",
+    Menu_Popout = "Popout",
+    Menu_Float = "Float",
+    Menu_Maximize = "Maximize",
+    Menu_Restore = "Restore",
+    Menu_Overlay = "Overlay",
+    Menu_Split = "Split",
+    Menu_Close_All = "Close All",
+    Menu_Close_Right = "Close to the Right",
+    Menu_Close_Others = "Close Others",
 }

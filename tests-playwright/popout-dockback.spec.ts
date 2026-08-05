@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForBox } from "./helpers";
 
 // regression: a tab containing a sublayout popped out to a window and then docked back is adopted
 // into the main document during effects; the document-scoped resize observer previously stayed
@@ -23,7 +24,7 @@ test("sublayout tracks container resizes after popout and dock back", async ({ p
         const dt = new DataTransfer();
         tab.dispatchEvent(new DragEvent("dragstart", { bubbles: true, cancelable: true, dataTransfer: dt, clientX: 50, clientY: 20 }));
     });
-    const mainBox = (await page.locator(".flexlayout__layout").first().boundingBox())!;
+    const mainBox = await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
     await page.evaluate((box) => {
         const root = document.querySelector(".flexlayout__layout") as HTMLElement;
         const dt = new DataTransfer();

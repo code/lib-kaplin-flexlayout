@@ -30,8 +30,7 @@ export class BorderNode extends Node implements IDropTarget {
         }
 
         if (border.getSelected() >= border.children.length) {
-            // clamp an out of range selected index from the json (empty border -> -1); an out of
-            // range index would otherwise crash getSize/setSize dereferencing children[selected]
+            // clamp out-of-range selected index from json to prevent children[selected] crash
             border.setSelected(border.children.length - 1);
         }
 
@@ -375,8 +374,7 @@ export class BorderNode extends Node implements IDropTarget {
         const pBounds = [0, 0];
         const rootRow = this.model.getRootRow(Model.MAIN_LAYOUT_ID)!;
         const innerRect = rootRow.getRect();
-        // before the first measure pass the root row rect is empty: return a locked bound rather
-        // than clamping against negative inner-rect edges (which would freeze the splitter)
+        // return locked bound when rect is empty (before first measure pass)
         if (innerRect.width === 0 && innerRect.height === 0) {
             return pBounds;
         }

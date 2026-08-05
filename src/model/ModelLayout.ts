@@ -7,8 +7,14 @@ import { TabSetNode } from "./TabSetNode";
 import { LayoutController } from "../view/layout/LayoutInternal";
 import { ILayoutType } from "./IJsonModel";
 
-/** @internal */
-export class Layout {
+/**
+ * A layout within the model: the main layout, a sublayout hosted in a tab, or a popout
+ * (a native window or floating panel) layout. Layouts are passed to the popout props
+ * ({@link ILayoutProps.renderPopoutContent}, {@link ILayoutProps.onPopoutOpen},
+ * {@link ILayoutProps.onPopoutClose}) and are also reachable from the model's layout map
+ * (see {@link Model}).
+ */
+export class ModelLayout {
     private _layoutId: string;
     private _type: ILayoutType;
     private _rect: Rect;
@@ -32,87 +38,108 @@ export class Layout {
         }
     }
 
+    /** the path of this layout within the model, e.g. `/sublayout1` */
     getPath() {
         return this._path;
     }
 
+    /** visit every node in this layout's tree */
     visitNodes(fn: (node: Node, level: number) => void) {
         this.getRootRow()?.forEachNode(fn, 0);
     }
 
+    /** whether this is the main layout */
     isMainLayout() {
         return this._layoutId === Model.MAIN_LAYOUT_ID;
     }
 
+    /** the id of this layout */
     getLayoutId(): string {
         return this._layoutId;
     }
 
+    /** the type of this layout: `window`, `float` or `tab` */
     getType(): ILayoutType {
         return this._type;
     }
 
-    setType(value: ILayoutType) {
-        this._type = value;
-    }
-
+    /** the rectangle of this layout (popout windows/floating panels) */
     getRect(): Rect {
         return this._rect;
     }
 
-    getController(): LayoutController | undefined {
-        return this._controller;
-    }
-
+    /** the browser window this layout is rendered in (the popout window for a popout layout) */
     getWindow(): Window | undefined {
         return this._controller?.getCurrentWindow();
     }
 
+    /** @internal */
+    setType(value: ILayoutType) {
+        this._type = value;
+    }
+
+    /** @internal */
+    getController(): LayoutController | undefined {
+        return this._controller;
+    }
+
+    /** @internal */
     getRootRow(): RowNode | undefined {
         return this._rootRow;
     }
 
+    /** @internal */
     getMaximizedTabSet(): TabSetNode | undefined {
         return this._maximizedTabSet;
     }
 
+    /** @internal */
     getActiveTabSet(): TabSetNode | undefined {
         return this._activeTabSet;
     }
 
+    /** @internal */
     setRect(value: Rect) {
         this._rect = value;
     }
 
+    /** @internal */
     setController(value: LayoutController | undefined) {
         this._controller = value;
     }
 
+    /** @internal */
     getWindowId(): string | undefined {
         return this._controller?.getWindowId();
     }
 
+    /** @internal */
     setRootRow(rowNode: RowNode | undefined) {
         rowNode?.setLayout(this);
         this._rootRow = rowNode;
     }
 
+    /** @internal */
     setMaximizedTabSet(value: TabSetNode | undefined) {
         this._maximizedTabSet = value;
     }
 
+    /** @internal */
     setActiveTabSet(value: TabSetNode | undefined) {
         this._activeTabSet = value;
     }
 
+    /** @internal */
     getToExportRectFunction(): (rect: Rect, type: ILayoutType) => Rect {
         return this._toExportRectFunction!;
     }
 
+    /** @internal */
     setToExportRectFunction(value: (rect: Rect, type: ILayoutType) => Rect) {
         this._toExportRectFunction = value;
     }
 
+    /** @internal */
     toJson(): IJsonSubLayout {
         // chrome sets top,left to large -ve values when minimized, dont save in this case
         if (this.getType() === "window" && this.getWindow() && this.getWindow()!.screenTop > -10000) {
@@ -127,7 +154,8 @@ export class Layout {
         return json;
     }
 
-    static fromJson(layoutJson: IJsonSubLayout, model: Model, layoutId: string): Layout {
+    /** @internal */
+    static fromJson(layoutJson: IJsonSubLayout, model: Model, layoutId: string): ModelLayout {
         const count = model.getLayouts().size;
         const rect = layoutJson.rect ? Rect.fromJson(layoutJson.rect) : new Rect(50 + 50 * count, 50 + 50 * count, 600, 400);
         // round to whole pixels; drift across save/restore cycles is prevented by the popout window
@@ -135,7 +163,7 @@ export class Layout {
         rect.snap(1);
         const subLayoutId = layoutId === Model.MAIN_LAYOUT_ID ? 0 : model.getNextSubLayoutId();
 
-        const layout = new Layout(layoutId, subLayoutId, layoutJson.type || "window", rect);
+        const layout = new ModelLayout(layoutId, subLayoutId, layoutJson.type || "window", rect);
         layout.setRootRow(RowNode.fromJson(layoutJson.layout, model, layout));
 
         return layout;

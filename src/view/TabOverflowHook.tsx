@@ -333,7 +333,7 @@ export const useTabOverflow = (
     const nodeId = node.getId();
     const selectedNode = node.getSelectedNode();
 
-    // if node id changes (new model) then reset scroll to 0
+    // reset scroll on model change
     React.useLayoutEffect(() => {
         if (tabStripRef.current) {
             setScrollPosition(0);

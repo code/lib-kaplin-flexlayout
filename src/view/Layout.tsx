@@ -10,6 +10,7 @@ import { Model } from "../model/Model";
 import { I18nLabel } from "./I18nLabel";
 import { DragRectRenderCallback, NodeMouseEvent, ShowOverflowMenuCallback, TabSetPlaceHolderCallback, ITabSetRenderValues, ITabRenderValues, IIcons, IKeyMap } from "./layout/LayoutTypes";
 import { LayoutInternal, LayoutController } from "./layout/LayoutInternal";
+import { ModelLayout } from "../model/ModelLayout";
 
 export interface ILayoutProps {
     /** the model for this layout */
@@ -23,7 +24,7 @@ export interface ILayoutProps {
      * disable that shortcut. The configured bindings are advertised to assistive technology via
      * aria-keyshortcuts */
     keyMap?: IKeyMap;
-    /** object mapping keys among close, pin, maximize, restore, more, popout to React nodes to use in place of the default icons, can alternatively return functions for creating the React nodes */
+    /** Custom icons for close, pin, maximize, restore, more, popout buttons. */
     icons?: IIcons;
     /** function called whenever the layout generates an action to update the model (allows for intercepting actions before they are dispatched to the model, for example, asking the user to confirm a tab close.) Returning undefined from the function will halt the action, otherwise return the action to continue */
     onAction?: (action: Action) => Action | undefined;
@@ -39,7 +40,7 @@ export interface ILayoutProps {
     ) => void;
     /** function called when model has changed */
     onModelChange?: (model: Model, action: Action) => void;
-    /** function called when an external object (not a tab) gets dragged onto the layout, with a single dragenter argument. Should return either undefined to reject the drag/drop or an object with keys dragText, jsonDrop, to create a tab via drag (similar to a call to addTabToTabSet). Function onDropis passed the added tabNodeand thedrop DragEvent`, unless the drag was canceled. */
+    /** Handle external drag-and-drop onto the layout. Return undefined to reject. */
     onExternalDrag?: (event: React.DragEvent<HTMLElement>) =>
         | undefined
         | {
@@ -72,6 +73,27 @@ export interface ILayoutProps {
     tabDragSpeed?: number;
     /** set to constrain floating panels to within the layout control */
     constrainFloatPanels?: boolean;
+    /**
+     * Wrap the content rendered into a popout window, e.g. to inject css-in-js styles into the
+     * popout document via an emotion {@link https://emotion.sh/docs/cache-provider CacheProvider}
+     * or a styled-components StyleSheetManager targeting the popout document's head. css-in-js
+     * libraries that insert rules through the CSSOM (emotion's production "speedy" mode) are
+     * invisible to the runtime style copy, so styles must be written into the popout document
+     * directly. The default returns the children unchanged.
+     */
+    renderPopoutContent?: (renderContext: { children: React.ReactNode; layout: ModelLayout; popoutWindow: Window; popoutDocument: Document }) => React.ReactNode;
+    /**
+     * Called once a popout window's document is ready, before its content is rendered. Allows
+     * styling-specific setup to run with the popout window/document in hand (e.g. pre-creating an
+     * emotion cache or styled-components sheet that targets the popout document).
+     */
+    onPopoutOpen?: (layout: ModelLayout, popoutWindow: Window, popoutDocument: Document) => void;
+    /**
+     * Called when a popout window closes, after its layout has been removed from the model. Allows
+     * teardown (e.g. disposing per-window style caches). Fires once per popout, including when the
+     * main window unloads.
+     */
+    onPopoutClose?: (layout: ModelLayout, popoutWindow: Window, popoutDocument: Document) => void;
 }
 
 export interface ILayoutApi {
@@ -182,8 +204,7 @@ const Layout = React.forwardRef<ILayoutApi, ILayoutProps>((props, ref) => {
         },
     }));
 
-    // fresh object identity per render: invalidates the memoized tab contents whenever this
-    // host component re-renders, without mutating a ref during render
+    // fresh object per render to invalidate memoized tab contents
     const renderMarker = {};
 
     return <LayoutInternal key={key.current} ref={controllerRef} {...props} parentRedrawRevision={renderMarker} />;

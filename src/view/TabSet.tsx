@@ -37,11 +37,10 @@ export const TabSet = (props: ITabSetProps) => {
 
     const icons = controller.getIcons();
 
-    // close an open overflow menu if this tabset unmounts (e.g. removed by an external doAction);
-    // otherwise showPopup's document listener + overlay + portal would leak
+    // cleanup: close overflow menu on unmount to prevent listener/portal leak
     React.useEffect(() => () => hideOverflowRef.current?.(), []);
 
-    // this must be after the useEffect, so the node rect is already set (else window popin will not position tabs correctly)
+    // must be after useEffect so the node rect is already set
     const { userControlledPositionRef, onScroll, onScrollPointerDown, hiddenTabs, onMouseWheel, isDockStickyButtons, isShowHiddenTabs } = useTabOverflow(
         controller,
         tabsetNode,
@@ -52,10 +51,7 @@ export const TabSet = (props: ITabSetProps) => {
         controller.getClassName(CLASSES.FLEXLAYOUT__TAB_BUTTON),
     );
 
-    // register with the layout's central measure pass via callback refs: they fire whenever
-    // react attaches/detaches the elements, including remounts the component cannot know about
-    // (e.g. moving into or out of the maximize portal, which also happens on the first render
-    // after the main element becomes available), unlike an effect
+    // callback refs: fire on attach/detach including remounts, unlike effects
     const setSelfRef = React.useCallback(
         (element: HTMLDivElement | null) => {
             selfRef.current = element;
@@ -246,9 +242,7 @@ export const TabSet = (props: ITabSetProps) => {
             renderState.overflowPosition = stickyButtons.length;
         }
 
-        // the sticky buttons bar renders after the tablist element, not inside it: a tablist
-        // may only contain tab children (the bar still sits directly after the last tab, in
-        // the same scrolling row)
+        // sticky bar outside tablist (tablist may only contain tab children)
         let stickyBar: React.ReactNode = undefined;
         if (stickyButtons.length > 0) {
             if (!tabsetNode.isEnableTabWrap() && (isDockStickyButtons || isTabStretch)) {
@@ -290,8 +284,7 @@ export const TabSet = (props: ITabSetProps) => {
                 buttons.splice(
                     Math.min(renderState.overflowPosition, buttons.length),
                     0,
-                    // toolbar buttons carry an explicit tabindex: Safari only includes elements
-                    // with an explicit tabindex in the tab order (native buttons are skipped)
+                    // explicit tabindex: Safari skips native buttons in tab order
                     <button
                         key="overflowbutton"
                         tabIndex={0}
@@ -422,13 +415,11 @@ export const TabSet = (props: ITabSetProps) => {
     const renderTabBar = (tabs: React.ReactNode[], leading: React.ReactNode, buttonbar: React.ReactNode, stickyBar: React.ReactNode) => {
         let tabStrip;
 
-        // advertise the tabset cycling shortcuts (if configured) on the tablist
+        // tabset cycling shortcuts on the tablist
         const keyMap = controller.getKeyMap();
         const tablistKeyshortcuts = [toAriaKeyShortcuts(keyMap.focusNextTabset), toAriaKeyShortcuts(keyMap.focusPreviousTabset)].filter(Boolean).join(" ") || undefined;
 
-        // while one of this tabset's tabs shows its rename textbox, the strip is a plain
-        // container: the editing tab drops its tab role (a tab must not contain interactive
-        // children) and a tablist may only contain tabs; both are restored when the edit ends
+        // drop tablist role during rename
         const editingHere = controller.getEditingTab()?.getParent() === tabsetNode;
         const tablistRole = editingHere ? undefined : "tablist";
 
@@ -488,8 +479,7 @@ export const TabSet = (props: ITabSetProps) => {
                             {tabs}
                         </div>
                         {stickyBar}
-                        <div style={{ flexGrow: 1 }} />
-                        {buttonbar}
+                        <div style={{ flexGrow: 1, display: "flex", justifyContent: "flex-end" }}>{buttonbar}</div>
                     </div>
                 );
             }
@@ -595,8 +585,7 @@ export const TabSet = (props: ITabSetProps) => {
         style.display = "none";
     }
 
-    // note: tabset container is needed to allow flexbox to size without border/padding/margin
-    // then inner tabset can have border/padding/margin for styling
+    // outer container for flex sizing; inner for border/padding/margin styling
     const tabset = (
         <div ref={setSelfRef} className={cm(CLASSES.FLEXLAYOUT__TABSET_CONTAINER)} style={style}>
             <div className={cm(CLASSES.FLEXLAYOUT__TABSET)} data-layout-path={path}>

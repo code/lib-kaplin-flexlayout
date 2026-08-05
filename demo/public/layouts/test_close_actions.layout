@@ -1,0 +1,44 @@
+{
+  "global": {
+    "tabEnablePopout": false
+  },
+  "borders": [],
+  "layout": {
+    "type": "row",
+    "weight": 100,
+    "children": [
+      {
+        "type": "tabset",
+        "weight": 50,
+        "children": [
+          {
+            "type": "tab",
+            "name": "One",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "Two",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "Three",
+            "component": "testing",
+            "enableClose": false
+          },
+          {
+            "type": "tab",
+            "name": "Four",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "Five",
+            "component": "testing"
+          }
+        ]
+      }
+    ]
+  }
+}

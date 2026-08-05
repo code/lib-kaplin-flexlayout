@@ -71,6 +71,26 @@ describe("setTabPinned action", () => {
         model.doAction(Actions.setTabPinned("bt0", true));
         expect((model.getNodeById("bt0") as TabNode).isPinned()).equal(false);
     });
+
+    it("is a no-op when the tab has enablePin disabled", () => {
+        model.doAction(Actions.updateNodeAttributes("t3", { enablePin: false }));
+        model.doAction(Actions.setTabPinned("t3", true));
+        expect((model.getNodeById("t3") as TabNode).isPinned()).equal(false);
+        expect(names("ts0")).toEqual(["PinOne", "PinTwo", "Three", "Four"]);
+    });
+
+    it("still allows unpinning a tab that has enablePin disabled", () => {
+        model.doAction(Actions.updateNodeAttributes("t0", { enablePin: false }));
+        model.doAction(Actions.setTabPinned("t0", false));
+        expect((model.getNodeById("t0") as TabNode).isPinned()).equal(false);
+        expect(names("ts0")).toEqual(["PinTwo", "PinOne", "Three", "Four"]);
+    });
+
+    it("respects the global tabEnablePin setting", () => {
+        const model2 = Model.fromJson({ ...pinnedJson, global: { tabEnablePin: false } });
+        model2.doAction(Actions.setTabPinned("t3", true));
+        expect((model2.getNodeById("t3") as TabNode).isPinned()).equal(false);
+    });
 });
 
 describe("closability", () => {

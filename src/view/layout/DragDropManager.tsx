@@ -16,7 +16,7 @@ import { I18nLabel } from "../I18nLabel";
 import { TabButtonStamp } from "../TabButtonStamp";
 import { LayoutController } from "./LayoutInternal";
 import { findParentLayout, isSafari } from "../Utils";
-import { Layout } from "../../model/Layout";
+import { ModelLayout } from "../../model/ModelLayout";
 
 export class DragDropManager {
     private static dragState: DragState | undefined = undefined;
@@ -134,8 +134,8 @@ export class DragDropManager {
 
     updateActive(event: React.DragEvent<HTMLElement>) {
         const layouts = Array.from(this._controller.getModel().getLayouts().values());
-        let found: Layout | undefined = undefined;
-        let foundTab: Layout | undefined = undefined;
+        let found: ModelLayout | undefined = undefined;
+        let foundTab: ModelLayout | undefined = undefined;
         for (let i = layouts.length - 1; i >= 0; i--) {
             const layout = layouts[i];
             const dragDropManager = layout.getController()?.getDragDropManager();

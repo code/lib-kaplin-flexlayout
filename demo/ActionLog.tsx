@@ -2,7 +2,7 @@ import * as React from "react";
 import { AgGridReact } from "ag-grid-react";
 import type { ColDef } from "ag-grid-community";
 import { ModuleRegistry, ClientSideRowModelModule, RowApiModule, ScrollApiModule, ValidationModule } from "ag-grid-community";
-import { Action, Model } from "../src";
+import { Action, GroupAction, Model } from "../src";
 
 ModuleRegistry.registerModules([
     ClientSideRowModelModule,
@@ -39,7 +39,7 @@ export const ActionLog = (props: { model: Model }) => {
             nextActionId.current++;
             const newEntry: IActionEntry = {
                 id: nextActionId.current,
-                type: action.type,
+                type: action instanceof GroupAction ? action.type + " (" + action.actions.length + ")" : action.type,
                 data: JSON.stringify(action.data),
             };
             currentActions.current = [...currentActions.current, newEntry];
@@ -56,9 +56,10 @@ export const ActionLog = (props: { model: Model }) => {
             }
         };
 
-        currentModel.addChangeListener(listener);
+        const changeListener = { onAfterAction: listener };
+        currentModel.addChangeListener(changeListener);
         return () => {
-            currentModel.removeChangeListener(listener);
+            currentModel.removeChangeListener(changeListener);
         };
     }, [props.model]);
 

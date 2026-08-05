@@ -31,6 +31,8 @@ export interface IPopupMenuItem {
     content?: React.ReactNode;
     /** when true the item cannot be selected */
     disabled?: boolean;
+    /** called when this item is selected instead of the menu-level onSelect */
+    onSelect?: (item: IPopupMenuItem) => void;
 }
 
 /**
@@ -175,7 +177,7 @@ export const PopupMenu = (props: IPopupMenuProps) => {
             if (item.disabled) {
                 return;
             }
-            onSelect?.(item);
+            (item.onSelect ?? onSelect)?.(item);
             onClose();
         },
         [onSelect, onClose],
@@ -263,7 +265,7 @@ export const PopupMenu = (props: IPopupMenuProps) => {
     const defaultItem = (item: IPopupMenuItem) => (
         <div
             key={item.key}
-            className={cm(CLASSES.FLEXLAYOUT__POPUP_MENU_ITEM)}
+            className={cm(CLASSES.FLEXLAYOUT__POPUP_MENU_ITEM) + (item.disabled ? " " + cm(CLASSES.FLEXLAYOUT__POPUP_MENU_ITEM__DISABLED) : "")}
             role="menuitem"
             tabIndex={-1}
             aria-disabled={item.disabled || undefined}

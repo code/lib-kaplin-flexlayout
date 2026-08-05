@@ -2,19 +2,22 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { CLASSES } from "./CSSClassNames";
 import { LayoutController } from "./layout/LayoutInternal";
-import { Layout } from "../model/Layout";
+import { ModelLayout } from "../model/ModelLayout";
 
 // fallback so a stylesheet that never fires load/error (blocked, hung) cannot permanently
 // stall the popout from rendering its content
 const STYLE_LOAD_TIMEOUT_MS = 2000;
+// css-in-js rules added via the CSSOM sheet.insertRule api are invisible to the MutationObserver,
+// so the copied style tags are polled for rule-count changes while the popout is open
+const STYLE_POLL_INTERVAL_MS = 750;
 
 /** @internal */
 export interface IPopoutWindowProps {
     title: string;
     controller: LayoutController;
-    layout: Layout;
+    layout: ModelLayout;
     url: string;
-    onCloseLayout: (layout: Layout) => void;
+    onCloseLayout: (layout: ModelLayout) => void;
 }
 
 /** @internal */
@@ -22,18 +25,28 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
     const { title, controller, layout, url, onCloseLayout, children } = props;
     const popoutWindow = React.useRef<Window>(null);
     const [content, setContent] = React.useState<HTMLElement | undefined>(undefined);
+    // the popout window/document, captured when the window loads (needed by renderPopoutContent)
+    const [popoutWindowState, setPopoutWindowState] = React.useState<Window | undefined>(undefined);
+    const [popoutDocument, setPopoutDocument] = React.useState<Document | undefined>(undefined);
     // map from main docs style -> this docs equivalent style
     const styleMap = React.useMemo(() => new Map<HTMLElement, HTMLElement>(), []);
 
     const initializedRef = React.useRef(false);
     const observerRef = React.useRef<MutationObserver | null>(null);
+    const pollTimerRef = React.useRef<number | null>(null);
+    // per-source css rule count, to only re-sync css-in-js tags whose rules actually changed
+    const lastRuleCountRef = React.useRef<Map<HTMLElement, number>>(new Map());
 
     React.useLayoutEffect(() => {
         if (!initializedRef.current && content) {
             initializedRef.current = true;
             controller.redrawLayout();
+            // the popout content just mounted, so css-in-js libraries have inserted their rules for
+            // it (invisible to the MutationObserver); re-sync so those styles appear without waiting
+            // for the next poll tick
+            resyncStyles(styleMap);
         }
-    }, [content, controller]);
+    }, [content, controller, styleMap]);
 
     React.useLayoutEffect(() => {
         // listen for parent unloading to remove all popouts
@@ -71,6 +84,8 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
                         win.moveBy(rect.x - win.screenLeft, rect.y - win.screenTop);
 
                         const popoutDocument = popoutWindow.current.document;
+                        setPopoutWindowState(popoutWindow.current);
+                        setPopoutDocument(popoutDocument);
                         popoutDocument.title = title;
                         // carry over the language/direction so assistive technology in the popout
                         // announces content correctly
@@ -83,6 +98,10 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
                         const popoutContent = popoutDocument.createElement("div");
                         popoutContent.className = CLASSES.FLEXLAYOUT__FLOATING_WINDOW_CONTENT;
                         popoutDocument.body.appendChild(popoutContent);
+                        // notify the app the popout document is ready, before its content renders,
+                        // so styling-specific setup (e.g. an emotion cache targeting this document)
+                        // can run in time
+                        controller.getProps().onPopoutOpen?.(layout, popoutWindow.current, popoutDocument);
                         copyStyles(popoutDocument, styleMap).then(() => {
                             setContent(popoutContent); // re-render once link styles loaded
                         });
@@ -95,13 +114,25 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
                         observerRef.current = new MutationObserver((mutationsList: MutationRecord[]) => handleStyleMutations(mutationsList, popoutDocument, styleMap));
                         observerRef.current.observe(document.head, { childList: true, subtree: true, characterData: true });
 
+                        // poll the copied css-in-js style tags for CSSOM rule changes (the observer
+                        // cannot see them) and re-sync any that changed
+                        pollTimerRef.current =
+                            popoutDocument.defaultView?.setInterval(() => {
+                                resyncChangedStyles(styleMap, lastRuleCountRef.current);
+                            }, STYLE_POLL_INTERVAL_MS) ?? null;
+
                         // listen for popout unloading (needs to be after load for safari)
                         popoutWindow.current.addEventListener("beforeunload", () => {
                             if (popoutWindow.current) {
+                                controller.getProps().onPopoutClose?.(layout, popoutWindow.current, popoutDocument);
                                 onCloseLayout(layout); // remove the layout in the model
                                 popoutWindow.current = null;
                                 observerRef.current?.disconnect();
                                 observerRef.current = null;
+                                if (pollTimerRef.current != null) {
+                                    popoutDocument.defaultView?.clearInterval(pollTimerRef.current);
+                                    pollTimerRef.current = null;
+                                }
                             }
                         });
                     }
@@ -117,12 +148,22 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
             popoutWindow.current = null;
             observerRef.current?.disconnect();
             observerRef.current = null;
+            if (pollTimerRef.current != null) {
+                pollTimerRef.current = null;
+            }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     if (content !== undefined) {
-        return createPortal(children, content!);
+        const renderPopoutContent = controller.getProps().renderPopoutContent;
+        let rendered = children;
+        if (renderPopoutContent && popoutDocument) {
+            // allow the app to wrap popout content with css-in-js providers (e.g. a styled-components
+            // StyleSheetManager) that inject styles into the popout document
+            rendered = renderPopoutContent({ children, layout, popoutWindow: popoutWindowState ?? window, popoutDocument });
+        }
+        return createPortal(rendered, content);
     } else {
         return null;
     }
@@ -148,11 +189,11 @@ function handleStyleMutations(mutationsList: MutationRecord[], popoutDocument: D
             }
         } else {
             // a mutation inside an existing <style> (css-in-js updating its text): re-sync the
-            // owning style's current text into its clone in the popout
+            // owning style's current text (or css rules) into its clone in the popout
             const styleElement = findOwningStyle(mutation.target);
             const clone = styleElement && styleMap.get(styleElement);
             if (styleElement && clone) {
-                clone.textContent = styleElement.textContent;
+                syncStyleElement(styleElement, clone as HTMLStyleElement);
             }
         }
     }
@@ -208,9 +249,63 @@ function copyStyle(popoutDoc: Document, element: HTMLElement, styleMap: Map<HTML
         try {
             const styleElement = element.cloneNode(true) as HTMLStyleElement;
             popoutDoc.head.appendChild(styleElement);
+            syncStyleElement(element, styleElement);
             styleMap.set(element, styleElement);
         } catch (e) {
             // can throw an exception
+        }
+    }
+}
+
+/** @internal sync the source <style>'s rules into the popout clone. css-in-js libraries (emotion,
+ *  styled-components) insert rules through the CSSOM sheet.insertRule api in production ("speedy"
+ *  mode), leaving textContent empty - a clone would be blank, so rebuild the clone from the sheet's
+ *  css rules in that case */
+function syncStyleElement(source: HTMLStyleElement, clone: HTMLStyleElement) {
+    const text = source.textContent ?? "";
+    if (text.trim() !== "") {
+        clone.textContent = text;
+    } else {
+        try {
+            clone.textContent = "";
+            const rules = source.sheet?.cssRules;
+            if (rules) {
+                for (const rule of rules) {
+                    clone.sheet!.insertRule(rule.cssText, clone.sheet!.cssRules.length);
+                }
+            }
+        } catch (e) {
+            // cross-origin sheets or unreadable rules are ignored
+        }
+    }
+}
+
+/** @internal re-sync every copied style tag (used after the popout content first mounts, when
+ *  css-in-js rules for the newly rendered content were inserted invisibly to the observer) */
+function resyncStyles(styleMap: Map<HTMLElement, HTMLElement>) {
+    for (const [source, clone] of styleMap) {
+        if (source instanceof HTMLStyleElement) {
+            syncStyleElement(source, clone as HTMLStyleElement);
+        }
+    }
+}
+
+/** @internal poll the css-in-js (CSSOM-inserted) style tags and re-sync any whose rule count
+ *  changed; text-based tags are already kept in sync by the MutationObserver */
+function resyncChangedStyles(styleMap: Map<HTMLElement, HTMLElement>, lastRuleCount: Map<HTMLElement, number>) {
+    for (const [source, clone] of styleMap) {
+        if (!(source instanceof HTMLStyleElement) || (source.textContent ?? "").trim() !== "") {
+            continue;
+        }
+        let count = 0;
+        try {
+            count = source.sheet?.cssRules.length ?? 0;
+        } catch (e) {
+            // unreadable sheet
+        }
+        if (count !== lastRuleCount.get(source)) {
+            lastRuleCount.set(source, count);
+            syncStyleElement(source, clone as HTMLStyleElement);
         }
     }
 }

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { Actions, IJsonModel, Model, TabNode } from "../src";
-import { Layout } from "../src/model/Layout";
+import { ModelLayout } from "../src/model/ModelLayout";
 import { canDockToLayout, domId, findParentLayout, hasModifier, IKeyEventLike } from "../src/view/Utils";
 
 describe("domId", () => {
@@ -67,7 +67,7 @@ describe("canDockToLayout / findParentLayout", () => {
         tab = (id) => model.getNodeById(id) as TabNode;
     });
 
-    const layoutOfType = (type: string): Layout => Array.from(model.getLayouts().values()).find((l) => l.getType() === type && !l.isMainLayout())!;
+    const layoutOfType = (type: string): ModelLayout => Array.from(model.getLayouts().values()).find((l) => l.getType() === type && !l.isMainLayout())!;
 
     it("findParentLayout locates the hosting layout of a tab sublayout", () => {
         const subLayout = model.getLayouts().get("L1")!;

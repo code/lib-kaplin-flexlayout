@@ -16,9 +16,10 @@ export function JsonView({ model }: { model: Model }) {
                 timer.current = undefined;
             }, 1000);
         };
-        model.addChangeListener(onModelChange);
+        const changeListener = { onAfterAction: onModelChange };
+        model.addChangeListener(changeListener);
         return () => {
-            model.removeChangeListener(onModelChange);
+            model.removeChangeListener(changeListener);
             if (timer.current) {
                 clearTimeout(timer.current);
             }

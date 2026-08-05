@@ -25,9 +25,7 @@ export const TabButton = (props: ITabButtonProps) => {
     const keyMap = controller.getKeyMap();
     const editing = controller.getEditingTab() === tabNode;
 
-    // register with the layout's central measure pass via a callback ref: it fires whenever
-    // react attaches/detaches the element, including remounts the component cannot know about
-    // (e.g. the parent tabset moving into the maximize portal), unlike an effect
+    // callback ref: fires on attach/detach including remounts, unlike an effect
     const setSelfRef = React.useCallback(
         (element: HTMLDivElement | null) => {
             selfRef.current = element;
@@ -42,7 +40,7 @@ export const TabButton = (props: ITabButtonProps) => {
         }
     }, [editing]);
 
-    // while editing, end the edit on any pointer down outside the textbox
+    // end the edit on any pointer down outside the textbox
     React.useEffect(() => {
         if (editing) {
             const body = controller.getCurrentDocument()!.body;
@@ -179,11 +177,9 @@ export const TabButton = (props: ITabButtonProps) => {
 
     const onTextBoxKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.code === "Escape") {
-            // esc
             controller.setEditingTab(undefined);
             selfRef.current?.focus(); // return focus to the tab button
         } else if (event.code === "Enter" || event.code === "NumpadEnter") {
-            // enter
             controller.setEditingTab(undefined);
             controller.doAction(Actions.renameTab(tabNode.getId(), (event.target as HTMLInputElement).value));
             selfRef.current?.focus(); // return focus to the tab button
@@ -219,8 +215,7 @@ export const TabButton = (props: ITabButtonProps) => {
     // keep exactly one tab stop in the tablist even when the tabset has no selected tab
     const isTabbable = selected || (parentNode.getSelectedNode() === undefined && parentNode.getChildren()[0] === tabNode);
 
-    // advertise the tab's keyboard operations to assistive technology; composed from the
-    // resolved keymap so the advertised shortcuts always match the configured bindings
+    // aria-keyshortcuts from the resolved keymap
     const ariaKeyshortcuts =
         [
             toAriaKeyShortcuts(keyMap.focusTabToggle),
@@ -263,9 +258,7 @@ export const TabButton = (props: ITabButtonProps) => {
     if (tabNode.isCloseable() && !isStretch) {
         const closeTitle = controller.i18nName(I18nLabel.Close_Tab);
         renderState.buttons.push(
-            // hidden from assistive technology: it is a pointer affordance for the tab's
-            // close shortcut (advertised via aria-keyshortcuts), not a tab stop (per the
-            // APG tabs pattern, tab elements should not contain interactive children)
+            // aria-hidden: pointer-only close button, not a tab stop (APG tabs pattern)
             <div
                 key="close"
                 data-layout-path={path + "/button/close"}
@@ -284,14 +277,11 @@ export const TabButton = (props: ITabButtonProps) => {
         <div
             ref={setSelfRef}
             id={domId("flexlayout-tabbutton-", tabNode.getId())}
-            // while the rename textbox is showing, the element is a plain container for it, not
-            // a tab (a tab role must not contain interactive children); it stays programmatically
-            // focusable so the end of the edit can return focus to it
+            // drop tab role during rename (tab must not contain interactive children)
             role={editing ? undefined : "tab"}
             aria-selected={editing ? undefined : selected}
             aria-controls={editing ? undefined : domId("flexlayout-tab-", tabNode.getId())}
-            // an explicit name: the subtree contains the close/pin adornments, which must not
-            // leak into the tab's computed name; pinned state is conveyed here
+            // explicit name to exclude adornments from the accessible name
             aria-label={editing ? undefined : tabNode.isPinned() ? renderState.name + " (" + controller.i18nName(I18nLabel.Pinned_Tab) + ")" : renderState.name}
             aria-keyshortcuts={editing ? undefined : ariaKeyshortcuts}
             tabIndex={editing ? -1 : isTabbable ? 0 : -1}

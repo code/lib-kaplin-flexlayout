@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { findPath, findTabButton, drag, dragSplitter, checkTab, Location } from "./helpers";
+import { findPath, findTabButton, drag, dragSplitter, checkTab, Location, waitForBox } from "./helpers";
 
 const baseURL = "/demo";
 
@@ -106,13 +106,13 @@ test.describe("keyboard operation", () => {
     test("arrow keys resize a focused splitter", async ({ page }) => {
         await page.goto(baseURL + "?layout=test_two_tabs");
         const splitter = findPath(page, "/s0");
-        const before = (await findPath(page, "/ts0").boundingBox())!;
+        const before = await waitForBox(findPath(page, "/ts0"), "/ts0");
 
         await splitter.focus();
         for (let i = 0; i < 5; i++) {
             await page.keyboard.press("ArrowLeft");
         }
-        const after = (await findPath(page, "/ts0").boundingBox())!;
+        const after = await waitForBox(findPath(page, "/ts0"), "/ts0");
         expect(after.width).toBeLessThan(before.width - 30);
     });
 

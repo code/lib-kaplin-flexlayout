@@ -230,6 +230,15 @@ export interface IGlobalAttributes {
     tabEnableDrag?: boolean;
 
     /**
+	  Value for TabNode attribute enablePin if not overridden
+
+	  whether the user can pin/unpin the tab via the context menu
+
+	  Default: true
+	 */
+    tabEnablePin?: boolean;
+
+    /**
 	  Value for TabNode attribute enablePopout if not overridden
 
 	  enable window popout (in popout capable browser), to show an icon in the tabset header also set the enablePopoutIcon attribute
@@ -777,6 +786,13 @@ export interface ITabAttributes {
 	  Default: inherited from Global attribute tabEnableDrag (default true)
 	 */
     enableDrag?: boolean;
+
+    /**
+	  whether the user can pin/unpin the tab via the context menu
+
+	  Default: inherited from Global attribute tabEnablePin (default true)
+	 */
+    enablePin?: boolean;
 
     /**
 	  enable window popout (in popout capable browser), to show an icon in the tabset header also set the enablePopoutIcon attribute

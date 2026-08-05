@@ -45,11 +45,31 @@ describe("PopupMenu", () => {
         expect(onClose).toHaveBeenCalled();
     });
 
+    it("calls the item's own onSelect instead of the menu onSelect", () => {
+        const itemOnSelect = vi.fn();
+        const { onSelect, onClose } = renderMenu({
+            items: [{ key: "own", label: "Own", onSelect: itemOnSelect }],
+        });
+        fireEvent.click(screen.getByText("Own"));
+        expect(itemOnSelect).toHaveBeenCalledWith(expect.objectContaining({ key: "own" }));
+        expect(onSelect).not.toHaveBeenCalled();
+        expect(onClose).toHaveBeenCalled();
+    });
+
     it("does not select a disabled item", () => {
         const { onSelect, onClose } = renderMenu();
         fireEvent.click(screen.getByText("Three"));
         expect(onSelect).not.toHaveBeenCalled();
         expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("marks disabled items with aria-disabled and a disabled class", () => {
+        renderMenu();
+        const item = screen.getByText("Three").closest('[role="menuitem"]')!;
+        expect(item).toHaveAttribute("aria-disabled", "true");
+        expect(item.className).toContain("flexlayout__popup_menu_item--disabled");
+        const enabled = screen.getByText("One").closest('[role="menuitem"]')!;
+        expect(enabled.className).not.toContain("flexlayout__popup_menu_item--disabled");
     });
 
     it("closes on Escape", () => {

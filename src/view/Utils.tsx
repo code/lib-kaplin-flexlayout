@@ -3,7 +3,7 @@ import { Node } from "../model/Node";
 import { TabNode } from "../model/TabNode";
 import { LayoutController } from "./layout/LayoutInternal";
 import { TabSetNode } from "../model/TabSetNode";
-import { Layout } from "../model/Layout";
+import { ModelLayout } from "../model/ModelLayout";
 import { defaultKeyMap, IKeyMap } from "./layout/LayoutTypes";
 
 /** @internal */
@@ -149,8 +149,8 @@ export function startDrag(doc: Document, event: React.PointerEvent<HTMLElement>,
     doc.addEventListener("pointercancel", pointerCancel);
 }
 
-export function findParentLayout(layout: Layout): Layout | undefined {
-    let parentLayout: Layout | undefined = undefined;
+export function findParentLayout(layout: ModelLayout): ModelLayout | undefined {
+    let parentLayout: ModelLayout | undefined = undefined;
     const model = layout.getController()!.getModel();
     model.visitNodes((node) => {
         if (node instanceof TabNode && node.getSubLayoutId() === layout.getLayoutId()) {
@@ -160,7 +160,7 @@ export function findParentLayout(layout: Layout): Layout | undefined {
     return parentLayout;
 }
 
-export function canDockToLayout(node: Node, layout: Layout) {
+export function canDockToLayout(node: Node, layout: ModelLayout) {
     const type = layout.getType();
     if (type === "window") {
         return node.isAllowedInWindow();
@@ -188,16 +188,13 @@ export function canDockToLayout(node: Node, layout: Layout) {
 }
 
 export function copyInlineStyles(source: HTMLElement, target: HTMLElement): boolean {
-    // Get the inline style attribute from the source element
     const sourceStyle = source.getAttribute("style");
     const targetStyle = target.getAttribute("style");
     if (sourceStyle === targetStyle) return false;
 
     if (sourceStyle) {
-        // Set the style attribute on the target element
         target.setAttribute("style", sourceStyle);
     } else {
-        // If the source has no inline style, clear the target's style attribute
         target.removeAttribute("style");
     }
     return true;
@@ -211,11 +208,8 @@ export function isSafari() {
 export function getPageMetrics(win: Window = window) {
     const document = win.document;
     return {
-        // How far the user has scrolled from the top/left
         scrollTop: win.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0,
         scrollLeft: win.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft || 0,
-
-        // The total height and width of the entire document
         fullHeight: Math.max(
             document.body.scrollHeight,
             document.documentElement.scrollHeight,
