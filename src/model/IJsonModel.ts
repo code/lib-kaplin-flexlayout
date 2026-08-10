@@ -1,6 +1,7 @@
 import { ICloseType } from "./ICloseType";
 export type IBorderLocation = "top" | "bottom" | "left" | "right";
 export type ITabLocation = "top" | "bottom";
+export type IBorderTabDirection = "up" | "down";
 export type ILayoutType = "window" | "float" | "tab";
 
 export interface IJsonModel {
@@ -20,7 +21,7 @@ export interface IJsonRect {
     height: number;
 }
 
-export interface IJsonSubLayout {
+export interface IJsonSubLayout extends ISubLayoutAttributes {
     layout: IJsonRowNode;
     rect?: IJsonRect;
     type?: ILayoutType;
@@ -110,6 +111,13 @@ export interface IGlobalAttributes {
 	  Default: false
 	 */
     borderEnableTabScrollbar?: boolean;
+
+    /**
+	  the direction the left border tabs read: 'up' (default, text reads bottom to top) or 'down' (text reads top to bottom like the right border)
+
+	  Default: "up"
+	 */
+    borderLeftTabDirection?: IBorderTabDirection;
 
     /**
 	  Value for BorderNode attribute maxSize if not overridden
@@ -1042,4 +1050,12 @@ export interface IBorderAttributes {
 	  Fixed value: "border"
 	 */
     type?: string;
+}
+export interface ISubLayoutAttributes {
+    /**
+	  the name of the sub layout, e.g. as shown in the model explorer
+
+	  Default: undefined
+	 */
+    name?: string;
 }

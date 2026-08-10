@@ -86,15 +86,30 @@ export const defaultKeyMap: Readonly<IKeyMap> = {
 };
 
 export interface IIcons {
+    /** the close button on a tab */
     close?: React.ReactNode | ((tabNode: TabNode) => React.ReactNode);
+    /** the pin indicator on a pinned tab */
     pin?: React.ReactNode | ((tabNode: TabNode) => React.ReactNode);
+    /** the close button in the tabset toolbar */
     closeTabset?: React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode);
+    /** the toolbar button that pops the selected tab out into a native window */
     popout?: React.ReactNode | ((tabNode: TabNode) => React.ReactNode);
+    /** the toolbar button that pops the selected tab out into a floating panel */
     popoutFloat?: React.ReactNode | ((tabNode: TabNode) => React.ReactNode);
+    /** the toolbar button that maximizes the tabset */
     maximize?: React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode);
+    /** the toolbar button that restores a maximized tabset */
     restore?: React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode);
+    /** the overflow button shown when tabs are hidden in the tabstrip */
     more?: React.ReactNode | ((tabSetNode: TabSetNode | BorderNode, hiddenTabs: { node: TabNode; index: number }[]) => React.ReactNode);
+    /** the arrow shown on the edge dock indicators while dragging */
     edgeArrow?: React.ReactNode;
+    /** the active tabset indicator shown when the tabset is active */
     activeTabset?: React.ReactNode | ((tabSetNode: TabSetNode) => React.ReactNode);
+    /** the button that closes a floating panel */
     closeFloatPopout?: React.ReactNode | (() => React.ReactNode);
+    /** the drag handle in the floating panel header that docks the panel into the main layout */
+    dragToDock?: React.ReactNode;
+    /** the button in the floating panel header that pops the panel out into a native window */
+    popoutFloatWindow?: React.ReactNode;
 }

@@ -250,7 +250,7 @@ export class BorderNode extends Node implements IDropTarget {
     }
 
     /** @internal */
-    canDrop(dragNode: Node & IDraggable, x: number, y: number): DropInfo | undefined {
+    canDrop(dragNode: Node & IDraggable, x: number, y: number, _excludeCenter: boolean = false): DropInfo | undefined {
         if (!(dragNode instanceof TabNode)) {
             return undefined;
         }

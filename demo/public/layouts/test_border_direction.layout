@@ -1,0 +1,61 @@
+{
+  "global": {
+    "borderEnableTabScrollbar": true
+  },
+  "borders": [
+    {
+      "type": "border",
+      "location": "left",
+      "children": [
+        {
+          "type": "tab",
+          "name": "left1",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "left2",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "left3",
+          "component": "testing"
+        }
+      ]
+    },
+    {
+      "type": "border",
+      "location": "right",
+      "children": [
+        {
+          "type": "tab",
+          "name": "right1",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "right2",
+          "component": "testing"
+        }
+      ]
+    }
+  ],
+  "layout": {
+    "type": "row",
+    "weight": 100,
+    "children": [
+      {
+        "type": "tabset",
+        "weight": 100,
+        "children": [
+          {
+            "type": "tab",
+            "name": "One",
+            "component": "testing"
+          }
+        ]
+      }
+    ]
+  }
+}

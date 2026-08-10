@@ -380,6 +380,8 @@ const onContextMenu = (node: TabNode | TabSetNode | BorderNode, event: React.Mou
 <Layout model={model} factory={factory} onContextMenu={onContextMenu} />
 ```
 
+The items returned by `build()` (and the `getNodeContextMenuItems` helper) are plain data, so they don't have to be shown via `showPopupMenu` — you can render them in your own styled menu component. Each item's `label` is the menu text already resolved through the layout's `i18nMapper`, and its `onSelect` fires the corresponding action against the node's model.
+
 ## Model Actions
 
 Once the model JSON has been loaded, all changes are applied through actions. In the Demo app, you can view these actions in the 'Action Log':
@@ -691,15 +693,13 @@ pnpm dev
 
 The `pnpm dev` command watches for changes in both FlexLayout and the Demo app, allowing you to see updates in your browser immediately.
 
-Run the unit tests once using:
+Run the unit tests with:
 
 ```bash
-pnpm test run
+pnpm test
 ```
 
-or in watch mode with `pnpm test`.
-
-Run the playwright tests once using:
+Run the playwright tests with:
 
 ```bash
 pnpm playwright
@@ -709,4 +709,8 @@ or interactively in the playwright ui with `pnpm playwright:ui`.
 
 <img src="screenshots/PlaywrightUI.png?raw=true" alt="PlaywrightUI" title="PlaywrightUI screenshot"/>
 
-To build the npm distribution, run `pnpm build`.
+To build the npm distribution, run:
+
+```bash
+pnpm build
+```

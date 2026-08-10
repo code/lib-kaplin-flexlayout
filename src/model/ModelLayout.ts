@@ -1,11 +1,13 @@
 import { Rect } from "./Rect";
-import { IJsonSubLayout } from "./IJsonModel";
+import { IJsonSubLayout, ISubLayoutAttributes } from "./IJsonModel";
 import { Model } from "./Model";
 import { RowNode } from "./RowNode";
 import { Node } from "./Node";
 import { TabSetNode } from "./TabSetNode";
 import { LayoutController } from "../view/layout/LayoutInternal";
 import { ILayoutType } from "./IJsonModel";
+import { Attribute } from "./Attributes";
+import { Attributes } from "./Attributes";
 
 /**
  * A layout within the model: the main layout, a sublayout hosted in a tab, or a popout
@@ -19,6 +21,8 @@ export class ModelLayout {
     private _type: ILayoutType;
     private _rect: Rect;
     private _path: string;
+    /** @internal */
+    private attributes: Record<string, any>;
 
     private _controller: LayoutController | undefined;
     private _rootRow?: RowNode | undefined;
@@ -26,7 +30,12 @@ export class ModelLayout {
     private _activeTabSet?: TabSetNode | undefined;
     private _toExportRectFunction: (rect: Rect, type: ILayoutType) => Rect;
 
-    constructor(layoutId: string, subLayoutId: number, type: ILayoutType, rect: Rect) {
+    /** @internal */
+    private static attributeDefinitions: Attributes = ModelLayout.createAttributeDefinitions();
+
+    constructor(layoutId: string, subLayoutId: number, type: ILayoutType, rect: Rect, json?: IJsonSubLayout) {
+        this.attributes = {};
+        ModelLayout.attributeDefinitions.fromJson(json ?? {}, this.attributes);
         this._layoutId = layoutId;
         this._type = type;
         this._rect = rect;
@@ -61,6 +70,26 @@ export class ModelLayout {
     /** the type of this layout: `window`, `float` or `tab` */
     getType(): ILayoutType {
         return this._type;
+    }
+
+    /** the name of this layout, e.g. as shown in the model explorer; undefined if not set */
+    getName(): string | undefined {
+        return this.getAttr("name") as string | undefined;
+    }
+
+    /** @internal */
+    getAttr(name: string) {
+        return this.attributes[name];
+    }
+
+    /** @internal */
+    getAttributeDefinitions() {
+        return ModelLayout.attributeDefinitions;
+    }
+
+    /** @internal */
+    updateAttrs(json: ISubLayoutAttributes) {
+        ModelLayout.attributeDefinitions.update(json, this.attributes);
     }
 
     /** the rectangle of this layout (popout windows/floating panels) */
@@ -140,6 +169,18 @@ export class ModelLayout {
     }
 
     /** @internal */
+    static getAttributeDefinitions() {
+        return ModelLayout.attributeDefinitions;
+    }
+
+    /** @internal */
+    private static createAttributeDefinitions(): Attributes {
+        const attributeDefinitions = new Attributes();
+        attributeDefinitions.add("name", undefined).setType(Attribute.STRING).setDescription(`the name of the sub layout, e.g. as shown in the model explorer`);
+        return attributeDefinitions;
+    }
+
+    /** @internal */
     toJson(): IJsonSubLayout {
         // chrome sets top,left to large -ve values when minimized, dont save in this case
         if (this.getType() === "window" && this.getWindow() && this.getWindow()!.screenTop > -10000) {
@@ -151,6 +192,7 @@ export class ModelLayout {
             layout: this.getRootRow()!.toJson(),
             rect: this.getType() === "tab" ? undefined : this.getRect().toJson(),
         };
+        ModelLayout.attributeDefinitions.toJson(json, this.attributes);
         return json;
     }
 
@@ -163,7 +205,7 @@ export class ModelLayout {
         rect.snap(1);
         const subLayoutId = layoutId === Model.MAIN_LAYOUT_ID ? 0 : model.getNextSubLayoutId();
 
-        const layout = new ModelLayout(layoutId, subLayoutId, layoutJson.type || "window", rect);
+        const layout = new ModelLayout(layoutId, subLayoutId, layoutJson.type || "window", rect, layoutJson);
         layout.setRootRow(RowNode.fromJson(layoutJson.layout, model, layout));
 
         return layout;

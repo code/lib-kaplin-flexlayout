@@ -106,9 +106,66 @@ describe("TabSetNode.canDrop", () => {
         expect(drop.location).equal(DockLocation.CENTER);
     });
 
-    it("a tabset that disables drops rejects center drops", () => {
+    it("a tabset that disables drops is offered split regions instead of a dead center", () => {
         model.doAction(Actions.updateNodeAttributes("ts0", { enableDrop: false }));
-        expect(ts0.canDrop(dragTab("tC"), 100, 60)).equal(undefined);
+        expect((ts0.canDrop(dragTab("tC"), 100, 60) as DropInfo).location).equal(DockLocation.BOTTOM);
+        expect((ts0.canDrop(dragTab("tC"), 5, 60) as DropInfo).location).equal(DockLocation.LEFT);
+        expect((ts0.canDrop(dragTab("tC"), 195, 60) as DropInfo).location).equal(DockLocation.RIGHT);
+    });
+
+    it("excludes the center region when the drag cannot merge, extending the edges to the center", () => {
+        expect((ts0.canDrop(dragTab("tC"), 100, 60, true) as DropInfo).location).not.equal(DockLocation.CENTER);
+        expect((ts0.canDrop(dragTab("tC"), 100, 60, true) as DropInfo).location).equal(DockLocation.BOTTOM);
+        expect((ts0.canDrop(dragTab("tC"), 100, 25, true) as DropInfo).location).equal(DockLocation.TOP);
+        expect((ts0.canDrop(dragTab("tC"), 5, 60, true) as DropInfo).location).equal(DockLocation.LEFT);
+        expect((ts0.canDrop(dragTab("tC"), 195, 60, true) as DropInfo).location).equal(DockLocation.RIGHT);
+    });
+
+    it("a tabset that cannot be split is entirely a center drop", () => {
+        model.doAction(Actions.updateNodeAttributes("ts0", { enableDivide: false }));
+        expect((ts0.canDrop(dragTab("tC"), 5, 60) as DropInfo).location).equal(DockLocation.CENTER);
+        expect((ts0.canDrop(dragTab("tC"), 100, 60) as DropInfo).location).equal(DockLocation.CENTER);
+        expect((ts0.canDrop(dragTab("tC"), 195, 60) as DropInfo).location).equal(DockLocation.CENTER);
+    });
+
+    it("a tabset that can neither merge (center excluded) nor split rejects the content", () => {
+        model.doAction(Actions.updateNodeAttributes("ts0", { enableDivide: false }));
+        expect(ts0.canDrop(dragTab("tC"), 100, 60, true)).equal(undefined);
+        expect(ts0.canDrop(dragTab("tC"), 5, 60, true)).equal(undefined);
+    });
+
+    it("a tabset that cannot merge is offered split regions instead of a dead center", () => {
+        // ts1 holds a pinned tab, so it can never merge into another tabset's center
+        expect(ts0.canDrop(ts1, 100, 60)).equal(undefined); // dead without excludeCenter
+        // with excludeCenter (as the drag manager sets for such a drag) the center resolves to a split
+        expect((ts0.canDrop(ts1, 100, 60, true) as DropInfo).location).not.equal(DockLocation.CENTER);
+        expect((ts0.canDrop(ts1, 5, 60, true) as DropInfo).location).equal(DockLocation.LEFT);
+        expect((ts0.canDrop(ts1, 195, 60, true) as DropInfo).location).equal(DockLocation.RIGHT);
+    });
+
+    it("a tabset that is not closable also gets split regions instead of a dead center", () => {
+        const model2 = Model.fromJson({
+            global: {},
+            layout: {
+                type: "row",
+                children: [
+                    { type: "tabset", id: "tsA", children: [{ type: "tab", id: "a0" }] },
+                    { type: "tabset", id: "tsB", children: [{ type: "tab", id: "b0" }] },
+                ],
+            },
+        });
+        const tsA = model2.getNodeById("tsA") as TabSetNode;
+        const tsB = model2.getNodeById("tsB") as TabSetNode;
+        tsA.setRect(new Rect(0, 0, 200, 100));
+        tsA.setContentRect(new Rect(0, 20, 200, 80));
+        tsA.setTabStripRect(new Rect(0, 0, 200, 20));
+
+        // a closable tabset can merge into the center
+        expect((tsA.canDrop(tsB, 100, 60) as DropInfo).location).equal(DockLocation.CENTER);
+        // once it cannot be closed it can no longer merge, so the drag manager passes excludeCenter
+        model2.doAction(Actions.updateNodeAttributes("tsB", { enableClose: false }));
+        expect(tsA.canDrop(tsB, 100, 60)).equal(undefined);
+        expect((tsA.canDrop(tsB, 100, 60, true) as DropInfo).location).not.equal(DockLocation.CENTER);
     });
 });
 

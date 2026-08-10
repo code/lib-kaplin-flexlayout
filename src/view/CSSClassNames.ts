@@ -19,6 +19,7 @@ export enum CLASSES {
     FLEXLAYOUT__BORDER_INNER_ = "flexlayout__border_inner_",
     FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER = "flexlayout__border_inner_tab_container",
     FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER_ = "flexlayout__border_inner_tab_container_",
+    FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER_LEFT_DOWN = "flexlayout__border_inner_tab_container_left_down",
     FLEXLAYOUT__BORDER_TAB_DIVIDER = "flexlayout__border_tab_divider",
     FLEXLAYOUT__BORDER_LEADING = "flexlayout__border_leading",
 
@@ -42,7 +43,10 @@ export enum CLASSES {
 
     FLEXLAYOUT__FLOAT_WINDOW = "flexlayout__float_window",
     FLEXLAYOUT__FLOAT_WINDOW_HEADER = "flexlayout__float_window_header",
+    FLEXLAYOUT__FLOAT_WINDOW_HEADER_TITLE = "flexlayout__float_window_header_title",
     FLEXLAYOUT__FLOAT_WINDOW_CONTENT = "flexlayout__float_window_content",
+    FLEXLAYOUT__FLOAT_WINDOW_DRAG_HANDLE = "flexlayout__float_window_drag_handle",
+    FLEXLAYOUT__FLOAT_WINDOW_BUTTON = "flexlayout__float_window_button",
 
     FLEXLAYOUT__FLOATING_WINDOW_CONTENT = "flexlayout__floating_window_content",
 

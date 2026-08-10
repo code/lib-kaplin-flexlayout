@@ -2,7 +2,6 @@ import * as React from "react";
 import { Node } from "../model/Node";
 import { TabNode } from "../model/TabNode";
 import { LayoutController } from "./layout/LayoutInternal";
-import { TabSetNode } from "../model/TabSetNode";
 import { ModelLayout } from "../model/ModelLayout";
 import { defaultKeyMap, IKeyMap } from "./layout/LayoutTypes";
 
@@ -171,20 +170,20 @@ export function canDockToLayout(node: Node, layout: ModelLayout) {
         if (parentLayout && parentLayout.getType() === "window" && !parentLayout.isMainLayout() && !node.isAllowedInWindow()) {
             return false;
         }
-        if (node instanceof TabNode) {
-            if (node.getSubLayoutId() !== undefined) {
-                return false;
-            }
-        } else if (node instanceof TabSetNode) {
-            for (const child of node.getChildren()) {
-                if ((child as TabNode).getSubLayoutId() !== undefined) {
-                    return false;
-                }
-            }
+        // a tab sublayout cannot host tabs (or rows of tabs) that carry their own sublayout
+        if (containsTabSublayout(node)) {
+            return false;
         }
         return true;
     }
     return false;
+}
+
+function containsTabSublayout(node: Node): boolean {
+    if (node instanceof TabNode) {
+        return node.getSubLayoutId() !== undefined;
+    }
+    return node.getChildren().some((child) => containsTabSublayout(child));
 }
 
 export function copyInlineStyles(source: HTMLElement, target: HTMLElement): boolean {

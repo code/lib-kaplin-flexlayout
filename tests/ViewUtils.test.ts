@@ -98,6 +98,14 @@ describe("canDockToLayout / findParentLayout", () => {
         expect(canDockToLayout(tab("t1"), subLayout)).equal(true);
     });
 
+    it("a tab sublayout rejects a row of tabs that contains a sublayout tab", () => {
+        const subLayout = model.getLayouts().get("L1")!;
+        // the main root row hosts the sublayout tab tHost, so it cannot be docked into a sublayout
+        expect(canDockToLayout(model.getRootRow()!, subLayout)).equal(false);
+        // a float's plain row (no sublayout tabs) can be docked into a sublayout
+        expect(canDockToLayout(layoutOfType("float").getRootRow()!, subLayout)).equal(true);
+    });
+
     it("rejects unknown layout types", () => {
         const bogus = layoutOfType("float");
         bogus.setType("bogus" as any);

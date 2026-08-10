@@ -1,5 +1,5 @@
 import { DockLocation } from "./DockLocation";
-import { IGlobalAttributes, IJsonRect, IJsonRowNode, IJsonTabNode, IRowAttributes, ITabAttributes, ITabSetAttributes } from "./IJsonModel";
+import { IGlobalAttributes, IJsonRect, IJsonRowNode, IJsonTabNode, IRowAttributes, ISubLayoutAttributes, ITabAttributes, ITabSetAttributes } from "./IJsonModel";
 import { ILayoutType } from "./IJsonModel";
 import { Rect } from "./Rect";
 
@@ -19,12 +19,15 @@ export class Actions {
     static MAXIMIZE_TOGGLE = "FlexLayout_MaximizeToggle";
     static UPDATE_MODEL_ATTRIBUTES = "FlexLayout_UpdateModelAttributes";
     static UPDATE_NODE_ATTRIBUTES = "FlexLayout_UpdateNodeAttributes";
+    static UPDATE_SUBLAYOUT_ATTRIBUTES = "FlexLayout_UpdateSubLayoutAttributes";
 
     static POPOUT_TAB = "FlexLayout_PopoutTab";
     static POPOUT_TABSET = "FlexLayout_PopoutTabset";
     static CLOSE_POPOUT = "FlexLayout_ClosePopout";
     static MOVE_POPOUT_TO_FRONT = "FlexLayout_MoveFloatToFront";
     static MOVE_FLOAT = "FlexLayout_MoveFloat";
+    static DOCK_FLOAT_TO_LAYOUT = "FlexLayout_DockFloatToLayout";
+    static POPOUT_FLOAT = "FlexLayout_PopoutFloat";
 
     static CREATE_SUBLAYOUT = "FlexLayout_CreateSubLayout";
 
@@ -203,6 +206,16 @@ export class Actions {
     }
 
     /**
+     * Updates the given sublayout's json attributes
+     * @param layoutId the id of the sublayout to update
+     * @param attributes the json attributes to update (merge with the existing attributes)
+     * @returns {Action} the action
+     */
+    static updateSubLayoutAttributes(layoutId: string, attributes: ISubLayoutAttributes): Action {
+        return new Action(Actions.UPDATE_SUBLAYOUT_ATTRIBUTES, { layoutId: layoutId, json: attributes });
+    }
+
+    /**
      * Pops out the given tab node into a new browser window or floating panel
      * @param nodeId the tab node to popout
      * @param type the type of window to create, either "window" (native browser window) or "float" (simulated div based window)
@@ -248,6 +261,34 @@ export class Actions {
      */
     static moveFloat(layoutId: string, rect: Rect): Action {
         return new Action(Actions.MOVE_FLOAT, { layoutId: layoutId, rect: rect });
+    }
+
+    /**
+     * Converts a floating panel into a native popout window (the reverse of closePopout). The
+     * layout keeps its id and content; the given rect should be in screen coordinates.
+     * @param layoutId the id of the float layout to popout
+     * @param rect optional the screen rectangle for the new window
+     * @returns {Action} the action
+     */
+    static popoutFloat(layoutId: string, rect?: IJsonRect): Action {
+        return new Action(Actions.POPOUT_FLOAT, { layoutId: layoutId, rect: rect });
+    }
+
+    /**
+     * Docks a floating panel's whole layout into another layout.
+     * @param layoutId the id of the float layout to dock
+     * @param toNodeId the id of a tabset or root row in the target layout to dock into
+     * @param location the location where the moved layout will be added, one of the DockLocation enum values (CENTER is ignored)
+     * @param index for docking to the center this value is the index of the tab, use -1 to add to the end
+     * @returns {Action} the action
+     */
+    static dockFloatToLayout(layoutId: string, toNodeId: string, location: DockLocation, index: number): Action {
+        return new Action(Actions.DOCK_FLOAT_TO_LAYOUT, {
+            layoutId: layoutId,
+            toNode: toNodeId,
+            location: location.getName(),
+            index,
+        });
     }
 
     /**

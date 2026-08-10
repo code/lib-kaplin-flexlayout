@@ -23,6 +23,19 @@ describe("DockLocation", () => {
             expect(DockLocation.getLocation(square, 0, 100)).equal(DockLocation.BOTTOM);
             expect(DockLocation.getLocation(square, 100, 100)).equal(DockLocation.BOTTOM);
         });
+
+        it("with excludeCenter the edge regions extend to the center", () => {
+            expect(DockLocation.getLocation(square, 50, 50, true)).not.equal(DockLocation.CENTER);
+            expect(DockLocation.getLocation(square, 25, 25, true)).not.equal(DockLocation.CENTER);
+            expect(DockLocation.getLocation(square, 74, 74, true)).not.equal(DockLocation.CENTER);
+            // every point in the content resolves to one of the four edge splits
+            const edges = [DockLocation.TOP, DockLocation.BOTTOM, DockLocation.LEFT, DockLocation.RIGHT];
+            for (const x of [25, 50, 74]) {
+                for (const y of [25, 50, 74]) {
+                    expect(edges).toContain(DockLocation.getLocation(square, x, y, true));
+                }
+            }
+        });
     });
 
     describe("getDockRect", () => {

@@ -15,11 +15,11 @@ export class DockLocation {
     }
 
     /** @internal */
-    static getLocation(rect: Rect, x: number, y: number) {
+    static getLocation(rect: Rect, x: number, y: number, excludeCenter: boolean = false) {
         x = (x - rect.x) / rect.width;
         y = (y - rect.y) / rect.height;
 
-        if (x >= 0.25 && x < 0.75 && y >= 0.25 && y < 0.75) {
+        if (!excludeCenter && x >= 0.25 && x < 0.75 && y >= 0.25 && y < 0.75) {
             return DockLocation.CENTER;
         }
 

@@ -3,12 +3,14 @@ import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { DropInfo } from "../../model/DropInfo";
 import { Node } from "../../model/Node";
+import { RowNode } from "../../model/RowNode";
 import { TabNode } from "../../model/TabNode";
 import { TabSetNode } from "../../model/TabSetNode";
 import { IDraggable } from "../../model/IDraggable";
 import { IJsonTabNode } from "../../model/IJsonModel";
 import { Actions } from "../../model/Actions";
 import { BorderNode } from "../../model/BorderNode";
+import { DockLocation } from "../../model/DockLocation";
 import { Orientation } from "../../model/Orientation";
 import { Rect } from "../../model/Rect";
 import { CLASSES } from "../CSSClassNames";
@@ -34,6 +36,24 @@ export class DragDropManager {
         this._mainController = controller.getMainController()!;
     }
 
+    // a floating panel can be docked into any layout except the floating panel it was dragged from
+    private isDockTarget() {
+        return this._controller.getLayout().getLayoutId() !== DragDropManager.dragState?.floatLayoutId;
+    }
+
+    // center drops are not offered when the dragged node can never merge into a tabset: a floating
+    // panel being docked, a tabset that cannot be closed, or a tabset holding pinned tabs
+    private isExcludeCenter() {
+        if (DragDropManager.dragState?.dockFloatToMain) {
+            return true;
+        }
+        const dragNode = DragDropManager.dragState?.dragNode;
+        if (dragNode instanceof TabSetNode) {
+            return !dragNode.isEnableClose() || dragNode.getPinnedRunLength() > 0;
+        }
+        return false;
+    }
+
     addTabWithDragAndDrop(event: DragEvent, json: IJsonTabNode, onDrop?: (node?: Node, event?: React.DragEvent<HTMLElement>) => void) {
         const tempNode = TabNode.fromJson(json, this._controller.getModel(), false);
         DragDropManager.dragState = new DragState(this._controller.getMainController()!, DragSource.Add, tempNode, json, onDrop);
@@ -47,6 +67,37 @@ export class DragDropManager {
 
     moveTabWithDragAndDrop(event: DragEvent, node: TabNode | TabSetNode) {
         this.setDragNode(event, node);
+    }
+
+    // starts dragging a floating panel's whole layout, which can be docked into any other layout
+    startDockLayoutDrag(event: DragEvent, layout: ModelLayout, sourceFloatElement?: Element) {
+        const rowNode = layout.getRootRow()! as unknown as Node & IDraggable;
+        DragDropManager.dragState = new DragState(this._controller.getMainController()!, DragSource.Float, rowNode, undefined, undefined, true, layout.getLayoutId(), sourceFloatElement);
+        event.dataTransfer!.setData("text/plain", "--flexlayout--");
+        event.dataTransfer!.effectAllowed = "copyMove";
+        event.dataTransfer!.dropEffect = "move";
+
+        this._dragEnterCount = 0;
+        this._controller.getModel().sortLayouts(); // must have order windows, tabs, floats
+
+        let tabCount = 0;
+        layout.getRootRow()?.forEachNode((node) => {
+            if (node instanceof TabNode) {
+                tabCount++;
+            }
+        }, 0);
+        const content = this._controller.i18nName(I18nLabel.Dock_Float_Tabs).replace("?", String(tabCount));
+        let rendered = false;
+        if (this._controller.getProps().onRenderDragRect) {
+            const dragComponent = this._controller.getProps().onRenderDragRect!(content, rowNode, undefined);
+            if (dragComponent) {
+                this.setDragComponent(event, dragComponent, 10, 10);
+                rendered = true;
+            }
+        }
+        if (!rendered) {
+            this.setDragComponent(event, content, 10, 10);
+        }
     }
 
     setDragNode = (event: DragEvent, node: Node & IDraggable) => {
@@ -134,10 +185,15 @@ export class DragDropManager {
 
     updateActive(event: React.DragEvent<HTMLElement>) {
         const layouts = Array.from(this._controller.getModel().getLayouts().values());
+        const dockToMain = DragDropManager.dragState?.dockFloatToMain === true;
         let found: ModelLayout | undefined = undefined;
         let foundTab: ModelLayout | undefined = undefined;
         for (let i = layouts.length - 1; i >= 0; i--) {
             const layout = layouts[i];
+            // the floating panel being dragged is never a drop target
+            if (dockToMain && layout.getLayoutId() === DragDropManager.dragState?.floatLayoutId) {
+                continue;
+            }
             const dragDropManager = layout.getController()?.getDragDropManager();
             if (dragDropManager) {
                 if (dragDropManager.getDragEnterCount() > 0) {
@@ -224,6 +280,9 @@ export class DragDropManager {
         if (this._mainController !== DragDropManager.dragState?.mainLayoutController) {
             return;
         }
+        if (DragDropManager.dragState?.dockFloatToMain && !this.isDockTarget()) {
+            return;
+        }
 
         if (DragDropManager.dragState) {
             event.preventDefault();
@@ -256,17 +315,36 @@ export class DragDropManager {
         if (this._mainController !== DragDropManager.dragState?.mainLayoutController) {
             return;
         }
+        if (DragDropManager.dragState?.dockFloatToMain && !this.isDockTarget()) {
+            return;
+        }
         if (this._active) {
+            // the pointer over the panel being dragged is never a valid drop target
+            if (DragDropManager.dragState?.dockFloatToMain) {
+                const target = event.target as Element | null;
+                if (target && DragDropManager.dragState.sourceFloatElement?.contains(target)) {
+                    this._dropInfo = undefined;
+                    return;
+                }
+            }
+
             const clientRect = this._controller.getRootDiv()?.getBoundingClientRect();
             const pos = {
                 x: event.clientX - (clientRect?.left ?? 0),
                 y: event.clientY - (clientRect?.top ?? 0),
             };
 
-            this._controller.checkForBorderToShow(pos.x, pos.y);
+            if (!DragDropManager.dragState!.dockFloatToMain) {
+                this._controller.checkForBorderToShow(pos.x, pos.y);
+            }
 
-            const dropInfo = this._controller.getModel().findDropTargetNode(this._controller.getLayoutId(), DragDropManager.dragState!.dragNode!, pos.x, pos.y);
+            const dropInfo = this._controller.getModel().findDropTargetNode(this._controller.getLayoutId(), DragDropManager.dragState!.dragNode!, pos.x, pos.y, this.isExcludeCenter());
             if (dropInfo) {
+                // a floating panel's layout can split a tabset or dock to a layout edge (the root
+                // row), never dock to the center or into a border
+                if (DragDropManager.dragState!.dockFloatToMain && (dropInfo.location === DockLocation.CENTER || (!(dropInfo.node instanceof TabSetNode) && !(dropInfo.node instanceof RowNode)))) {
+                    return;
+                }
                 event.preventDefault(); // can drop so prevent default (which is cannot drop)
                 this._dropInfo = dropInfo;
                 if (this._outlineDiv) {
@@ -308,10 +386,22 @@ export class DragDropManager {
         if (this._mainController !== DragDropManager.dragState?.mainLayoutController) {
             return;
         }
+        if (DragDropManager.dragState?.dockFloatToMain && !this.isDockTarget()) {
+            return;
+        }
         if (this._active) {
             event.preventDefault();
 
             const dragState = DragDropManager.dragState!;
+            if (this._dropInfo) {
+                // a floating panel can never be dropped back into the panel it was dragged from
+                if (dragState.dockFloatToMain) {
+                    const target = event.target as Element | null;
+                    if (target && dragState.sourceFloatElement?.contains(target)) {
+                        this._dropInfo = undefined;
+                    }
+                }
+            }
             if (this._dropInfo) {
                 if (dragState.dragJson !== undefined) {
                     const newNode = this._controller.doAction(Actions.addTab(dragState.dragJson, this._dropInfo.node.getId(), this._dropInfo.location, this._dropInfo.index));
@@ -319,7 +409,11 @@ export class DragDropManager {
                         dragState.fnNewNodeDropped(newNode, event);
                     }
                 } else if (dragState.dragNode !== undefined) {
-                    this._controller.doAction(Actions.moveNode(dragState.dragNode.getId(), this._dropInfo.node.getId(), this._dropInfo.location, this._dropInfo.index));
+                    if (dragState.dockFloatToMain) {
+                        this._controller.doAction(Actions.dockFloatToLayout(dragState.floatLayoutId!, this._dropInfo.node.getId(), this._dropInfo.location, this._dropInfo.index));
+                    } else {
+                        this._controller.doAction(Actions.moveNode(dragState.dragNode.getId(), this._dropInfo.node.getId(), this._dropInfo.location, this._dropInfo.index));
+                    }
                 }
             }
 
@@ -342,6 +436,7 @@ export enum DragSource {
     Internal = "internal",
     External = "external",
     Add = "add",
+    Float = "float",
 }
 
 export class DragState {
@@ -350,6 +445,11 @@ export class DragState {
     readonly dragNode: (Node & IDraggable) | undefined;
     readonly dragJson: IJsonTabNode | undefined;
     readonly fnNewNodeDropped: ((node?: Node, event?: React.DragEvent<HTMLElement>) => void) | undefined;
+    // true when dragging a floating panel's whole layout to dock into another layout
+    readonly dockFloatToMain: boolean;
+    readonly floatLayoutId: string | undefined;
+    // the floating panel window the drag came from; drops over it are rejected
+    readonly sourceFloatElement: Element | undefined;
 
     constructor(
         mainLayoutController: LayoutController,
@@ -357,11 +457,17 @@ export class DragState {
         dragNode: (Node & IDraggable) | undefined,
         dragJson: IJsonTabNode | undefined,
         fnNewNodeDropped: ((node?: Node, event?: React.DragEvent<HTMLElement>) => void) | undefined,
+        dockFloatToMain: boolean = false,
+        floatLayoutId: string | undefined = undefined,
+        sourceFloatElement: Element | undefined = undefined,
     ) {
         this.mainLayoutController = mainLayoutController;
         this.dragSource = dragSource;
         this.dragNode = dragNode;
         this.dragJson = dragJson;
         this.fnNewNodeDropped = fnNewNodeDropped;
+        this.dockFloatToMain = dockFloatToMain;
+        this.floatLayoutId = floatLayoutId;
+        this.sourceFloatElement = sourceFloatElement;
     }
 }

@@ -88,7 +88,7 @@ export class RowNode extends Node implements IDropTarget {
     }
 
     /** @internal */
-    setLayout(layout: ModelLayout) {
+    setLayout(layout: ModelLayout | undefined) {
         this.layout = layout;
     }
 
@@ -386,7 +386,7 @@ export class RowNode extends Node implements IDropTarget {
     }
 
     /** @internal */
-    canDrop(dragNode: Node & IDraggable, x: number, y: number): DropInfo | undefined {
+    canDrop(dragNode: Node & IDraggable, x: number, y: number, _excludeCenter: boolean = false): DropInfo | undefined {
         const yy = y - this.rect.y;
         const xx = x - this.rect.x;
         const w = this.rect.width;

@@ -15,7 +15,7 @@ import { RowNode } from "../../model/RowNode";
 import { ILayoutType } from "../../model/IJsonModel";
 import { TabNode } from "../../model/TabNode";
 import { TabSetNode } from "../../model/TabSetNode";
-import { AsterickIcon, CloseIcon, EdgeIcon, MaximizeIcon, OverflowIcon, PinIcon, PopoutIcon, PopoutFloatIcon, RestoreIcon } from "../Icons";
+import { AsterickIcon, GripIcon, CloseIcon, EdgeIcon, MaximizeIcon, OverflowIcon, PinIcon, PopoutIcon, PopoutFloatIcon, RestoreIcon } from "../Icons";
 import { Overlay } from "../Overlay";
 import { Row } from "../Row";
 import { Tab } from "../Tab";
@@ -1361,6 +1361,8 @@ const defaultIcons = {
     more: <OverflowIcon />,
     edgeArrow: <EdgeIcon />,
     activeTabset: <AsterickIcon />,
+    dragToDock: <GripIcon />,
+    popoutFloatWindow: <PopoutIcon />,
 };
 
 const defaultSupportsPopout: boolean = isDesktop();

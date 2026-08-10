@@ -11,7 +11,7 @@ import { BorderSet } from "./BorderSet";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
 import { ICloseType } from "./ICloseType";
-import { IGlobalAttributes, IJsonModel, IJsonSubLayout, IJsonRowNode, ITabSetAttributes } from "./IJsonModel";
+import { IBorderTabDirection, IGlobalAttributes, IJsonModel, IJsonSubLayout, IJsonRowNode, ITabSetAttributes } from "./IJsonModel";
 import { Node } from "./Node";
 import { RowNode } from "./RowNode";
 import { TabNode } from "./TabNode";
@@ -329,6 +329,15 @@ export class Model {
                 break;
             }
 
+            case Actions.UPDATE_SUBLAYOUT_ATTRIBUTES: {
+                const layout = this.layouts.get(action.data.layoutId);
+                if (layout !== undefined) {
+                    // ignore unknown layout ids rather than throwing
+                    layout.updateAttrs(action.data.json);
+                }
+                break;
+            }
+
             case Actions.RENAME_TAB: {
                 const node = this.idMap.get(action.data.node);
                 if (node instanceof TabNode) {
@@ -408,6 +417,50 @@ export class Model {
                 break;
             }
 
+            case Actions.POPOUT_FLOAT: {
+                const layout = this.layouts.get(action.data.layoutId);
+                if (layout && !layout.isMainLayout() && layout.getType() === "float") {
+                    layout.setType("window");
+                    if (action.data.rect) {
+                        layout.setRect(Rect.fromJson(action.data.rect));
+                    }
+                }
+                break;
+            }
+
+            case Actions.DOCK_FLOAT_TO_LAYOUT: {
+                const layout = this.layouts.get(action.data.layoutId);
+                const toNode = this.idMap.get(action.data.toNode);
+                const location = DockLocation.getByName(action.data.location);
+                if (layout && !layout.isMainLayout() && layout.getType() === "float" && (toNode instanceof TabSetNode || toNode instanceof RowNode) && location !== DockLocation.CENTER) {
+                    const toLayout = toNode.getLayout();
+                    // the target can be any layout except the floating panel being dragged itself
+                    if (toLayout.getLayoutId() !== layout.getLayoutId()) {
+                        const row = layout.getRootRow();
+                        if (row) {
+                            // a tab sublayout cannot host a floating panel containing a tab sublayout
+                            let containsSublayout = false;
+                            if (toLayout.getType() === "tab") {
+                                row.forEachNode((node) => {
+                                    if (node instanceof TabNode && node.getSubLayoutId() !== undefined) {
+                                        containsSublayout = true;
+                                    }
+                                }, 0);
+                            }
+                            if (!containsSublayout) {
+                                // detach the float layout first so tidy (called inside drop) never visits it
+                                this.layouts.delete(layout.getLayoutId());
+                                layout.setRootRow(undefined);
+                                // the moved row inherits the target layout via its new parent chain
+                                row.setLayout(undefined);
+                                toNode.drop(row, location, action.data.index);
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+
             case Actions.GROUP: {
                 const group = action as GroupAction;
                 for (const sub of group.actions) {
@@ -456,6 +509,10 @@ export class Model {
 
     isEnableRotateBorderIcons() {
         return this.attributes.enableRotateBorderIcons as boolean;
+    }
+
+    getBorderLeftTabDirection() {
+        return this.attributes.borderLeftTabDirection as IBorderTabDirection;
     }
 
     /**
@@ -710,22 +767,22 @@ export class Model {
     }
 
     /** @internal */
-    findDropTargetNode(layoutId: string, dragNode: Node & IDraggable, x: number, y: number) {
+    findDropTargetNode(layoutId: string, dragNode: Node & IDraggable, x: number, y: number, excludeCenter: boolean = false) {
         // an open overlay border panel overlays the main layout, so it must take drop
         // precedence over the tabsets underneath it
         if (layoutId === Model.MAIN_LAYOUT_ID) {
             for (const border of this.borders.getBorders()) {
                 if (border.isShowing() && border.isOverlay() && border.getSelected() !== -1 && border.getContentRect()?.contains(x, y)) {
-                    const dropInfo = border.canDrop(dragNode, x, y);
+                    const dropInfo = border.canDrop(dragNode, x, y, excludeCenter);
                     if (dropInfo !== undefined) {
                         return dropInfo;
                     }
                 }
             }
         }
-        let node = (this.layouts.get(layoutId)!.getRootRow() as RowNode).findDropTargetNode(layoutId, dragNode, x, y);
+        let node = (this.layouts.get(layoutId)!.getRootRow() as RowNode).findDropTargetNode(layoutId, dragNode, x, y, excludeCenter);
         if (node === undefined && layoutId === Model.MAIN_LAYOUT_ID) {
-            node = this.borders.findDropTargetNode(dragNode, x, y);
+            node = this.borders.findDropTargetNode(dragNode, x, y, excludeCenter);
         }
         return node;
     }
@@ -783,6 +840,7 @@ export class Model {
         sb.push(TabSetNode.getAttributeDefinitions().toTypescriptInterface("TabSet", Model.attributeDefinitions));
         sb.push(TabNode.getAttributeDefinitions().toTypescriptInterface("Tab", Model.attributeDefinitions));
         sb.push(BorderNode.getAttributeDefinitions().toTypescriptInterface("Border", Model.attributeDefinitions));
+        sb.push(ModelLayout.getAttributeDefinitions().toTypescriptInterface("SubLayout", undefined));
         return sb.join("\n");
     }
 
@@ -861,6 +919,11 @@ export class Model {
         attributeDefinitions.add("borderClassName", undefined).setType(Attribute.STRING);
         attributeDefinitions.add("borderEnableAutoHide", false).setType(Attribute.BOOLEAN);
         attributeDefinitions.add("borderEnableTabScrollbar", false).setType(Attribute.BOOLEAN);
+        attributeDefinitions
+            .add("borderLeftTabDirection", "up")
+            .setType("IBorderTabDirection")
+            .setValues(["up", "down"])
+            .setDescription(`the direction the left border tabs read: 'up' (default, text reads bottom to top) or 'down' (text reads top to bottom like the right border)`);
 
         return attributeDefinitions;
     }

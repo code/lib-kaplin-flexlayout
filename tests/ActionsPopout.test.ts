@@ -93,6 +93,42 @@ describe("popout actions", () => {
         expect(layout.getRect()).toEqual(new Rect(200, 150, 400, 300));
     });
 
+    it("popoutFloat converts a float layout into a window layout with the given screen rect", () => {
+        model.doAction(Actions.popoutTab("t1", "float"));
+        const layout = nonMainLayouts(model)[0];
+        expect(layout.getType()).equal("float");
+
+        model.doAction(Actions.popoutFloat(layout.getLayoutId(), { x: 100, y: 200, width: 320, height: 240 }));
+
+        expect(layout.getType()).equal("window");
+        expect(layout.getRect()).toEqual(new Rect(100, 200, 320, 240));
+        // the tab still belongs to the same (now window) layout
+        expect((model.getNodeById("t1") as TabNode).getLayoutId()).equal(layout.getLayoutId());
+    });
+
+    it("popoutFloat without a rect keeps the layout's current rect", () => {
+        model.doAction(Actions.popoutTab("t1", "float"));
+        const layout = nonMainLayouts(model)[0];
+        const before = layout.getRect();
+
+        model.doAction(Actions.popoutFloat(layout.getLayoutId()));
+
+        expect(layout.getType()).equal("window");
+        expect(layout.getRect()).toEqual(before);
+    });
+
+    it("popoutFloat is a no-op for non-float layouts", () => {
+        model.doAction(Actions.popoutTab("t1", "window"));
+        const windowLayout = nonMainLayouts(model)[0];
+
+        model.doAction(Actions.popoutFloat(Model.MAIN_LAYOUT_ID, { x: 1, y: 2, width: 3, height: 4 }));
+        model.doAction(Actions.popoutFloat(windowLayout.getLayoutId(), { x: 1, y: 2, width: 3, height: 4 }));
+
+        expect(model.getMainLayout().getType()).equal("window");
+        expect(windowLayout.getType()).equal("window");
+        expect(windowLayout.getRect()).not.toEqual(new Rect(1, 2, 3, 4));
+    });
+
     it("adjustBorderSplit sets the border size", () => {
         const withBorder = Model.fromJson({
             global: {},

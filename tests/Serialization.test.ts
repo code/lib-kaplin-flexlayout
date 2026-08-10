@@ -56,6 +56,13 @@ describe("toJson default omission", () => {
         expect(round.getAttribute("tabSetEnableTabStrip")).equal(false);
     });
 
+    it("round-trips the left border tab direction", () => {
+        expect(model.getBorderLeftTabDirection()).equal("up"); // default
+        model.doAction(Actions.updateModelAttributes({ borderLeftTabDirection: "down" }));
+        const round = Model.fromJson(model.toJson());
+        expect(round.getBorderLeftTabDirection()).equal("down");
+    });
+
     it("preserves tab order and selection across a round trip", () => {
         model = Model.fromJson({
             global: {},

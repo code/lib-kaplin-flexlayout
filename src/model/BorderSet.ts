@@ -64,10 +64,10 @@ export class BorderSet {
     }
 
     /** @internal */
-    findDropTargetNode(dragNode: Node & IDraggable, x: number, y: number): DropInfo | undefined {
+    findDropTargetNode(dragNode: Node & IDraggable, x: number, y: number, excludeCenter: boolean = false): DropInfo | undefined {
         for (const border of this.borders) {
             if (border.isShowing()) {
-                const dropInfo = border.canDrop(dragNode, x, y);
+                const dropInfo = border.canDrop(dragNode, x, y, excludeCenter);
                 if (dropInfo !== undefined) {
                     return dropInfo;
                 }

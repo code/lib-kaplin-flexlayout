@@ -6,6 +6,7 @@ import { ModelLayout } from "../model/ModelLayout";
 import { Rect } from "../model/Rect";
 import { startDrag, getPageMetrics } from "./Utils";
 import { Actions } from "../model/Actions";
+import { I18nLabel } from "./I18nLabel";
 
 enum FloatWindowResizeDirection {
     North = "n",
@@ -182,6 +183,37 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
         );
     };
 
+    const icons = controller.getIcons();
+
+    // a panel can only pop out when every tab in it can live in a separate window
+    const canPopout = controller.isSupportsPopout() && layout.getRootRow()?.isAllowedInWindow() === true;
+
+    // the checkerboard handle docks the whole floating layout into the main layout
+    const onDragStartDock = (event: React.DragEvent<HTMLElement>) => {
+        event.stopPropagation();
+        if (layout.getRootRow()?.getChildren().length) {
+            controller.getDragDropManager().startDockLayoutDrag(event.nativeEvent, layout, selfRef.current ?? undefined);
+        } else {
+            event.preventDefault();
+        }
+    };
+
+    const onDragEndDock = (_event: React.DragEvent<HTMLElement>) => {
+        controller.getDragDropManager().onDragEnded();
+    };
+
+    const onDockHandlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+        // prevent the header's pointer move-drag from starting
+        event.stopPropagation();
+    };
+
+    const onPopoutFloatClick = (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
+        // the float's rect is relative to the main layout root; convert it to screen coords
+        const screenRect = controller.getScreenRect(layout.getRect());
+        controller.doAction(Actions.popoutFloat(layout.getLayoutId(), screenRect.toJson()));
+    };
+
     const onPointerDownResize = (e: React.PointerEvent<HTMLElement>, direction: FloatWindowResizeDirection) => {
         const startRect = rect;
         const startPos = { x: e.clientX, y: e.clientY };
@@ -247,14 +279,42 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
             }}
         >
             <div ref={headerRef} className={cm(CLASSES.FLEXLAYOUT__FLOAT_WINDOW_HEADER)} onPointerDown={onPointerDownHeader}>
-                {/* <div className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_ICON)}>
-                    {(typeof icons.popoutFloat === "function") ? icons.popoutFloat(layout) : icons.popoutFloat}
-                </div> */}
-                <div style={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
-                    <div style={{ width: 50, height: 8, display: "flex", flexDirection: "column", justifyContent: "space-around", opacity: 0.5 }}>
-                        <div style={{ height: 2, backgroundColor: "gray", borderRadius: 1 }}></div>
-                    </div>
+                <div
+                    data-layout-path="/floatwindow/drag-handle"
+                    className={cm(CLASSES.FLEXLAYOUT__FLOAT_WINDOW_DRAG_HANDLE)}
+                    draggable={true}
+                    title={controller.i18nName(I18nLabel.Dock_Float_To_Layout)}
+                    aria-label={controller.i18nName(I18nLabel.Dock_Float_To_Layout)}
+                    onDragStart={onDragStartDock}
+                    onDragEnd={onDragEndDock}
+                    onPointerDown={onDockHandlePointerDown}
+                >
+                    {icons.dragToDock}
                 </div>
+                <div style={{ flexGrow: 1, display: "flex", justifyContent: "center", alignItems: "center", minWidth: 0, overflow: "hidden" }}>
+                    {layout.getName() !== undefined ? (
+                        <span data-layout-path="/floatwindow/title" className={cm(CLASSES.FLEXLAYOUT__FLOAT_WINDOW_HEADER_TITLE)} title={layout.getName()}>
+                            {layout.getName()}
+                        </span>
+                    ) : (
+                        <div style={{ width: 50, height: 8, display: "flex", flexDirection: "column", justifyContent: "space-around", opacity: 0.5 }}>
+                            <div style={{ height: 2, backgroundColor: "gray", borderRadius: 1 }}></div>
+                        </div>
+                    )}
+                </div>
+                {canPopout && (
+                    <button
+                        type="button"
+                        data-layout-path="/floatwindow/button/popout"
+                        className={cm(CLASSES.FLEXLAYOUT__FLOAT_WINDOW_BUTTON)}
+                        title={controller.i18nName(I18nLabel.Popout_Float_To_Window)}
+                        aria-label={controller.i18nName(I18nLabel.Popout_Float_To_Window)}
+                        onClick={onPopoutFloatClick}
+                        onPointerDown={onDockHandlePointerDown}
+                    >
+                        {icons.popoutFloatWindow}
+                    </button>
+                )}
                 {/* <div
                     className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_BUTTON) + " " + cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_BUTTON_CLOSE)}
                     style={{ cursor: "pointer" }}

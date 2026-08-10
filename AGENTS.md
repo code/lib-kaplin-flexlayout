@@ -23,7 +23,7 @@ Before claiming a task complete, run and pass:
 ## Commands
 
 - `pnpm dev` — demo app dev server (vite with HMR; the demo imports `src/` directly).
-- `pnpm test` / `pnpm test run` — vitest watch / single run. `pnpm test:coverage` for coverage.
+- `pnpm test` — vitest single run (terminates). `pnpm test:coverage` for coverage.
 - `pnpm playwright` — Playwright e2e (UI runner).
 - `pnpm lint` — `check:interfaces` + eslint. `pnpm format` / `pnpm format:check` — prettier.
 - `pnpm typecheck` — `tsc -p tsconfig.json`.

@@ -69,9 +69,7 @@ describe("Actions.group / GroupAction", () => {
     });
 
     it("applies nested groups", () => {
-        model.doAction(
-            Actions.group([Actions.group([Actions.deleteTab("t0"), Actions.deleteTab("t1")]), Actions.deleteTab("t2")]),
-        );
+        model.doAction(Actions.group([Actions.group([Actions.deleteTab("t0"), Actions.deleteTab("t1")]), Actions.deleteTab("t2")]));
         expect(model.getNodeById("t0")).toBeUndefined();
         expect(model.getNodeById("t1")).toBeUndefined();
         expect(model.getNodeById("t2")).toBeUndefined();

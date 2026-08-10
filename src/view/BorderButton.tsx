@@ -197,7 +197,7 @@ export const BorderButton = (props: IBorderButtonProps) => {
     let iconAngle = 0;
     if (tabNode.getModel().isEnableRotateBorderIcons() === false) {
         if (border === "left") {
-            iconAngle = 90;
+            iconAngle = tabNode.getModel().getBorderLeftTabDirection() === "down" ? -90 : 90;
         } else if (border === "right") {
             iconAngle = -90;
         }

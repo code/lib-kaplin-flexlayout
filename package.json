@@ -1,6 +1,6 @@
 {
   "name": "flexlayout-react",
-  "version": "0.10.4",
+  "version": "0.10.5",
   "description": "A multi-tab docking layout manager",
   "author": "Caplin Systems Ltd",
   "repository": {
@@ -71,7 +71,7 @@
     "build:lib": "vite build --config vite.config.lib.ts",
     "generate:interfaces": "tsx scripts/generate-json-interfaces.ts",
     "check:interfaces": "tsx scripts/generate-json-interfaces.ts --check",
-    "test": "vitest",
+    "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "playwright": "playwright test --reporter=line",
     "playwright:ui": "playwright test --ui",

@@ -1,3 +1,8 @@
+## 0.10.5 - 2026-08-12
+* **Added:** Floating panels can now be docked into the layout.
+* **Added:** Floating panels can now be popped out into popout windows, shown only when every tab in the panel can live in a separate window and popouts are supported.
+* **Added:** New global attribute `borderLeftTabDirection` (`"up" | "down"`, default `"up"`). Setting it to `"down"` makes the left border tabs read top to bottom.
+
 ## 0.10.4 - 2026-08-09
 * **Added:** `ContextMenuBuilder` for building context menu items.
 * **Added:** New `useUndo` React hook that encapsulates undo/redo for a model. 

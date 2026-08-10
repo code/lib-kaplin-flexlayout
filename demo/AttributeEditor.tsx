@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Actions, IJsonModel, Model, Node } from "../src/index";
+import { Actions, IJsonModel, Model, ModelLayout, Node } from "../src/index";
 import { Attribute } from "../src/model/Attributes";
-import { getNodeLabel } from "./ModelTree";
+import { getLayoutLabel, getNodeLabel } from "./ModelTree";
 
 // a global attribute without its own description picks up the description of the node attribute
 // it is paired with, e.g. tabEnableClose <-> enableClose (the pairing is done by the Model)
@@ -16,6 +16,7 @@ const isProtectedAttr = (attrName: string): boolean => attrName === "name" || at
 interface IEditorTarget {
     label: string;
     node?: Node;
+    layout?: ModelLayout;
     attributes: Attribute[];
 }
 
@@ -34,6 +35,13 @@ const resolveTarget = (model: Model, selectedId: string): IEditorTarget | undefi
     if (selectedId === "global") {
         return { label: "Global", attributes: Model.getGlobalAttributeDefinitions().getAttributes() };
     }
+    if (selectedId.startsWith("sublayout:")) {
+        const layout = model.getLayouts().get(selectedId.slice("sublayout:".length));
+        if (layout) {
+            return { label: getLayoutLabel(layout), layout, attributes: layout.getAttributeDefinitions().getAttributes() };
+        }
+        return undefined;
+    }
     const node = model.getNodeById(selectedId);
     if (node) {
         return { label: getNodeLabel(node), node, attributes: node.getAttributeDefinitions().getAttributes() };
@@ -47,7 +55,14 @@ const getAttrRows = (model: Model, target: IEditorTarget): IAttrRow[] => {
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((attr) => {
             const readOnly = attr.name === "id";
-            const canDefault = !isProtectedAttr(attr.name);
+            // a sublayout's attributes are plain metadata (no id/component) so they can always be
+            // defaulted/cleared
+            const canDefault = target.layout !== undefined ? true : !isProtectedAttr(attr.name);
+            if (target.layout !== undefined) {
+                const layout = target.layout;
+                const value = layout.getAttr(attr.name);
+                return { attr, value, hasOverride: value !== attr.defaultValue, inherited: false, readOnly, canDefault };
+            }
             if (target.node === undefined) {
                 const value = model.getAttribute(attr.name);
                 return { attr, value, hasOverride: value !== attr.defaultValue, inherited: false, readOnly, canDefault };
@@ -177,6 +192,36 @@ const buildResetGlobalJson = (baselineGlobal: any): Record<string, any> => {
     return json;
 };
 
+// builds the json that resets a sublayout to its built-in defaults: each attribute is cleared to an
+// explicit undefined so an explicitly stored value is removed and the built-in default applies
+const buildDefaultLayoutJson = (layout: ModelLayout): Record<string, any> => {
+    const json: Record<string, any> = {};
+    for (const attr of layout.getAttributeDefinitions().getAttributes()) {
+        if (attr.fixed) {
+            continue;
+        }
+        json[attr.name] = attr.defaultValue;
+    }
+    return json;
+};
+
+// builds the json that restores a sublayout to the values it had in the loaded layout: attributes
+// that were set in the layout are restored, attributes that were left at their default are cleared
+const buildResetLayoutJson = (layout: ModelLayout, baselineJson: any): Record<string, any> => {
+    const json: Record<string, any> = {};
+    for (const attr of layout.getAttributeDefinitions().getAttributes()) {
+        if (attr.fixed) {
+            continue;
+        }
+        if (baselineJson !== undefined && Object.prototype.hasOwnProperty.call(baselineJson, attr.name) && baselineJson[attr.name] !== undefined) {
+            json[attr.name] = baselineJson[attr.name];
+        } else {
+            json[attr.name] = attr.defaultValue;
+        }
+    }
+    return json;
+};
+
 // deep-compares two values by their serialized form, so object-valued attributes (e.g. config)
 // are compared structurally rather than by reference
 const valuesEqual = (a: any, b: any): boolean => JSON.stringify(a) === JSON.stringify(b);
@@ -194,9 +239,25 @@ const getBaselineValue = (baselineJson: any, attr: Attribute): any => {
     return attr.defaultValue;
 };
 
+// finds the serialized json of the selected item within the snapshot of the loaded layout: a
+// sublayout target is the subLayouts entry itself, the global target the global entry
+const getBaselineJson = (baseline: IJsonModel | null, target: IEditorTarget): any => {
+    if (target.layout !== undefined) {
+        const subLayouts = baseline?.subLayouts ?? baseline?.popouts;
+        return subLayouts?.[target.layout.getLayoutId()];
+    }
+    if (target.node === undefined) {
+        return baseline?.global;
+    }
+    return baseline ? findBaselineNode(baseline, target.node) : undefined;
+};
+
 // the attribute's own value now (no inheritance resolution), so changes to the selected item are
 // reported independently of the global attributes it inherits from
 const getCurrentOwnValue = (model: Model, target: IEditorTarget, attr: Attribute): any => {
+    if (target.layout !== undefined) {
+        return target.layout.getAttr(attr.name);
+    }
     if (target.node === undefined) {
         return model.getAttribute(attr.name);
     }
@@ -385,7 +446,7 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
     // on the model so it is captured once per model and re-captured only when a new model is passed.
     const baseline = React.useMemo<IJsonModel | null>(() => model.toJson(), [model]);
 
-    const baselineJson = target ? (target.node === undefined ? baseline?.global : baseline ? findBaselineNode(baseline, target.node) : undefined) : undefined;
+    const baselineJson = target ? getBaselineJson(baseline, target) : undefined;
 
     // how many attributes are not at their built-in default (top-level Default button count)
     const defaultCount = rows.filter((r) => r.hasOverride && !r.readOnly && r.canDefault).length;
@@ -400,7 +461,9 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
         if (!target) {
             return;
         }
-        if (target.node === undefined) {
+        if (target.layout !== undefined) {
+            model.doAction(Actions.updateSubLayoutAttributes(target.layout.getLayoutId(), { [attr.name]: value } as any));
+        } else if (target.node === undefined) {
             model.doAction(Actions.updateModelAttributes({ [attr.name]: value } as any));
         } else {
             model.doAction(Actions.updateNodeAttributes(target.node.getId(), { [attr.name]: value } as any));
@@ -409,11 +472,15 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
 
     // restores a single attribute to its built-in default
     const resetRowToDefault = (row: IAttrRow) => {
-        if (!target || isProtectedAttr(row.attr.name)) {
+        if (!target) {
             return;
         }
-        if (target.node === undefined) {
+        if (target.layout !== undefined) {
+            model.doAction(Actions.updateSubLayoutAttributes(target.layout.getLayoutId(), { [row.attr.name]: row.attr.defaultValue } as any));
+        } else if (target.node === undefined) {
             model.doAction(Actions.updateModelAttributes({ [row.attr.name]: row.attr.defaultValue } as any));
+        } else if (isProtectedAttr(row.attr.name)) {
+            return;
         } else if (row.inherited) {
             model.doAction(Actions.updateNodeAttributes(target.node.getId(), { [row.attr.name]: undefined } as any));
         } else {
@@ -427,12 +494,14 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
             return;
         }
         const baselineValue = getBaselineValue(baselineJson, row.attr);
-        if (isProtectedAttr(row.attr.name) && baselineValue === undefined) {
-            return; // never clear a tab's name/component
-        }
-        if (target.node === undefined) {
+        if (target.layout !== undefined) {
+            model.doAction(Actions.updateSubLayoutAttributes(target.layout.getLayoutId(), { [row.attr.name]: baselineValue } as any));
+        } else if (target.node === undefined) {
             model.doAction(Actions.updateModelAttributes({ [row.attr.name]: baselineValue } as any));
         } else {
+            if (isProtectedAttr(row.attr.name) && baselineValue === undefined) {
+                return; // never clear a tab's name/component
+            }
             model.doAction(Actions.updateNodeAttributes(target.node.getId(), { [row.attr.name]: baselineValue } as any));
         }
     };
@@ -442,7 +511,9 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
         if (!target) {
             return;
         }
-        if (target.node === undefined) {
+        if (target.layout !== undefined) {
+            model.doAction(Actions.updateSubLayoutAttributes(target.layout.getLayoutId(), buildDefaultLayoutJson(target.layout) as any));
+        } else if (target.node === undefined) {
             model.doAction(Actions.updateModelAttributes(buildDefaultGlobalJson() as any));
         } else {
             model.doAction(Actions.updateNodeAttributes(target.node.getId(), buildDefaultNodeJson(target.node) as any));
@@ -454,7 +525,9 @@ export function AttributeEditor({ model, selectedId }: IAttributeEditorProps) {
         if (!target) {
             return;
         }
-        if (target.node === undefined) {
+        if (target.layout !== undefined) {
+            model.doAction(Actions.updateSubLayoutAttributes(target.layout.getLayoutId(), buildResetLayoutJson(target.layout, getBaselineJson(baseline, target)) as any));
+        } else if (target.node === undefined) {
             model.doAction(Actions.updateModelAttributes(buildResetGlobalJson(baseline?.global) as any));
         } else {
             const baselineNodeJson = baseline ? findBaselineNode(baseline, target.node) : undefined;

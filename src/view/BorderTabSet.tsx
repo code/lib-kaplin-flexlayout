@@ -279,7 +279,9 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
     let outerStyle: React.CSSProperties;
     const borderHeight = size - 1;
     if (borderNode.getLocation() === DockLocation.LEFT) {
-        innerStyle = { right: "100%", top: 0 };
+        // left border tabs read up by default, or down (like the right border) via global.borderLeftTabDirection
+        const tabsReadDown = controller.getModel().getBorderLeftTabDirection() === "down";
+        innerStyle = tabsReadDown ? { left: "100%", top: 0 } : { right: "100%", top: 0 };
         outerStyle = { width: borderHeight, overflowY: "auto" };
     } else if (borderNode.getLocation() === DockLocation.RIGHT) {
         innerStyle = { left: "100%", top: 0 };
@@ -298,6 +300,12 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
     if (leading) {
         leadingContainer = <div className={cm(CLASSES.FLEXLAYOUT__BORDER_LEADING)}>{leading}</div>;
     }
+
+    const tabContainerClassName =
+        cm(CLASSES.FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER) +
+        " " +
+        cm(CLASSES.FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER_ + borderNode.getLocation().getName()) +
+        (borderNode.getLocation() === DockLocation.LEFT && controller.getModel().getBorderLeftTabDirection() === "down" ? " " + cm(CLASSES.FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER_LEFT_DOWN) : "");
 
     return (
         <div
@@ -330,7 +338,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
                                 ? "vertical"
                                 : undefined
                         }
-                        className={cm(CLASSES.FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER) + " " + cm(CLASSES.FLEXLAYOUT__BORDER_INNER_TAB_CONTAINER_ + borderNode.getLocation().getName())}
+                        className={tabContainerClassName}
                     >
                         {tabButtons}
                     </div>

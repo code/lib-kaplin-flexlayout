@@ -238,17 +238,17 @@ export abstract class Node {
     }
 
     /** @internal */
-    findDropTargetNode(layoutId: string, dragNode: Node & IDraggable, x: number, y: number): DropInfo | undefined {
+    findDropTargetNode(layoutId: string, dragNode: Node & IDraggable, x: number, y: number, excludeCenter: boolean = false): DropInfo | undefined {
         let rtn: DropInfo | undefined;
         if (this.rect.contains(x, y)) {
             if (this.model.getMaximizedTabset(layoutId) !== undefined) {
-                rtn = this.model.getMaximizedTabset(layoutId)!.canDrop(dragNode, x, y);
+                rtn = this.model.getMaximizedTabset(layoutId)!.canDrop(dragNode, x, y, excludeCenter);
             } else {
-                rtn = this.canDrop(dragNode, x, y);
+                rtn = this.canDrop(dragNode, x, y, excludeCenter);
                 if (rtn === undefined) {
                     if (this.children.length !== 0) {
                         for (const child of this.children) {
-                            rtn = child.findDropTargetNode(layoutId, dragNode, x, y);
+                            rtn = child.findDropTargetNode(layoutId, dragNode, x, y, excludeCenter);
                             if (rtn !== undefined) {
                                 break;
                             }
@@ -262,7 +262,7 @@ export abstract class Node {
     }
 
     /** @internal */
-    canDrop(_dragNode: Node & IDraggable, _x: number, _y: number): DropInfo | undefined {
+    canDrop(_dragNode: Node & IDraggable, _x: number, _y: number, _excludeCenter: boolean = false): DropInfo | undefined {
         return undefined;
     }
 

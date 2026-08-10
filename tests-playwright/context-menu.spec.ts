@@ -116,3 +116,22 @@ test.describe("reusable popup menu (demo context menu)", () => {
         await expect(page.locator('.flexlayout__popup_menu [role="separator"]')).toHaveCount(0);
     });
 });
+
+test.describe("tabset context menu", () => {
+    test("floats the whole tabset from the tabset menu", async ({ page }) => {
+        // test_pinned has popoutable tabs, so the tabset menu offers Float/Popout
+        await page.goto("/demo?layout=test_pinned");
+        await expect(page.locator(".flexlayout__tab_button").first()).toBeVisible();
+
+        // right-click the trailing area of a tabstrip (away from the tab buttons)
+        const tabstrip = page.locator(".flexlayout__tabset_tabbar_outer").first();
+        const box = (await tabstrip.boundingBox())!;
+        await page.mouse.click(box.x + box.width - 15, box.y + box.height / 2, { button: "right" });
+        await expect(page.locator(".flexlayout__popup_menu")).toBeVisible();
+        await expect(page.getByRole("menuitem", { name: "Float tabset", exact: true })).toBeVisible();
+        await expect(page.getByRole("menuitem", { name: "Pop out tabset", exact: true })).toBeVisible();
+
+        await page.getByRole("menuitem", { name: "Float tabset", exact: true }).click();
+        await expect(page.locator(".flexlayout__float_window")).toHaveCount(1);
+    });
+});

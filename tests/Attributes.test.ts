@@ -25,6 +25,12 @@ describe("Attribute.setValues", () => {
             { value: "top", label: "Top" },
             { value: "bottom", label: "Bottom" },
         ]);
+
+        const leftBorderDirection = attrByName(global, "borderLeftTabDirection");
+        expect(leftBorderDirection.getValues()).toEqual([
+            { value: "up", label: "Up" },
+            { value: "down", label: "Down" },
+        ]);
     });
 
     it("declares the possible values for the border type", () => {

@@ -1,11 +1,12 @@
 import * as React from "react";
-import { BorderNode, Model, Node, RowNode, TabNode, TabSetNode } from "../src/index";
+import { BorderNode, Model, ModelLayout, Node, RowNode, TabNode, TabSetNode } from "../src/index";
 
 export interface ITreeItem {
     id: string;
     label: string;
     selectable: boolean;
     node?: Node;
+    layout?: ModelLayout;
     children?: ITreeItem[];
 }
 
@@ -23,6 +24,12 @@ export const getNodeLabel = (node: Node): string => {
         return "Border: " + node.getLocation().getName();
     }
     return node.getType();
+};
+
+// the sublayout tree label: "<type> (<name>)" when named, otherwise "<type> (<layout id>)"
+export const getLayoutLabel = (layout: ModelLayout): string => {
+    const name = layout.getName();
+    return layout.getType() + " (" + (name ?? layout.getLayoutId()) + ")";
 };
 
 const toTreeItem = (node: Node): ITreeItem => {
@@ -60,7 +67,7 @@ export const buildTreeItems = (model: Model): ITreeItem[] => {
         }
         const subRoot = layout.getRootRow();
         if (subRoot) {
-            subLayoutItems.push({ id: "sublayout:" + layoutId, label: "Sublayout: " + layoutId, selectable: false, children: [toTreeItem(subRoot)] });
+            subLayoutItems.push({ id: "sublayout:" + layoutId, label: getLayoutLabel(layout), selectable: true, layout, children: [toTreeItem(subRoot)] });
         }
     }
     if (subLayoutItems.length > 0) {
@@ -110,17 +117,7 @@ export interface IModelTreeProps {
 export function ModelTree({ model, selectedId, onSelect, revealId }: IModelTreeProps) {
     const items = buildTreeItems(model);
 
-    const [expanded, setExpanded] = React.useState<Set<string>>(() => {
-        const set = new Set<string>(["borders", "layout", "sublayouts"]);
-        for (const border of model.getBorderSet().getBorders()) {
-            set.add(border.getId());
-        }
-        const root = model.getRootRow();
-        if (root) {
-            set.add(root.getId());
-        }
-        return set;
-    });
+    const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set<string>());
 
     const toggle = (id: string) => {
         setExpanded((prev) => {
@@ -188,7 +185,7 @@ const TreeRow = ({ item, depth, selectedId, expanded, onToggle, onSelect }: ITre
             <div
                 className={"attrs-tree-row" + (isSelected ? " selected" : "") + (item.selectable ? " selectable" : "")}
                 style={{ paddingLeft: 6 + depth * 14 }}
-                title={item.node ? item.node.getType() + ": " + item.node.getPath() : undefined}
+                title={item.node ? item.node.getType() + ": " + item.node.getPath() : item.layout ? item.layout.getPath() : undefined}
                 onClick={() => {
                     if (hasChildren) {
                         onToggle(item.id);

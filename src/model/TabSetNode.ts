@@ -306,7 +306,7 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
     }
 
     /** @internal */
-    canDrop(dragNode: Node & IDraggable, x: number, y: number): DropInfo | undefined {
+    canDrop(dragNode: Node & IDraggable, x: number, y: number, excludeCenter: boolean = false): DropInfo | undefined {
         let dropInfo;
         const layout = this.getLayout();
 
@@ -319,7 +319,21 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         } else if (this.contentRect!.contains(x, y)) {
             let dockLocation = DockLocation.CENTER;
             if (this.model.getMaximizedTabset(this.getLayoutId()) === undefined) {
-                dockLocation = DockLocation.getLocation(this.contentRect!, x, y);
+                // resolve the drop from what is actually valid here: center merges are unavailable
+                // when the drag cannot merge (excludeCenter) or the tabset disables drops, and edge
+                // splits are unavailable when the tabset cannot be split - when only one is valid it
+                // covers the whole content
+                const centerValid = !excludeCenter && this.isEnableDrop();
+                const edgesValid = this.isEnableDivide();
+                if (!centerValid && !edgesValid) {
+                    return undefined; // neither a merge nor a split is possible
+                } else if (centerValid && edgesValid) {
+                    dockLocation = DockLocation.getLocation(this.contentRect!, x, y);
+                } else if (centerValid) {
+                    dockLocation = DockLocation.CENTER; // the whole content is a center drop
+                } else {
+                    dockLocation = DockLocation.getLocation(this.contentRect!, x, y, true); // the edges reach the center
+                }
             }
             const outlineRect = dockLocation.getDockRect(this.rect);
             dropInfo = new DropInfo(this, outlineRect, dockLocation, -1, CLASSES.FLEXLAYOUT__OUTLINE_RECT);
@@ -513,8 +527,20 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
                 newRow.setWeight(this.getWeight());
                 newRow.addChild(this);
                 this.setWeight(50);
-                moveNode.setWeight(50);
-                newRow.addChild(moveNode, dockLocation.indexPlus);
+                if (dragNode instanceof RowNode && dragNode.getChildren().length > 0 && dragNode.getOrientation() !== parentRow.getOrientation()) {
+                    // the new row shares the dragged row's orientation, so flatten its children
+                    // into the new row to keep the dragged layout's orientation
+                    const dragChildren = dragNode.getChildren() as (RowNode | TabSetNode)[];
+                    const total = dragChildren.reduce((sum, c) => sum + c.getWeight(), 0);
+                    let insertIndex = dockLocation.indexPlus;
+                    for (const child of dragChildren) {
+                        child.setWeight(total === 0 ? 50 / dragChildren.length : (50 * child.getWeight()) / total);
+                        newRow.addChild(child, insertIndex++);
+                    }
+                } else {
+                    moveNode.setWeight(50);
+                    newRow.addChild(moveNode, dockLocation.indexPlus);
+                }
 
                 parentRow.removeChild(this);
                 parentRow.addChild(newRow, pos);

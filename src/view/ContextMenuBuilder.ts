@@ -48,7 +48,7 @@ function orderedActions(node: Node): NodeContextAction[] {
         return ["pin", "float", "popout", "rename", "close"];
     }
     if (node instanceof TabSetNode) {
-        return ["maximize", "close"];
+        return ["maximize", "float", "popout", "close"];
     }
     if (node instanceof BorderNode) {
         return ["borderType"];
@@ -106,19 +106,21 @@ function isActionEnabled(action: NodeContextAction, node: Node): boolean {
             return node instanceof TabNode && node.getParent() instanceof TabSetNode && node.isEnablePin();
         case "popout":
             // popout positions from the parent's content rect: always available in tabsets; for
-            // border tabs it needs the selected tab's measured rect
-            return (
-                node instanceof TabNode &&
-                !node.isPoppedOut() &&
-                !node.isPinned() &&
-                (node.getParent() instanceof TabSetNode || node.isSelected()) &&
-                node.isAllowedInWindow() &&
-                (node.getLayout().getController()?.isSupportsPopout() ?? true)
-            );
+            // border tabs it needs the selected tab's measured rect. A tabset pops out as a whole.
+            return node instanceof TabSetNode
+                ? node.isAllowedInWindow() && (node.getLayout().getController()?.isSupportsPopout() ?? true)
+                : node instanceof TabNode &&
+                      !node.isPoppedOut() &&
+                      !node.isPinned() &&
+                      (node.getParent() instanceof TabSetNode || node.isSelected()) &&
+                      node.isAllowedInWindow() &&
+                      (node.getLayout().getController()?.isSupportsPopout() ?? true);
         case "float":
             // float positions from the parent's content rect: always available in tabsets; for
-            // border tabs it needs the selected tab's measured rect
-            return node instanceof TabNode && !node.isPoppedOut() && !node.isPinned() && (node.getParent() instanceof TabSetNode || node.isSelected()) && node.isAllowedInWindow();
+            // border tabs it needs the selected tab's measured rect. A tabset floats as a whole.
+            return node instanceof TabSetNode
+                ? node.isAllowedInWindow()
+                : node instanceof TabNode && !node.isPoppedOut() && !node.isPinned() && (node.getParent() instanceof TabSetNode || node.isSelected()) && node.isAllowedInWindow();
         case "maximize":
             return node instanceof TabSetNode && node.canMaximize();
         case "close":
@@ -155,9 +157,9 @@ function labelFor(action: NodeContextAction, node: Node): I18nLabel {
         case "pin":
             return node instanceof TabNode && node.isPinned() ? I18nLabel.Menu_Unpin : I18nLabel.Menu_Pin;
         case "popout":
-            return I18nLabel.Menu_Popout;
+            return node instanceof TabSetNode ? I18nLabel.Menu_Popout_Tabset : I18nLabel.Menu_Popout;
         case "float":
-            return I18nLabel.Menu_Float;
+            return node instanceof TabSetNode ? I18nLabel.Menu_Float_Tabset : I18nLabel.Menu_Float;
         case "maximize":
             return node instanceof TabSetNode && node.isMaximized() ? I18nLabel.Menu_Restore : I18nLabel.Menu_Maximize;
         case "close":
@@ -198,10 +200,10 @@ function performAction(action: NodeContextAction, node: Node, dispatch: (action:
             break;
         }
         case "popout":
-            dispatch(Actions.popoutTab(node.getId(), "window"));
+            dispatch(node instanceof TabSetNode ? Actions.popoutTabset(node.getId(), "window") : Actions.popoutTab(node.getId(), "window"));
             break;
         case "float":
-            dispatch(Actions.popoutTab(node.getId(), "float"));
+            dispatch(node instanceof TabSetNode ? Actions.popoutTabset(node.getId(), "float") : Actions.popoutTab(node.getId(), "float"));
             break;
         case "maximize":
             dispatch(Actions.maximizeToggle(node.getId(), node.getLayoutId()));
@@ -216,11 +218,19 @@ function performAction(action: NodeContextAction, node: Node, dispatch: (action:
             const tab = node as TabNode;
             const parent = tab.getParent() as TabSetNode;
             const index = parent.getChildren().indexOf(tab);
-            deleteTabs(tab, closeableSiblings(tab).filter((t) => parent.getChildren().indexOf(t) > index), dispatch);
+            deleteTabs(
+                tab,
+                closeableSiblings(tab).filter((t) => parent.getChildren().indexOf(t) > index),
+                dispatch,
+            );
             break;
         }
         case "closeOthers":
-            deleteTabs(node as TabNode, closeableSiblings(node as TabNode).filter((t) => t !== node), dispatch);
+            deleteTabs(
+                node as TabNode,
+                closeableSiblings(node as TabNode).filter((t) => t !== node),
+                dispatch,
+            );
             break;
         case "borderType":
             dispatch(Actions.setBorderType(node.getId(), (node as BorderNode).isOverlay() ? "split" : "overlay"));
@@ -305,7 +315,7 @@ export class ContextMenuBuilder {
     /** add a divider between groups. Unnamed dividers get a unique key (e.g. "divider-1") so
      *  several can be added to one menu without React key collisions. */
     addDivider(key?: string): this {
-        const dividerKey = key ?? "divider-" + (++this.dividerId);
+        const dividerKey = key ?? "divider-" + ++this.dividerId;
         this.entries.push({ type: "divider", key: dividerKey });
         return this;
     }

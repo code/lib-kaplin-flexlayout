@@ -60,10 +60,17 @@ describe("getNodeContextActions", () => {
 
     it("offers maximize only when the tabset can be maximized", () => {
         const model = makeModel(twoTabsets([tab("t0", "Alpha")]));
-        expect(getNodeContextActions(model.getNodeById("ts0") as TabSetNode)).toEqual(["maximize", "close"]);
+        expect(getNodeContextActions(model.getNodeById("ts0") as TabSetNode)).toEqual(["maximize", "float", "popout", "close"]);
 
         const single = makeModel({ global: {}, layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha")] }] } });
         expect(getNodeContextActions(single.getNodeById("ts0") as TabSetNode)).toEqual(["close"]);
+    });
+
+    it("omits popout and float for a tabset whose tabs are not popoutable", () => {
+        const model = makeModel({ global: {}, layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha")] }] } });
+        const node = model.getNodeById("ts0") as TabSetNode;
+        expect(getNodeContextActions(node)).not.toContain("popout");
+        expect(getNodeContextActions(node)).not.toContain("float");
     });
 
     it("offers the border type action for borders", () => {
@@ -136,12 +143,29 @@ describe("getNodeContextMenuItems", () => {
         expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: Actions.DELETE_TAB }));
     });
 
-    it("dispatches deleteTabset and maximizeToggle for a tabset", () => {
+    it("labels tabset popout/float items distinctly from the tab items", () => {
+        const model = makeModel(twoTabsets([tab("t0", "Alpha")]));
+        const tabsetItems = itemsOf(getNodeContextMenuItems(model.getNodeById("ts0") as TabSetNode));
+        expect(tabsetItems.find((i) => i.key === "popout")!.label).toBe("Pop out tabset");
+        expect(tabsetItems.find((i) => i.key === "float")!.label).toBe("Float tabset");
+
+        const tabItems = itemsOf(getNodeContextMenuItems(model.getNodeById("t0") as TabNode));
+        expect(tabItems.find((i) => i.key === "popout")!.label).toBe("Popout");
+        expect(tabItems.find((i) => i.key === "float")!.label).toBe("Float");
+    });
+
+    it("dispatches popoutTabset, deleteTabset and maximizeToggle for a tabset", () => {
         const model = makeModel(twoTabsets([tab("t0", "Alpha")]));
         const onAction = vi.fn();
         const node = model.getNodeById("ts0") as TabSetNode;
         const items = itemsOf(getNodeContextMenuItems(node, { onAction }));
-        expect(items.map((i) => i.key)).toEqual(["maximize", "close"]);
+        expect(items.map((i) => i.key)).toEqual(["maximize", "float", "popout", "close"]);
+
+        select(items.find((i) => i.key === "popout")!);
+        expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: Actions.POPOUT_TABSET, data: expect.objectContaining({ type: "window" }) }));
+
+        select(items.find((i) => i.key === "float")!);
+        expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: Actions.POPOUT_TABSET, data: expect.objectContaining({ type: "float" }) }));
 
         select(items.find((i) => i.key === "maximize")!);
         expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ type: Actions.MAXIMIZE_TOGGLE, data: expect.objectContaining({ node: "ts0" }) }));
@@ -294,14 +318,7 @@ describe("ContextMenuBuilder", () => {
             layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha")] }] },
         });
         const node = model.getNodeById("bt0") as TabNode;
-        const entries = new ContextMenuBuilder(node)
-            .add("closeAll")
-            .add("closeOthers")
-            .addDivider()
-            .add("close")
-            .addDivider()
-            .addCustom({ key: "custom", label: "Custom" })
-            .build();
+        const entries = new ContextMenuBuilder(node).add("closeAll").add("closeOthers").addDivider().add("close").addDivider().addCustom({ key: "custom", label: "Custom" }).build();
         expect(entries.map((e) => e.key)).toEqual(["custom"]);
     });
 

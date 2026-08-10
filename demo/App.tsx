@@ -417,7 +417,7 @@ function App() {
             if (node instanceof TabNode) {
                 menu.add("pin").add("float").add("popout").add("rename").addDivider().add("closeAll").add("closeRight").add("closeOthers").addDivider().add("close");
             } else if (node instanceof TabSetNode) {
-                menu.add("maximize").addDivider().add("close");
+                menu.add("maximize").add("float").add("popout").addDivider().add("close");
             } else {
                 menu.add("borderType");
             }
@@ -724,13 +724,13 @@ function App() {
                         Realtime resize
                         <input name="realtimeResize" type="checkbox" checked={realtimeResize} onChange={onRealtimeResizeChange} />
                     </label>
-                    <label style={{ marginLeft: 10 }}>
+                    <label style={{ marginLeft: 10 }} title="Show the structure of the layout, blue for rows, orange for tabsets">
                         Structure
                         <input name="show layout" type="checkbox" checked={showLayoutStructure} onChange={onShowLayoutChange} />
                     </label>
-                    <label style={{ marginLeft: 10 }}>
+                    <label style={{ marginLeft: 10 }} title="Choose which type of component the factory returns for each tab">
                         Render
-                        <select className="toolbar_control" aria-label="Attributes" title="Render" style={{ marginLeft: 5 }} defaultValue="examples" onChange={onRenderModeChange}>
+                        <select className="toolbar_control" aria-label="Attributes" style={{ marginLeft: 5 }} defaultValue="examples" onChange={onRenderModeChange}>
                             <option value="examples">Examples</option>
                             <option value="properties">Properties</option>
                             <option value="blank">Blank</option>
