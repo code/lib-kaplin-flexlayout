@@ -15,6 +15,7 @@ export * from "./model/Node";
 export * from "./model/RowNode";
 export * from "./model/TabSetNode";
 export * from "./model/BorderNode";
+export * from "./model/TabGroupNode";
 export * from "./model/TabNode";
 export * from "./model/Actions";
 export * from "./model/BorderSet";

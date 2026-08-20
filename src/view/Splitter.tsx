@@ -54,6 +54,7 @@ export const Splitter = (props: ISplitterProps) => {
             initalSizes.current = node.getSplitterInitials(index);
         }
 
+        controller.setSplitterDragging(true);
         enablePointerOnIFrames(false, controller.getCurrentDocument()!);
         startDrag(event.currentTarget.ownerDocument, event, onDragMove, onDragEnd, onDragCancel);
 
@@ -96,6 +97,7 @@ export const Splitter = (props: ISplitterProps) => {
         }
         if (delta !== 0) {
             event.preventDefault();
+            controller.setSplitterDragging(true);
             if (node instanceof BorderNode) {
                 // moving towards the border edge shrinks it; bottom/right borders grow the other way
                 const location = node.getLocation();
@@ -107,6 +109,7 @@ export const Splitter = (props: ISplitterProps) => {
                 // an unmeasured row (all zero rects) cannot be split: skip rather than emitting
                 // Infinity/NaN weights from a division by the zero sum
                 if (initials.sum <= 0) {
+                    controller.setSplitterDragging(false);
                     return;
                 }
                 const bounds = node.getSplitterBounds(index);
@@ -114,6 +117,8 @@ export const Splitter = (props: ISplitterProps) => {
                 const weights = node.calculateSplit(index, pos, initials.initialSizes, initials.sum, initials.startPosition);
                 controller.doAction(Actions.adjustWeights(node.getId(), weights));
             }
+            // keep the flag long enough for the ResizeObserver to fire
+            setTimeout(() => controller.setSplitterDragging(false), 300);
         }
     };
 
@@ -123,6 +128,7 @@ export const Splitter = (props: ISplitterProps) => {
             rootdiv.removeChild(outlineDiv.current as Element);
         }
         outlineDiv.current = undefined;
+        setTimeout(() => controller.setSplitterDragging(false), 300);
         enablePointerOnIFrames(true, controller.getCurrentDocument()!);
     };
 
@@ -154,6 +160,8 @@ export const Splitter = (props: ISplitterProps) => {
             }
             outlineDiv.current = undefined;
         }
+        // keep the flag until the ResizeObserver has fired
+        setTimeout(() => controller.setSplitterDragging(false), 300);
         enablePointerOnIFrames(true, controller.getCurrentDocument()!);
     };
 

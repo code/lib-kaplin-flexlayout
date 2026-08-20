@@ -463,8 +463,9 @@ export class RowNode extends Node implements IDropTarget {
                 node.addChild(dragNode);
             }
         } else {
+            // a tab or a group docked to a row is wrapped in a new tabset
             const callback = this.model.getOnCreateTabSet();
-            const json: ITabAttributes = callback ? callback(dragNode as TabNode) : {};
+            const json: ITabAttributes = callback && dragNode instanceof TabNode ? callback(dragNode) : {};
             node = new TabSetNode(this.model, json);
             node.addChild(dragNode);
         }

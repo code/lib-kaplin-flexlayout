@@ -25,7 +25,7 @@ const checkA11y = async (page: Page, exclude: string[] = []) => {
 
 // the demo tab contents are not part of the library: exclude third party widgets that the
 // library cannot fix (the flexlayout tab panel elements themselves are still scanned)
-const thirdParty = [".ag-root-wrapper", ".monaco-editor", ".xterm", "canvas", ".ol-viewport"];
+const thirdParty = [".ag-root-wrapper", ".monaco-editor", ".xterm", "canvas", ".ol-viewport", ".MuiDataGrid-root"];
 
 // the scans run against the aria theme, the accessibility reference theme whose colors are
 // kept WCAG AA compliant (see aria_theme in style/_themes.scss)

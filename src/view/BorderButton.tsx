@@ -3,6 +3,7 @@ import { I18nLabel } from "./I18nLabel";
 import { Actions } from "../model/Actions";
 import { TabNode } from "../model/TabNode";
 import { BorderNode } from "../model/BorderNode";
+import { TabGroupNode } from "../model/TabGroupNode";
 import { IIcons } from "../view/layout/LayoutTypes";
 import { LayoutController } from "../view/layout/LayoutInternal";
 import { ICloseType } from "../model/ICloseType";
@@ -128,8 +129,8 @@ export const BorderButton = (props: IBorderButtonProps) => {
         if (selected) {
             return true;
         }
-        const parent = tabNode.getParent();
-        return parent instanceof BorderNode && parent.getSelected() === -1 && parent.getChildren()[0] === tabNode;
+        const tabset = tabNode.getTabContainer();
+        return tabset instanceof BorderNode && tabset.getSelected() === -1 && tabset.getTabNodes()[0] === tabNode;
     };
 
     const editing = controller.getEditingTab() === tabNode;
@@ -190,6 +191,14 @@ export const BorderButton = (props: IBorderButtonProps) => {
         classNames += " " + cm(CLASSES.FLEXLAYOUT__BORDER_BUTTON__UNSELECTED);
     }
 
+    const groupNode = tabNode.getParent() instanceof TabGroupNode ? (tabNode.getParent() as TabGroupNode) : undefined;
+    if (groupNode !== undefined) {
+        classNames += " " + cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_GROUPED);
+        if (tabNode.getModel().getTabGroupType() === "underline") {
+            classNames += " " + cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_GROUPED_UNDERLINE);
+        }
+    }
+
     if (tabNode.getClassName() !== undefined) {
         classNames += " " + tabNode.getClassName();
     }
@@ -246,6 +255,11 @@ export const BorderButton = (props: IBorderButtonProps) => {
     // aria-keyshortcuts from the resolved keymap
     const ariaKeyshortcuts = [toAriaKeyShortcuts(keyMap.focusTabToggle), tabNode.isCloseable() ? toAriaKeyShortcuts(keyMap.closeTab) : undefined].filter(Boolean).join(" ") || undefined;
 
+    const style: React.CSSProperties = {};
+    if (groupNode !== undefined) {
+        (style as Record<string, string>)["--flexlayout-group-color"] = groupNode.getColor();
+    }
+
     return (
         <div
             ref={setSelfRef}
@@ -261,6 +275,7 @@ export const BorderButton = (props: IBorderButtonProps) => {
             onKeyDown={onKeyDown}
             data-layout-path={path}
             className={classNames}
+            style={style}
             onClick={onClick}
             onAuxClick={onAuxMouseClick}
             onContextMenu={onContextMenu}

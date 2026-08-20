@@ -92,6 +92,17 @@ export enum CLASSES {
     FLEXLAYOUT__TABSET_TABBAR_INNER_ = "flexlayout__tabset_tabbar_inner_",
     FLEXLAYOUT__TABSET_LEADING = "flexlayout__tabset_leading",
 
+    FLEXLAYOUT__GROUP_PILL = "flexlayout__group_pill",
+    FLEXLAYOUT__GROUP_PILL_COLLAPSED = "flexlayout__group_pill_collapsed",
+    FLEXLAYOUT__GROUP_PILL_UNDERLINE = "flexlayout__group_pill_underline",
+    FLEXLAYOUT__GROUP_PILL_NAME = "flexlayout__group_pill_name",
+    FLEXLAYOUT__GROUP_PILL_COUNT = "flexlayout__group_pill_count",
+    FLEXLAYOUT__GROUP_END_MARKER = "flexlayout__group_end_marker",
+    FLEXLAYOUT__GROUP_RENAME = "flexlayout__group_rename",
+    FLEXLAYOUT__GROUP_RENAME_INPUT = "flexlayout__group_rename_input",
+    FLEXLAYOUT__TAB_BUTTON_GROUPED = "flexlayout__tab_button_grouped",
+    FLEXLAYOUT__TAB_BUTTON_GROUPED_UNDERLINE = "flexlayout__tab_button_grouped_underline",
+
     FLEXLAYOUT__TABSET_TABBAR_INNER_TAB_CONTAINER = "flexlayout__tabset_tabbar_inner_tab_container",
     FLEXLAYOUT__TABSET_TABBAR_INNER_TAB_CONTAINER_ = "flexlayout__tabset_tabbar_inner_tab_container_",
 
@@ -124,6 +135,7 @@ export enum CLASSES {
     FLEXLAYOUT__POPUP_MENU_ITEM = "flexlayout__popup_menu_item",
     FLEXLAYOUT__POPUP_MENU_ITEM__SELECTED = "flexlayout__popup_menu_item--selected",
     FLEXLAYOUT__POPUP_MENU_ITEM__DISABLED = "flexlayout__popup_menu_item--disabled",
+    FLEXLAYOUT__POPUP_MENU_ITEM_GROUPED = "flexlayout__popup_menu_item_grouped",
     FLEXLAYOUT__POPUP_MENU_DIVIDER = "flexlayout__popup_menu_divider",
     FLEXLAYOUT__POPUP_MENU = "flexlayout__popup_menu",
 

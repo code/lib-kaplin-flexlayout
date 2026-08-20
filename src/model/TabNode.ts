@@ -2,6 +2,7 @@ import { Attribute } from "./Attributes";
 import { Attributes } from "./Attributes";
 import { Rect } from "./Rect";
 import { BorderNode } from "./BorderNode";
+import { TabGroupNode } from "./TabGroupNode";
 import { IDraggable } from "./IDraggable";
 import { IJsonTabNode, ITabAttributes } from "./IJsonModel";
 import { Model } from "./Model";
@@ -100,8 +101,29 @@ export class TabNode extends Node implements IDraggable {
         return this.getLayoutId() !== Model.MAIN_LAYOUT_ID;
     }
 
+    /** @internal the tabset (or border) that contains this tab, walking up through a group if needed */
+    getTabContainer() {
+        const parent = this.getParent();
+        if (parent instanceof TabGroupNode) {
+            return parent.getTabContainer();
+        }
+        return parent as TabSetNode | BorderNode;
+    }
+
+    /** whether this tab's direct parent is a {@link TabSetNode} or a {@link TabGroupNode} inside one */
+    isInsideTabSet() {
+        const parent = this.getParent();
+        return parent instanceof TabSetNode || (parent instanceof TabGroupNode && parent.getTabContainer() instanceof TabSetNode);
+    }
+
+    /** whether this tab's direct parent is a {@link BorderNode} or a {@link TabGroupNode} inside one */
+    isInsideBorder() {
+        const parent = this.getParent();
+        return parent instanceof BorderNode || (parent instanceof TabGroupNode && parent.getTabContainer() instanceof BorderNode);
+    }
+
     isSelected() {
-        return (this.getParent() as TabSetNode | BorderNode).getSelectedNode() === this;
+        return this.getTabContainer().getSelectedNode() === this;
     }
 
     isPinned() {
@@ -351,7 +373,7 @@ export class TabNode extends Node implements IDraggable {
 
     /** @internal */
     delete() {
-        (this.parent as TabSetNode | BorderNode).remove(this);
+        (this.parent as TabSetNode | BorderNode | TabGroupNode).remove(this);
         this.deleteSubLayout();
         this.fireEvent("close", {});
     }

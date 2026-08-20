@@ -8,11 +8,13 @@ import { canDockToLayout } from "../view/Utils";
 import { BorderNode } from "./BorderNode";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
-import { IJsonTabSetNode, ITabSetAttributes } from "./IJsonModel";
+import { IJsonTabGroupNode, IJsonTabSetNode, ITabSetAttributes } from "./IJsonModel";
 import { ModelLayout } from "./ModelLayout";
+import { TabGroupNode } from "./TabGroupNode";
 import { Model } from "./Model";
 import { Node } from "./Node";
 import { RowNode } from "./RowNode";
+import { findStripDrop } from "./StripDrop";
 import { TabNode } from "./TabNode";
 import { adjustSelectedIndex, adjustSelectedIndexAfterInsert } from "./Utils";
 
@@ -25,14 +27,19 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
 
         if (json.children != null) {
             for (const jsonChild of json.children) {
-                const child = TabNode.fromJson(jsonChild, model);
-                newLayoutNode.addChild(child);
+                if (jsonChild.type === TabGroupNode.TYPE) {
+                    const child = TabGroupNode.fromJson(jsonChild as IJsonTabGroupNode, model);
+                    newLayoutNode.addChild(child);
+                } else {
+                    const child = TabNode.fromJson(jsonChild, model);
+                    newLayoutNode.addChild(child);
+                }
             }
         }
         if (newLayoutNode.children.length === 0) {
             newLayoutNode.setSelected(-1);
-        } else if (newLayoutNode.getSelected() >= newLayoutNode.children.length) {
-            newLayoutNode.setSelected(newLayoutNode.children.length - 1);
+        } else if (newLayoutNode.getSelected() >= newLayoutNode.getTabNodes().length) {
+            newLayoutNode.setSelected(newLayoutNode.getTabNodes().length - 1);
         }
 
         if (json.maximized && json.maximized === true) {
@@ -82,12 +89,46 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         return -1;
     }
 
+    /**
+     * Returns the tabs of this tabset in strip order. Tabs inside a closed (collapsed) group are
+     * not included. The `selected` index is an index into this list.
+     */
+    getTabNodes(): TabNode[] {
+        const tabs: TabNode[] = [];
+        for (const child of this.children) {
+            if (child instanceof TabNode) {
+                tabs.push(child);
+            } else if (child instanceof TabGroupNode && child.isOpened()) {
+                tabs.push(...(child.getChildren() as TabNode[]));
+            }
+        }
+        return tabs;
+    }
+
+    /** @internal number of tabs in strip order (used for single-tab stretch / overflow logic) */
+    getVisibleTabCount() {
+        return this.getTabNodes().length;
+    }
+
     getSelectedNode() {
         const selected = this.getSelected();
         if (selected !== -1) {
-            return this.children[selected];
+            return this.getTabNodes()[selected];
         }
         return undefined;
+    }
+
+    /** @internal clamps the flat selected index so it always refers to a visible tab */
+    repairSelected() {
+        const tabs = this.getTabNodes();
+        if (tabs.length === 0) {
+            this.setSelected(-1);
+        } else {
+            const selected = this.getSelected();
+            if (selected !== -1 && selected >= tabs.length) {
+                this.setSelected(tabs.length - 1);
+            }
+        }
     }
 
     /** @internal */
@@ -95,10 +136,10 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         // number of leading contiguous pinned tabs
         let n = 0;
         for (const child of this.children) {
-            if ((child as TabNode).isPinned()) {
+            if (child instanceof TabNode && (child as TabNode).isPinned()) {
                 n++;
             } else {
-                break;
+                break; // groups are never pinned and terminate the pinned run
             }
         }
         return n;
@@ -245,12 +286,11 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         this.calculatedMinWidth = this.getAttrMinWidth();
         this.calculatedMaxHeight = this.getAttrMaxHeight();
         this.calculatedMaxWidth = this.getAttrMaxWidth();
-        for (const child of this.children) {
-            const c = child as TabNode;
-            this.calculatedMinWidth = Math.max(this.calculatedMinWidth, c.getMinWidth());
-            this.calculatedMinHeight = Math.max(this.calculatedMinHeight, c.getMinHeight());
-            this.calculatedMaxWidth = Math.min(this.calculatedMaxWidth, c.getMaxWidth());
-            this.calculatedMaxHeight = Math.min(this.calculatedMaxHeight, c.getMaxHeight());
+        for (const tab of this.getTabNodes()) {
+            this.calculatedMinWidth = Math.max(this.calculatedMinWidth, tab.getMinWidth());
+            this.calculatedMinHeight = Math.max(this.calculatedMinHeight, tab.getMinHeight());
+            this.calculatedMaxWidth = Math.min(this.calculatedMaxWidth, tab.getMaxWidth());
+            this.calculatedMaxHeight = Math.min(this.calculatedMaxHeight, tab.getMaxHeight());
         }
 
         this.calculatedMinHeight += this.tabStripRect.height;
@@ -338,45 +378,11 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
             const outlineRect = dockLocation.getDockRect(this.rect);
             dropInfo = new DropInfo(this, outlineRect, dockLocation, -1, CLASSES.FLEXLAYOUT__OUTLINE_RECT);
         } else if (this.tabStripRect != null && this.tabStripRect.contains(x, y)) {
-            let r: Rect;
-            let yy: number;
-            let h: number;
-            if (this.children.length === 0) {
-                r = this.tabStripRect.clone();
-                yy = r.y + 3;
-                h = r.height - 4;
-                r.width = 2;
-            } else {
-                let child = this.children[0] as TabNode;
-                r = child.getTabRect()!;
-                yy = r.y;
-                h = r.height;
-                let p = this.tabStripRect.x;
-                for (let i = 0; i < this.children.length; i++) {
-                    child = this.children[i] as TabNode;
-                    r = child.getTabRect()!;
-                    if (r.y !== yy) {
-                        yy = r.y;
-                        p = this.tabStripRect.x;
-                    }
-                    const childCenter = r.x + r.width / 2;
-                    if (p <= x && x < childCenter && r.y < y && y < r.getBottom()) {
-                        const dockLocation = DockLocation.CENTER;
-                        const outlineRect = new Rect(r.x - 2, r.y, 3, r.height);
-                        if (this.rect.x < r.x && r.x < this.rect.getRight()) {
-                            dropInfo = new DropInfo(this, outlineRect, dockLocation, i, CLASSES.FLEXLAYOUT__OUTLINE_RECT);
-                            break;
-                        } else {
-                            return undefined;
-                        }
-                    }
-                    p = childCenter;
-                }
-            }
-            if (dropInfo == null && r.getRight() < this.rect!.getRight()) {
-                const dockLocation = DockLocation.CENTER;
-                const outlineRect = new Rect(r.getRight() - 2, yy, 3, h);
-                dropInfo = new DropInfo(this, outlineRect, dockLocation, this.children.length, CLASSES.FLEXLAYOUT__OUTLINE_RECT);
+            dropInfo = findStripDrop(this, this.tabStripRect, this.children as (TabNode | TabGroupNode)[], dragNode, x, y, false, true);
+            // a drop resolved into a group (its trailing line space) is already a complete drop; the
+            // group ran its own canDockInto
+            if (dropInfo !== undefined && dropInfo.node !== this) {
+                return dropInfo;
             }
         }
 
@@ -387,14 +393,16 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
             const pinnedDrag = dragNode instanceof TabNode && dragNode.isPinned();
             const clamped = pinnedDrag ? Math.min(dropInfo.index, run) : Math.max(dropInfo.index, run);
             if (clamped !== dropInfo.index) {
-                // reposition the outline to the boundary (using the boundary child's own tab rect
-                // keeps the outline on the correct row in tab wrap mode)
+                // reposition the outline to the boundary (using the boundary child's own rect keeps
+                // the outline on the correct row in tab wrap mode; a group child uses its pill rect)
                 let r: Rect;
                 if (clamped < this.children.length) {
-                    const cr = (this.children[clamped] as TabNode).getTabRect()!;
+                    const bc = this.children[clamped];
+                    const cr = bc instanceof TabGroupNode ? bc.getPillRect() : (bc as TabNode).getTabRect()!;
                     r = new Rect(cr.x - 2, cr.y, 3, cr.height);
                 } else {
-                    const cr = (this.children[this.children.length - 1] as TabNode).getTabRect()!;
+                    const bc = this.children[this.children.length - 1];
+                    const cr = bc instanceof TabGroupNode ? bc.getPillRect() : (bc as TabNode).getTabRect()!;
                     r = new Rect(cr.getRight() - 2, cr.y, 3, cr.height);
                 }
                 dropInfo = new DropInfo(this, r, DockLocation.CENTER, clamped, CLASSES.FLEXLAYOUT__OUTLINE_RECT);
@@ -434,20 +442,30 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
             return; // dock back to itself
         }
 
-        const dragParent = dragNode.getParent() as BorderNode | TabSetNode | RowNode;
+        const selectedTab = this.getSelectedNode();
+        const dragParent = dragNode.getParent() as BorderNode | TabSetNode | RowNode | TabGroupNode | undefined;
         let fromIndex = 0;
         if (dragParent !== undefined) {
             fromIndex = dragParent.removeChild(dragNode);
-            // if selected node in border is being docked into tabset then deselect border tabs
-            if (dragParent instanceof BorderNode && dragParent.getSelected() === fromIndex) {
+            if (dragNode instanceof TabGroupNode) {
+                // a whole group left its container: repair the container's flat selection
+                (dragParent as TabSetNode | BorderNode).repairSelected();
+            } else if (dragParent instanceof BorderNode && dragParent.getSelected() === fromIndex) {
+                // if selected node in border is being docked into tabset then deselect border tabs
                 dragParent.setSelected(-1);
+            } else if (dragParent instanceof TabGroupNode) {
+                // a tab leaving a group: repair the group's selection and delete the empty group
+                dragParent.getTabContainer().repairSelected();
+                if (dragParent.getChildren().length === 0) {
+                    dragParent.getTabContainer().removeChild(dragParent);
+                }
             } else {
                 adjustSelectedIndex(dragParent, fromIndex);
             }
         }
 
-        // if dropping a tab back to same tabset and moving to forward position then reduce insertion index
-        if (dragNode instanceof TabNode && dragParent === this && fromIndex < index && index > 0) {
+        // if dropping a tab/group back to the same tabset and moving to a forward position then reduce insertion index
+        if ((dragNode instanceof TabNode || dragNode instanceof TabGroupNode) && dragParent === this && fromIndex < index && index > 0) {
             index--;
         }
 
@@ -463,15 +481,35 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
             if (dragNode instanceof TabNode) {
                 insertPos = dragNode.isPinned() ? Math.min(insertPos, pinnedRun) : Math.max(insertPos, pinnedRun);
             } else {
-                insertPos = Math.max(insertPos, pinnedRun); // tabset/row merges insert after the pinned group
+                insertPos = Math.max(insertPos, pinnedRun); // tabset/row/group moves insert after the pinned group
             }
 
             if (dragNode instanceof TabNode) {
                 this.addChild(dragNode, insertPos);
                 if (select || (select !== false && this.isAutoSelectTab())) {
-                    this.setSelected(insertPos);
+                    this.setSelected(this.getTabNodes().indexOf(dragNode));
+                } else if (selectedTab !== undefined) {
+                    const newIndex = this.getTabNodes().indexOf(selectedTab);
+                    if (newIndex === -1) {
+                        this.repairSelected(); // selected tab moved into a closed group
+                    } else {
+                        this.setSelected(newIndex);
+                    }
                 } else {
-                    adjustSelectedIndexAfterInsert(this, insertPos);
+                    this.repairSelected();
+                }
+            } else if (dragNode instanceof TabGroupNode) {
+                // move the whole group (with its tabs) into this tabset as a unit
+                this.addChild(dragNode, insertPos);
+                if (selectedTab !== undefined) {
+                    const newIndex = this.getTabNodes().indexOf(selectedTab);
+                    if (newIndex === -1) {
+                        this.repairSelected();
+                    } else {
+                        this.setSelected(newIndex);
+                    }
+                } else {
+                    this.repairSelected();
                 }
             } else if (dragNode instanceof RowNode) {
                 const firstInsertPos = insertPos;
@@ -496,11 +534,15 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
             }
             this.model.setActiveTabset(this, this.parent!.getLayoutId());
         } else {
-            let moveNode = dragNode as TabSetNode | RowNode | TabNode;
+            let moveNode: TabSetNode | RowNode | TabNode | TabGroupNode;
             if (dragNode instanceof TabNode) {
                 // create new tabset parent
                 const callback = this.model.getOnCreateTabSet();
                 moveNode = new TabSetNode(this.model, callback ? callback(dragNode as TabNode) : {});
+                moveNode.addChild(dragNode);
+            } else if (dragNode instanceof TabGroupNode) {
+                // a group docked to an edge is wrapped in a new tabset
+                moveNode = new TabSetNode(this.model, {});
                 moveNode.addChild(dragNode);
             } else if (dragNode instanceof RowNode) {
                 const parent = this.getParent()! as RowNode;
@@ -509,6 +551,8 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
                     const node = new RowNode(this.model, {});
                     node.addChild(dragNode);
                     moveNode = node;
+                } else {
+                    moveNode = dragNode;
                 }
             } else {
                 moveNode = dragNode as TabSetNode;

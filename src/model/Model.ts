@@ -8,10 +8,11 @@ import { Actions } from "./Actions";
 import { GroupAction } from "./Actions";
 import { BorderNode } from "./BorderNode";
 import { BorderSet } from "./BorderSet";
+import { TabGroupNode } from "./TabGroupNode";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
 import { ICloseType } from "./ICloseType";
-import { IBorderTabDirection, IGlobalAttributes, IJsonModel, IJsonSubLayout, IJsonRowNode, ITabSetAttributes } from "./IJsonModel";
+import { IBorderTabDirection, IGlobalAttributes, IJsonTabGroupNode, IJsonModel, IJsonSubLayout, IJsonRowNode, ITabGroupType, ITabSetAttributes } from "./IJsonModel";
 import { Node } from "./Node";
 import { RowNode } from "./RowNode";
 import { TabNode } from "./TabNode";
@@ -63,6 +64,7 @@ export class Model {
         Model.attributeDefinitions.pairAttributes("TabSetNode", TabSetNode.getAttributeDefinitions());
         Model.attributeDefinitions.pairAttributes("TabNode", TabNode.getAttributeDefinitions());
         Model.attributeDefinitions.pairAttributes("BorderNode", BorderNode.getAttributeDefinitions());
+        Model.attributeDefinitions.pairAttributes("TabGroupNode", TabGroupNode.getAttributeDefinitions());
     }
 
     /** @internal */
@@ -141,7 +143,7 @@ export class Model {
             case Actions.ADD_TAB: {
                 const newNode = new TabNode(this, action.data.json, true);
                 const toNode = this.idMap.get(action.data.toNode) as Node & IDraggable;
-                if (toNode instanceof TabSetNode || toNode instanceof BorderNode || toNode instanceof RowNode) {
+                if (toNode instanceof TabSetNode || toNode instanceof BorderNode || toNode instanceof RowNode || toNode instanceof TabGroupNode) {
                     toNode.drop(newNode, DockLocation.getByName(action.data.location), action.data.index, action.data.select);
                     returnVal = newNode;
                 }
@@ -150,13 +152,13 @@ export class Model {
             case Actions.MOVE_NODE: {
                 const fromNode = this.idMap.get(action.data.fromNode) as Node & IDraggable;
 
-                if (fromNode instanceof TabNode || fromNode instanceof TabSetNode || fromNode instanceof RowNode) {
+                if (fromNode instanceof TabNode || fromNode instanceof TabSetNode || fromNode instanceof RowNode || fromNode instanceof TabGroupNode) {
                     if (fromNode === this.getMaximizedTabset(fromNode.getLayoutId())) {
                         const fromLayout = this.layouts.get(fromNode.getLayoutId())!;
                         fromLayout.setMaximizedTabSet(undefined);
                     }
                     const toNode = this.idMap.get(action.data.toNode) as Node & IDropTarget;
-                    if (toNode instanceof TabSetNode || toNode instanceof BorderNode || toNode instanceof RowNode) {
+                    if (toNode instanceof TabSetNode || toNode instanceof BorderNode || toNode instanceof RowNode || toNode instanceof TabGroupNode) {
                         toNode.drop(fromNode, DockLocation.getByName(action.data.location), action.data.index, action.data.select);
                     }
                 }
@@ -219,7 +221,7 @@ export class Model {
                 if (node instanceof TabNode) {
                     const layoutId = randomUUID();
 
-                    const parent = node.getParent() as TabSetNode | BorderNode;
+                    const parent = node.getTabContainer();
                     const popoutRect = parent.getContentRect();
                     const oldLayout = node.getLayout()!;
                     const type = action.data.type || "window";
@@ -242,8 +244,8 @@ export class Model {
             case Actions.SELECT_TAB: {
                 const tabNode = this.idMap.get(action.data.tabNode);
                 if (tabNode instanceof TabNode) {
-                    const parent = tabNode.getParent() as Node;
-                    const pos = parent.getChildren().indexOf(tabNode);
+                    const parent = tabNode.getTabContainer();
+                    const pos = parent.getTabNodes().indexOf(tabNode);
 
                     if (parent instanceof BorderNode) {
                         if (parent.getSelected() === pos) {
@@ -324,7 +326,127 @@ export class Model {
                 const node = this.idMap.get(action.data.node);
                 if (node !== undefined) {
                     // ignore unknown node ids rather than throwing
+                    const wasOpened = node instanceof TabGroupNode && node.isOpened();
+                    // capture the selected tab and group flat-range before the toggle
+                    let selectedTab: TabNode | undefined;
+                    let groupStart = -1;
+                    if (node instanceof TabGroupNode) {
+                        const tabset = node.getTabContainer();
+                        selectedTab = tabset.getSelectedNode();
+                        if (wasOpened) {
+                            const groupTabs = node.getChildren() as TabNode[];
+                            if (groupTabs.length > 0) {
+                                groupStart = tabset.getTabNodes().indexOf(groupTabs[0]);
+                            }
+                        }
+                    }
                     node.updateAttrs(action.data.json);
+                    if (node instanceof TabGroupNode && wasOpened !== node.isOpened()) {
+                        // collapsing/expanding a group changes the set of visible tabs;
+                        // keep the same tab selected when possible, otherwise move to the
+                        // next visible tab after the collapsed group (or previous if none)
+                        const tabset = node.getTabContainer();
+                        const tabs = tabset.getTabNodes();
+                        if (selectedTab !== undefined) {
+                            const idx = tabs.indexOf(selectedTab);
+                            if (idx !== -1) {
+                                tabset.setSelected(idx);
+                            } else if (wasOpened && groupStart !== -1) {
+                                // the selected tab was inside the collapsed group
+                                if (groupStart < tabs.length) {
+                                    tabset.setSelected(groupStart);
+                                } else if (groupStart > 0) {
+                                    tabset.setSelected(groupStart - 1);
+                                } else {
+                                    tabset.setSelected(-1);
+                                }
+                            }
+                        } else if (!wasOpened && node.getChildren().length > 0 && tabset instanceof TabSetNode) {
+                            // expanding a group into an empty tabset selection activates its first
+                            // tab, so the content area isn't left showing nothing (borders keep
+                            // their no-selection state: they only show a panel when selected)
+                            const firstGroupTab = node.getChildren()[0] as TabNode;
+                            tabset.setSelected(tabset.getTabNodes().indexOf(firstGroupTab));
+                        } else {
+                            tabset.repairSelected();
+                        }
+                    }
+                }
+                break;
+            }
+
+            case Actions.ADD_TAB_TO_NEW_GROUP: {
+                const tab = this.idMap.get(action.data.node);
+                if (tab instanceof TabNode && !tab.isPinned()) {
+                    const tabset = tab.getTabContainer();
+                    if (tabset instanceof TabSetNode || tabset instanceof BorderNode) {
+                        const parent = tab.getParent() as TabSetNode | BorderNode | TabGroupNode;
+                        let insertPos;
+                        if (parent instanceof TabGroupNode) {
+                            // a grouped tab leaves its group: put the new group right after it
+                            insertPos = tabset.getChildren().indexOf(parent) + 1;
+                            parent.removeChild(tab);
+                            if (parent.getChildren().length === 0) {
+                                tabset.removeChild(parent);
+                                insertPos--;
+                            }
+                        } else {
+                            insertPos = tabset.getChildren().indexOf(tab);
+                            if (insertPos === -1) {
+                                insertPos = tabset.getChildren().length;
+                            }
+                            tabset.removeChild(tab);
+                        }
+                        const json: IJsonTabGroupNode = {
+                            name: action.data.name,
+                            color: action.data.color,
+                        };
+                        const group = new TabGroupNode(this, json);
+                        tabset.addChild(group, insertPos);
+                        group.addChild(tab);
+                        const flatIndex = tabset.getTabNodes().indexOf(tab);
+                        tabset.setSelected(flatIndex);
+                        if (tabset instanceof TabSetNode) {
+                            this.setActiveTabset(tabset, tabset.getLayoutId());
+                        }
+                        returnVal = group.getId();
+                    }
+                }
+                break;
+            }
+
+            case Actions.UNGROUP: {
+                const group = this.idMap.get(action.data.node);
+                if (group instanceof TabGroupNode) {
+                    const tabset = group.getTabContainer();
+                    const index = tabset.getChildren().indexOf(group);
+                    const children = [...group.getChildren()];
+                    tabset.removeChild(group);
+                    for (let i = 0; i < children.length; i++) {
+                        tabset.addChild(children[i], index + i);
+                    }
+                    tabset.repairSelected();
+                    if (tabset instanceof TabSetNode) {
+                        this.setActiveTabset(tabset, tabset.getLayoutId());
+                    }
+                }
+                break;
+            }
+
+            case Actions.REMOVE_TAB_FROM_GROUP: {
+                const tab = this.idMap.get(action.data.node);
+                if (tab instanceof TabNode && tab.getParent() instanceof TabGroupNode) {
+                    const group = tab.getParent() as TabGroupNode;
+                    const tabset = group.getTabContainer();
+                    const groupIndex = tabset.getChildren().indexOf(group);
+                    group.remove(tab);
+                    // insert the tab where the group was (if group was deleted) or right after it
+                    const insertPos = tabset.getChildren().indexOf(group);
+                    tabset.addChild(tab, insertPos === -1 ? groupIndex : insertPos + 1);
+                    tabset.setSelected(tabset.getTabNodes().indexOf(tab));
+                    if (tabset instanceof TabSetNode) {
+                        this.setActiveTabset(tabset, tabset.getLayoutId());
+                    }
                 }
                 break;
             }
@@ -348,22 +470,32 @@ export class Model {
 
             case Actions.SET_TAB_PINNED: {
                 const node = this.idMap.get(action.data.node);
-                if (node instanceof TabNode && node.getParent() instanceof TabSetNode) {
-                    const parent = node.getParent() as TabSetNode;
+                if (node instanceof TabNode && (node.getParent() instanceof TabSetNode || node.getParent() instanceof TabGroupNode)) {
+                    const tabset = node.getTabContainer() as TabSetNode;
                     const pinned = action.data.pinned === true;
                     // a tab with enablePin disabled cannot be pinned via the action (unpinning is always allowed)
                     if (pinned && !node.isEnablePin()) {
                         break;
                     }
                     if (node.isPinned() !== pinned) {
-                        const selectedNode = parent.getSelectedNode(); // restore by identity after the move
+                        const selectedNode = tabset.getSelectedNode(); // restore by identity after the move
                         node.setPinned(pinned);
-                        parent.removeChild(node);
+                        // if the tab is inside a group, remove it from the group first
+                        const groupParent = node.getParent() instanceof TabGroupNode ? (node.getParent() as TabGroupNode) : undefined;
+                        if (groupParent !== undefined) {
+                            groupParent.removeChild(node);
+                            if (groupParent.getChildren().length === 0) {
+                                tabset.removeChild(groupParent);
+                            }
+                            tabset.repairSelected();
+                        } else {
+                            tabset.removeChild(node);
+                        }
                         // with the node removed, the leading pinned run length is both the "end of pinned
                         // group" (pin) and the "start of unpinned group" (unpin) insertion point
-                        parent.addChild(node, parent.getPinnedRunLength());
+                        tabset.addChild(node, tabset.getPinnedRunLength());
                         if (selectedNode !== undefined) {
-                            parent.setSelected(parent.getChildren().indexOf(selectedNode));
+                            tabset.setSelected(tabset.getTabNodes().indexOf(selectedNode));
                         }
                     }
                 }
@@ -513,6 +645,10 @@ export class Model {
 
     getBorderLeftTabDirection() {
         return this.attributes.borderLeftTabDirection as IBorderTabDirection;
+    }
+
+    getTabGroupType() {
+        return this.attributes.tabGroupType as ITabGroupType;
     }
 
     /**
@@ -840,6 +976,7 @@ export class Model {
         sb.push(TabSetNode.getAttributeDefinitions().toTypescriptInterface("TabSet", Model.attributeDefinitions));
         sb.push(TabNode.getAttributeDefinitions().toTypescriptInterface("Tab", Model.attributeDefinitions));
         sb.push(BorderNode.getAttributeDefinitions().toTypescriptInterface("Border", Model.attributeDefinitions));
+        sb.push(TabGroupNode.getAttributeDefinitions().toTypescriptInterface("TabGroup", Model.attributeDefinitions));
         sb.push(ModelLayout.getAttributeDefinitions().toTypescriptInterface("SubLayout", undefined));
         return sb.join("\n");
     }
@@ -908,6 +1045,16 @@ export class Model {
         attributeDefinitions.add("tabSetMaxWidth", DefaultMax).setType(Attribute.NUMBER);
         attributeDefinitions.add("tabSetMaxHeight", DefaultMax).setType(Attribute.NUMBER);
         attributeDefinitions.add("tabSetEnableTabScrollbar", false).setType(Attribute.BOOLEAN);
+
+        // tab group
+        attributeDefinitions
+            .add("tabGroupType", "splitpill")
+            .setType("ITabGroupType")
+            .setValues([
+                { value: "splitpill", label: "Split Pill" },
+                { value: "underline", label: "Underline" },
+            ])
+            .setDescription(`how a tab group is visually indicated: 'splitpill' encloses the group's tabs in a pill (left/right caps), 'underline' draws a colored underline under each grouped tab`);
 
         // border
         attributeDefinitions.add("borderSize", 200).setType(Attribute.NUMBER);

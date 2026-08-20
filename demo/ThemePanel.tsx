@@ -69,6 +69,8 @@ const COLOR_VARS: IColorDef[] = [
     { group: "Misc", label: "Toolbar button hover", varName: "--color-toolbar-button-hover" },
     { group: "Misc", label: "Edge marker", varName: "--color-edge-marker" },
     { group: "Misc", label: "Edge icon", varName: "--color-edge-icon" },
+    { group: "Tab Group", label: "Pill text", varName: "--color-tabgroup-pill-text" },
+    { group: "Tab Group", label: "Default color", varName: "--color-tabgroup-default" },
 ];
 
 const METRIC_VARS: IMetricDef[] = [
@@ -76,6 +78,7 @@ const METRIC_VARS: IMetricDef[] = [
     { label: "Splitter active size", varName: "--splitter-active-size", min: 1, max: 20, step: 1, unit: "px" },
     { label: "Tab button radius", varName: "--tab-button-radius", min: 0, max: 30, step: 1, unit: "px" },
     { label: "Border button radius", varName: "--border-button-radius", min: 0, max: 30, step: 1, unit: "px" },
+    { label: "Tabgroup pill radius", varName: "--tabgroup-pill-radius", min: 0, max: 30, step: 1, unit: "px" },
     { label: "Mini scroll indicator size", varName: "--size-mini-scroll-indicator", min: 2, max: 10, step: 1, unit: "px" },
 ];
 

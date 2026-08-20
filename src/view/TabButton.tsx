@@ -3,6 +3,7 @@ import { I18nLabel } from "./I18nLabel";
 import { Actions } from "../model/Actions";
 import { TabNode } from "../model/TabNode";
 import { TabSetNode } from "../model/TabSetNode";
+import { TabGroupNode } from "../model/TabGroupNode";
 import { LayoutController } from "./layout/LayoutInternal";
 import { ICloseType } from "../model/ICloseType";
 import { CLASSES } from "./CSSClassNames";
@@ -187,9 +188,10 @@ export const TabButton = (props: ITabButtonProps) => {
     };
 
     const cm = controller.getClassName;
-    const parentNode = tabNode.getParent() as TabSetNode;
+    const parentNode = tabNode.getTabContainer() as TabSetNode;
+    const groupNode = tabNode.getParent() instanceof TabGroupNode ? (tabNode.getParent() as TabGroupNode) : undefined;
 
-    const isStretch = parentNode.isEnableSingleTabStretch() && parentNode.getChildren().length === 1;
+    const isStretch = parentNode.isEnableSingleTabStretch() && parentNode.getChildren().length === 1 && parentNode.getChildren()[0] === tabNode;
     const baseClassName = isStretch ? CLASSES.FLEXLAYOUT__TAB_BUTTON_STRETCH : CLASSES.FLEXLAYOUT__TAB_BUTTON;
     let classNames = cm(baseClassName);
     classNames += " " + cm(baseClassName + "_" + parentNode.getTabLocation());
@@ -206,6 +208,13 @@ export const TabButton = (props: ITabButtonProps) => {
         classNames += " " + cm(baseClassName + "--pinned");
     }
 
+    if (groupNode !== undefined) {
+        classNames += " " + cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_GROUPED);
+        if (tabNode.getModel().getTabGroupType() === "underline") {
+            classNames += " " + cm(CLASSES.FLEXLAYOUT__TAB_BUTTON_GROUPED_UNDERLINE);
+        }
+    }
+
     if (tabNode.getClassName() !== undefined) {
         classNames += " " + tabNode.getClassName();
     }
@@ -213,7 +222,7 @@ export const TabButton = (props: ITabButtonProps) => {
     const renderState = getRenderStateEx(controller, tabNode);
 
     // keep exactly one tab stop in the tablist even when the tabset has no selected tab
-    const isTabbable = selected || (parentNode.getSelectedNode() === undefined && parentNode.getChildren()[0] === tabNode);
+    const isTabbable = selected || (parentNode.getSelectedNode() === undefined && parentNode.getTabNodes()[0] === tabNode);
 
     // aria-keyshortcuts from the resolved keymap
     const ariaKeyshortcuts =
@@ -273,6 +282,11 @@ export const TabButton = (props: ITabButtonProps) => {
         );
     }
 
+    const style: React.CSSProperties = {};
+    if (groupNode !== undefined) {
+        (style as Record<string, string>)["--flexlayout-group-color"] = groupNode.getColor();
+    }
+
     return (
         <div
             ref={setSelfRef}
@@ -288,6 +302,7 @@ export const TabButton = (props: ITabButtonProps) => {
             onKeyDown={onKeyDown}
             data-layout-path={path}
             className={classNames}
+            style={style}
             onClick={onClick}
             onAuxClick={onAuxMouseClick}
             onContextMenu={onContextMenu}

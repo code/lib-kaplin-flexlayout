@@ -6,6 +6,7 @@ import { Node } from "../../model/Node";
 import { RowNode } from "../../model/RowNode";
 import { TabNode } from "../../model/TabNode";
 import { TabSetNode } from "../../model/TabSetNode";
+import { TabGroupNode } from "../../model/TabGroupNode";
 import { IDraggable } from "../../model/IDraggable";
 import { IJsonTabNode } from "../../model/IJsonModel";
 import { Actions } from "../../model/Actions";
@@ -116,6 +117,20 @@ export class DragDropManager {
             if (node.getChildren().length > 0) {
                 content = this._controller.i18nName(I18nLabel.Move_Tabs).replace("?", String(node.getChildren().length));
             }
+            if (this._controller.getProps().onRenderDragRect) {
+                const dragComponent = this._controller.getProps().onRenderDragRect!(content, node, undefined);
+                if (dragComponent) {
+                    this.setDragComponent(event, dragComponent, 10, 10);
+                    rendered = true;
+                }
+            }
+            if (!rendered) {
+                this.setDragComponent(event, content, 10, 10);
+            }
+        } else if (node instanceof TabGroupNode) {
+            // dragging a group pill moves the whole group (like dragging a tabset)
+            let rendered = false;
+            const content = this._controller.i18nName(I18nLabel.Move_Group).replace("?", String(node.getChildren().length));
             if (this._controller.getProps().onRenderDragRect) {
                 const dragComponent = this._controller.getProps().onRenderDragRect!(content, node, undefined);
                 if (dragComponent) {

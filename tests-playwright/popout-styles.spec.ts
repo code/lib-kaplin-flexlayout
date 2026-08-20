@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForPopout } from "./helpers";
 
 // css-in-js styles must reach popout windows. In production, emotion/styled-components insert rules
 // through the CSSOM sheet.insertRule API (invisible to the runtime style copy), so the copy rebuilds
@@ -12,10 +13,7 @@ test("MUI component is styled in a popout and reacts to dynamic style changes", 
     await page.evaluate(() => {
         (window as any).__flexDispatch((window as any).__flexActions.popoutTab("mui", "window"));
     });
-    await page.waitForTimeout(2000);
-
-    const popout = context.pages().filter((p) => p !== page && !p.isClosed())[0];
-    expect(popout).toBeDefined();
+    const popout = await waitForPopout(context, page);
     await popout.waitForSelector(".MuiSlider-root", { state: "attached", timeout: 8000 });
     await popout.waitForTimeout(500);
 
@@ -37,10 +35,7 @@ test("styled-components component is styled in a popout", async ({ page, context
     await page.evaluate(() => {
         (window as any).__flexDispatch((window as any).__flexActions.popoutTab("styledcomp", "window"));
     });
-    await page.waitForTimeout(2000);
-
-    const popout = context.pages().filter((p) => p !== page && !p.isClosed())[0];
-    expect(popout).toBeDefined();
+    const popout = await waitForPopout(context, page);
     await popout.waitForSelector("text=Styled Components Box", { state: "attached", timeout: 8000 });
     await popout.waitForTimeout(500);
 

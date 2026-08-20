@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForPopout } from "./helpers";
 
 // regression: closing a popout window turns the layout into a float; any sublayout hosted inside
 // (a JSON subLayoutId tab or a nested <Layout> component tab) must re-measure against the float's
@@ -24,10 +25,7 @@ const popoutAndClose = async (page: import("@playwright/test").Page, context: im
     await page.evaluate((id) => {
         (window as any).__flexDispatch((window as any).__flexActions.popoutTab(id, "window"));
     }, tabId);
-    await page.waitForTimeout(1500);
-
-    const popoutPage = context.pages().filter((p) => p !== page && !p.isClosed())[0];
-    expect(popoutPage).toBeDefined();
+    const popoutPage = await waitForPopout(context, page);
     await popoutPage.waitForSelector('[role="tab"]');
     await popoutPage.close({ runBeforeUnload: true }); // triggers beforeunload -> closePopout
     await page.waitForTimeout(2000);

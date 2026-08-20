@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForPopout } from "./helpers";
 
 // the floating panel header's right button pops the whole floating layout out into a native
 // browser window. It is only available when every tab in the float layout can live in a window.
@@ -27,12 +28,9 @@ test("pops the floating panel out into a native window", async ({ page, context 
     await page.waitForSelector(".flexlayout__float_window");
     await expect(page.locator('[data-layout-path="/floatwindow/button/popout"]')).toBeVisible();
 
-    const popoutPromise = context.waitForEvent("page");
     await page.locator('[data-layout-path="/floatwindow/button/popout"]').click();
-    await popoutPromise;
-    // strict mode double-mounts the popout component (open, close, reopen), so pick the live window
-    const popout = context.pages().filter((p) => p !== page && !p.isClosed())[0];
-    expect(popout).toBeDefined();
+    // strict mode double-mounts the popout component (open, close, reopen), so wait for the live window
+    const popout = await waitForPopout(context, page);
     await popout.waitForSelector('[role="tab"]');
     await popout.waitForTimeout(500);
 

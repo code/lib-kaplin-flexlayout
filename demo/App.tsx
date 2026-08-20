@@ -4,6 +4,7 @@ import {
     Action,
     Actions,
     BorderNode,
+    TabGroupNode,
     IJsonTabNode,
     ITabRenderValues,
     ITabSetRenderValues,
@@ -17,6 +18,7 @@ import {
     SettingsIcon,
     ILayoutApi,
     showPopupMenu,
+    showGroupMenu,
     PopupMenuEntry,
     ContextMenuBuilder,
     useUndo,
@@ -93,10 +95,6 @@ function App() {
         // expose the live model/layout to the e2e tests (inert otherwise)
         testing.installTestHooks({ getModel: () => currentModel.current, getLayout: () => layoutRef.current });
     });
-
-    // ---------------------------------------------------------------------------
-    // Layout loading & saving
-    // ---------------------------------------------------------------------------
 
     const saveLayout = () => {
         if (currentModel.current && currentLayoutName.current) {
@@ -321,12 +319,19 @@ function App() {
             }
 
             return <Layout model={subModel} factory={factory} />;
+        } else if (component === "label") {
+            return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: 24, fontWeight: 600, color: "gray" }}>{node.getName()}</div>;
         } else if (component === "text") {
-            try {
-                return <div dangerouslySetInnerHTML={{ __html: node.getConfig().text }} />;
-            } catch (e) {
-                console.log(e);
-            }
+            // the Groups demo layout renders text tabs without a config; the content is generated
+            // from the tab node and its parent so it reflects the live tree
+            const parent = node.getParent();
+            const parentName = parent instanceof TabNode || parent instanceof TabSetNode || parent instanceof TabGroupNode ? parent.getName() : undefined;
+            const html =
+                `<p><b>${node.getName()}</b></p>` +
+                `<p>type: ${node.getType()}</p>` +
+                `<p>parent: ${parent ? parent.getType() : "none"}${parentName !== undefined ? ` &quot;${parentName}&quot;` : ""}</p>` +
+                `<p>path: ${node.getPath()}</p>`;
+            return <div dangerouslySetInnerHTML={{ __html: html }} />;
         } else if (component === "otherfeatures") {
             return <NewFeatures />;
         } else if (component === "multitype") {
@@ -406,16 +411,27 @@ function App() {
         }
     };
 
-    const onContextMenu = (node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent<HTMLElement, MouseEvent>) => {
+    const onContextMenu = (node: TabNode | TabSetNode | BorderNode | TabGroupNode, event: React.MouseEvent<HTMLElement, MouseEvent>) => {
         event.preventDefault();
         event.stopPropagation();
 
         let items: PopupMenuEntry[] = [];
-        if (testing.isTestLayout(layoutName) || layoutName === "default" || layoutName === "simple") {
+        if (testing.isTestLayout(layoutName) || layoutName === "default" || layoutName === "simple" || layoutName === "groups") {
             // show menu on the default/simple/test layouts for all node types
-            const menu = new ContextMenuBuilder(node);
+            if (node instanceof TabGroupNode) {
+                contextMenuHideRef.current?.(); // close any menu already open
+                contextMenuHideRef.current = showGroupMenu(node, { x: event.clientX, y: event.clientY }, {});
+                return;
+            }
+            const menu = new ContextMenuBuilder(node, { closeMenu: () => contextMenuHideRef.current?.() });
             if (node instanceof TabNode) {
-                menu.add("pin").add("float").add("popout").add("rename").addDivider().add("closeAll").add("closeRight").add("closeOthers").addDivider().add("close");
+                menu.add("pin").add("float").add("popout").add("rename");
+                if (layoutName === "groups") {
+                    menu.addDivider().add("addToNewGroup").add("addToGroup").add("removeFromGroup");
+                    menu.addDivider().add("close");
+                } else {
+                    menu.addDivider().add("closeAll").add("closeRight").add("closeOthers").addDivider().add("close");
+                }
             } else if (node instanceof TabSetNode) {
                 menu.add("maximize").add("float").add("popout").addDivider().add("close");
             } else {
@@ -488,7 +504,7 @@ function App() {
                 renderValues.buttons.push(createButton("Tabset settings", "settingbtn", undefined, <SettingsIcon />));
             }
 
-            if (layoutName === "default") {
+            if (layoutName === "default" || layoutName === "groups") {
                 const button = createButton("Add tab", "addtab", (_e: React.MouseEvent<HTMLElement, MouseEvent>) => onAddFromTabSetButton(node), <AddIcon />);
 
                 renderValues.stickyButtons.push(button);
@@ -537,7 +553,7 @@ function App() {
         }
     };
 
-    const onAuxMouseClick = (_node: TabNode | TabSetNode | BorderNode, _event: React.MouseEvent<HTMLElement, MouseEvent>) => {};
+    const onAuxMouseClick = (_node: TabNode | TabSetNode | BorderNode | TabGroupNode, _event: React.MouseEvent<HTMLElement, MouseEvent>) => {};
 
     const onTabSetPlaceHolder = (_node: TabSetNode) => {
         return (
@@ -681,7 +697,9 @@ function App() {
                 onExternalDrag={onExternalDrag}
                 realtimeResize={realtimeResize}
                 keyMap={{ focusTabToggle: "F6", focusNextTabset: "Ctrl+]", focusPreviousTabset: "Ctrl+[" }}
-                onContextMenu={testing.isTestLayout(layoutName) || layoutName === "default" || layoutName === "simple" || layoutName === "otherfeatures" ? onContextMenu : undefined}
+                onContextMenu={
+                    testing.isTestLayout(layoutName) || layoutName === "default" || layoutName === "simple" || layoutName === "groups" || layoutName === "otherfeatures" ? onContextMenu : undefined
+                }
                 onAuxMouseClick={layoutName === "otherfeatures" ? onAuxMouseClick : undefined}
                 onTabSetPlaceHolder={onTabSetPlaceHolder}
                 renderPopoutContent={({ children, popoutDocument }) => <PopoutStyleProvider popoutDocument={popoutDocument}>{children}</PopoutStyleProvider>}
@@ -699,6 +717,7 @@ function App() {
                         <option value="mosaic">Mosaic Style</option>
                         <option value="sub">SubLayout</option>
                         <option value="complex">Complex</option>
+                        <option value="groups">Tab Groups</option>
                         <option value="otherfeatures">Other Features</option>
                     </select>
                     <button key="reloadbutton" className="toolbar_control " onClick={onReloadFromFile} title="Reload layout from file (Ctrl+Alt+R)" style={{ marginLeft: 5 }}>

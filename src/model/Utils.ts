@@ -1,9 +1,15 @@
 import { TabSetNode } from "./TabSetNode";
 import { BorderNode } from "./BorderNode";
 import { RowNode } from "./RowNode";
+import { TabGroupNode } from "./TabGroupNode";
 
 /** @internal */
-export function adjustSelectedIndexAfterInsert(parent: TabSetNode | BorderNode, insertedIndex: number, count: number = 1) {
+export function adjustSelectedIndexAfterInsert(parent: TabSetNode | BorderNode | TabGroupNode, insertedIndex: number, count: number = 1) {
+    // a group's children do not drive its container's selection (the container uses a flat tab
+    // index), so inserts into a group never shift the container's selected index
+    if (parent instanceof TabGroupNode) {
+        return;
+    }
     // shift the selected index when tabs are inserted at or before it, so the same tab stays selected
     const selectedIndex = parent.getSelected();
     if (count > 0 && selectedIndex !== -1 && insertedIndex <= selectedIndex) {
@@ -12,8 +18,13 @@ export function adjustSelectedIndexAfterInsert(parent: TabSetNode | BorderNode, 
 }
 
 /** @internal */
-export function adjustSelectedIndex(parent: TabSetNode | BorderNode | RowNode, removedIndex: number) {
+export function adjustSelectedIndex(parent: TabSetNode | BorderNode | RowNode | TabGroupNode, removedIndex: number) {
     // for the tabset/border being removed from set the selected index
+    if (parent instanceof TabGroupNode) {
+        // a tab leaving a group: repair the containing tabset's flat selection
+        parent.getTabContainer().repairSelected();
+        return;
+    }
     if (parent !== undefined && (parent instanceof TabSetNode || parent instanceof BorderNode)) {
         const selectedIndex = (parent as TabSetNode | BorderNode).getSelected();
         if (selectedIndex !== -1) {

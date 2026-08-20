@@ -4,7 +4,7 @@ import { DropInfo } from "./DropInfo";
 import { Orientation } from "./Orientation";
 import { Rect } from "./Rect";
 import { IDraggable } from "./IDraggable";
-import { IJsonBorderNode, IJsonRowNode, IJsonTabNode, IJsonTabSetNode } from "./IJsonModel";
+import { IJsonBorderNode, IJsonTabGroupNode, IJsonRowNode, IJsonTabNode, IJsonTabSetNode } from "./IJsonModel";
 import { Model } from "./Model";
 import { ModelLayout } from "./ModelLayout";
 
@@ -141,7 +141,7 @@ export abstract class Node {
         this.listeners.delete(event);
     }
 
-    abstract toJson(): IJsonRowNode | IJsonBorderNode | IJsonTabSetNode | IJsonTabNode | undefined;
+    abstract toJson(): IJsonRowNode | IJsonBorderNode | IJsonTabSetNode | IJsonTabGroupNode | IJsonTabNode | undefined;
 
     /** @internal */
     setId(id: string) {
@@ -203,6 +203,8 @@ export abstract class Node {
                 newPath += "/ts" + i;
             } else if (node.getType() === "tab") {
                 newPath += "/t" + i;
+            } else if (node.getType() === "tabgroup") {
+                newPath += "/g" + i;
             }
 
             node.path = newPath;

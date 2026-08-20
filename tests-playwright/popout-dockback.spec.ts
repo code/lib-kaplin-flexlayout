@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForBox } from "./helpers";
+import { waitForBox, waitForPopout } from "./helpers";
 
 // regression: a tab containing a sublayout popped out to a window and then docked back is adopted
 // into the main document during effects; the document-scoped resize observer previously stayed
@@ -10,11 +10,8 @@ test("sublayout tracks container resizes after popout and dock back", async ({ p
     await page.waitForTimeout(500);
 
     // popout the Tabbed Pane
-    const popoutPromise = context.waitForEvent("page");
     await page.locator('[data-layout-path="/ts0/button/popout"]').click();
-    await popoutPromise;
-    await page.waitForTimeout(1200);
-    const popout = context.pages().filter((p) => p !== page && !p.isClosed())[0];
+    const popout = await waitForPopout(context, page);
     await popout.waitForSelector('[role="tab"]');
     await popout.waitForTimeout(300);
 

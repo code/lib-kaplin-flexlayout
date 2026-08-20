@@ -1,3 +1,10 @@
+## 0.10.6 - 2026-08-25
+* **Added:** Tab groups (Chrome-style colored group pills). A new `tabgroup` node type holds tabs as children and renders a colored pill in the tab strip; clicking a pill collapses/expands its tabs, and right-clicking offers rename, color, collapse/expand and ungroup. Groups support drag-and-drop: drop a tab onto a pill to add it, drag a tab out to remove it, and drag the pill to reorder or move the whole group.
+* **Added:** New actions `Actions.addTabToNewGroup(tabNodeId, name?, color?)`, `Actions.ungroup(groupNodeId)` and `Actions.removeTabFromGroup(tabNodeId)`.
+* **Added:** New `Tab Groups` layout in the demo showcasing tab groups.
+* **Changed:** `TabSetNode.getSelected()` and `BorderNode.getSelected()` now return a flat index over visible tabs (tabs inside collapsed groups are excluded). Use `getSelectedNode()` for the tab reference. Code that indexes `getChildren()[getSelected()]` must switch to `getTabNodes()[getSelected()]` or use `getSelectedNode()`.
+* **Updated:** Dev Dependencies.
+
 ## 0.10.5 - 2026-08-12
 * **Added:** Floating panels can now be docked into the layout.
 * **Added:** Floating panels can now be popped out into popout windows, shown only when every tab in the panel can live in a separate window and popouts are supported.

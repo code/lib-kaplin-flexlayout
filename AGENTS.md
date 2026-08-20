@@ -75,7 +75,7 @@ Full signatures are in `src/model/Actions.ts`; commonly needed ones:
 
 - `tests/` — vitest unit tests (model, actions, serialization, `useUndo`, view components under `tests/view/`).
 - `tests-playwright/` — Playwright e2e; `tests-playwright/helpers.ts` has ready-made helpers. Layout fixtures live in `demo/public/layouts/*.layout` and are loaded by the demo app the e2e tests drive.
-- **e2e selectors**: every rendered element carries `data-layout-path`, e.g. `/r1/ts0` (row 1, tabset 0), `/border/left`, `/ts0/tb1` (tab button 1), `/ts0/t0` (tab panel 0), `/s0` (splitter), `/button/max`, `/popup-menu`. Paths reflect the *current* tree, so indices shift after moves.
+- **e2e selectors**: every rendered element carries `data-layout-path`, e.g. `/r1/ts0` (row 1, tabset 0), `/border/left`, `/ts0/tb1` (tab button 1), `/ts0/g0` (group pill), `/ts0/t0` (tab panel 0), `/s0` (splitter), `/button/max`, `/popup-menu`. Paths reflect the *current* tree, so indices shift after moves.
 
 ## Docs & reference
 

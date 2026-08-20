@@ -1,5 +1,6 @@
 import * as React from "react";
 import { BorderNode } from "../../model/BorderNode";
+import { TabGroupNode } from "../../model/TabGroupNode";
 import { IJsonTabNode } from "../../model/IJsonModel";
 import { Node } from "../../model/Node";
 import { TabNode } from "../../model/TabNode";
@@ -7,7 +8,7 @@ import { TabSetNode } from "../../model/TabSetNode";
 
 export type DragRectRenderCallback = (content: React.ReactNode | undefined, node?: Node, json?: IJsonTabNode) => React.ReactNode | undefined;
 
-export type NodeMouseEvent = (node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent<HTMLElement, MouseEvent>) => void;
+export type NodeMouseEvent = (node: TabNode | TabSetNode | BorderNode | TabGroupNode, event: React.MouseEvent<HTMLElement, MouseEvent>) => void;
 
 export type ShowOverflowMenuCallback = (
     node: TabSetNode | BorderNode,

@@ -14,6 +14,7 @@ import { Node } from "../../model/Node";
 import { RowNode } from "../../model/RowNode";
 import { ILayoutType } from "../../model/IJsonModel";
 import { TabNode } from "../../model/TabNode";
+import { TabGroupNode } from "../../model/TabGroupNode";
 import { TabSetNode } from "../../model/TabSetNode";
 import { AsterickIcon, GripIcon, CloseIcon, EdgeIcon, MaximizeIcon, OverflowIcon, PinIcon, PopoutIcon, PopoutFloatIcon, RestoreIcon } from "../Icons";
 import { Overlay } from "../Overlay";
@@ -32,7 +33,7 @@ import { randomUUID } from "../../model/Utils";
 import { DragTabButton } from "../DragTabButton";
 
 /** @internal */
-export type MeasurableKind = "row" | "tabset" | "tabstrip" | "tabsetcontent" | "tabbutton" | "borderheader" | "bordercontent";
+export type MeasurableKind = "row" | "tabset" | "tabstrip" | "tabsetcontent" | "tabbutton" | "grouppill" | "groupendmarker" | "borderheader" | "bordercontent";
 
 /** @internal */
 export interface ILayoutInternalProps extends ILayoutProps {
@@ -385,6 +386,7 @@ export class LayoutController {
     // watches the measured elements so css-driven geometry changes (e.g. a font-size or theme
     // change altering the tabstrip height without resizing the layout root) re-measure the layout
     private _geometryResizeObserver: ResizeObserver | undefined;
+    private _splitterDragging: boolean = false;
 
     constructor(
         props: ILayoutInternalProps,
@@ -452,7 +454,7 @@ export class LayoutController {
                     const isSelected = tabNode.isSelected();
                     const isRendered = tabNode.isRendered();
                     const isEnableRenderOnDemand = tabNode.isEnableRenderOnDemand();
-                    const rect = (tabNode.getParent() as BorderNode | TabSetNode).getContentRect();
+                    const rect = tabNode.getTabContainer().getContentRect();
                     const visible = isSelected || !isEnableRenderOnDemand;
                     const renderTabContent = isRendered || (visible && rect.width > 0 && rect.height > 0);
 
@@ -877,6 +879,14 @@ export class LayoutController {
             this._measurables.set(key, { kind, node, element });
         } else {
             this._measurables.delete(key);
+            // an unmounted group element must not leave a stale rect behind (e.g. the split pill's
+            // end marker disappears when the model switches to the underline tab group type), or
+            // the group's line geometry keeps hit-testing at the ghost position
+            if (kind === "grouppill") {
+                (node as TabGroupNode).setPillRect(Rect.empty());
+            } else if (kind === "groupendmarker") {
+                (node as TabGroupNode).setEndMarkerRect(Rect.empty());
+            }
         }
         // css-driven geometry changes (e.g. a font-size or theme change) do not resize the layout
         // root, so also watch the measured elements and re-measure when they resize; tab buttons are
@@ -949,6 +959,18 @@ export class LayoutController {
                         changed = true;
                     }
                     break;
+                case "grouppill":
+                    if (!rect.equalsWhenRounded((node as TabGroupNode).getPillRect())) {
+                        (node as TabGroupNode).setPillRect(rect);
+                        changed = true;
+                    }
+                    break;
+                case "groupendmarker":
+                    if (!rect.equalsWhenRounded((node as TabGroupNode).getEndMarkerRect())) {
+                        (node as TabGroupNode).setEndMarkerRect(rect);
+                        changed = true;
+                    }
+                    break;
                 case "borderheader":
                     // note: BorderNode.getRect() returns the tab header rect
                     if (!rect.equalsWhenRounded((node as BorderNode).getRect())) {
@@ -970,6 +992,18 @@ export class LayoutController {
                 }
             }
         }
+        // a group's drop region spans its pill plus (when open) its tabs, which are measured in
+        // the same pass above, so reconcile each group's rect after all child rects are current
+        for (const { kind, node } of this._measurables.values()) {
+            if (kind === "grouppill") {
+                const group = node as TabGroupNode;
+                const region = group.getDropRegion();
+                if (!region.equalsWhenRounded(group.getRect())) {
+                    group.setRect(region);
+                    changed = true;
+                }
+            }
+        }
         return changed;
     }
 
@@ -986,7 +1020,7 @@ export class LayoutController {
     // measured rects to the panels
     positionTabPanels() {
         for (const { node, element } of this._tabPanels.values()) {
-            const parent = node.getParent() as TabSetNode | BorderNode;
+            const parent = node.getTabContainer();
             const rect = parent.getContentRect();
 
             let visible = node.isSelected();
@@ -1217,6 +1251,16 @@ export class LayoutController {
         return this._props.realtimeResize ?? false;
     }
 
+    isSplitterDragging() {
+        // reached via the main controller so a splitter in any sublayout (float) is visible to every tabstrip
+        return this._mainController ? this._mainController._splitterDragging : this._splitterDragging;
+    }
+
+    setSplitterDragging(dragging: boolean) {
+        const target = this._mainController ?? this;
+        target._splitterDragging = dragging;
+    }
+
     setEditingTab(tabNode?: TabNode) {
         this.setState({ editingTab: tabNode });
     }
@@ -1319,13 +1363,13 @@ export class LayoutController {
         return this._props.onTabSetPlaceHolder;
     }
 
-    showContextMenu(node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent<HTMLElement, MouseEvent>) {
+    showContextMenu(node: TabNode | TabSetNode | BorderNode | TabGroupNode, event: React.MouseEvent<HTMLElement, MouseEvent>) {
         if (this._props.onContextMenu) {
             this._props.onContextMenu(node, event);
         }
     }
 
-    auxMouseClick(node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent<HTMLElement, MouseEvent>) {
+    auxMouseClick(node: TabNode | TabSetNode | BorderNode | TabGroupNode, event: React.MouseEvent<HTMLElement, MouseEvent>) {
         if (this._props.onAuxMouseClick) {
             this._props.onAuxMouseClick(node, event);
         }

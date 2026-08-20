@@ -2,7 +2,10 @@ import * as React from "react";
 import { DockLocation } from "../model/DockLocation";
 import { BorderNode } from "../model/BorderNode";
 import { TabNode } from "../model/TabNode";
+import { TabGroupNode } from "../model/TabGroupNode";
 import { BorderButton } from "./BorderButton";
+import { GroupPill } from "./GroupPill";
+import { GroupEndMarker } from "./GroupEndMarker";
 import { LayoutController } from "./layout/LayoutInternal";
 import { ITabSetRenderValues } from "./layout/LayoutTypes";
 import { showOverflowMenu } from "./PopupMenu";
@@ -74,8 +77,9 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
 
     const onOverflowClick = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
         const callback = controller.getShowOverflowMenu();
+        const tabs = borderNode.getTabNodes();
         const items = hiddenTabs.map((h) => {
-            return { index: h, node: borderNode.getChildren()[h] as TabNode };
+            return { index: h, node: tabs[h] };
         });
         if (callback !== undefined) {
             callback(borderNode, event, items, onOverflowItemSelect);
@@ -96,7 +100,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
     };
 
     const onPopoutWindow = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
-        const selectedTabNode = borderNode.getChildren()[borderNode.getSelected()] as TabNode;
+        const selectedTabNode = borderNode.getSelectedNode();
         if (selectedTabNode !== undefined) {
             controller.doAction(Actions.popoutTab(selectedTabNode.getId(), "window"));
         }
@@ -104,7 +108,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
     };
 
     const onPopoutFloat = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
-        const selectedTabNode = borderNode.getChildren()[borderNode.getSelected()] as TabNode;
+        const selectedTabNode = borderNode.getSelectedNode();
         if (selectedTabNode !== undefined) {
             controller.doAction(Actions.popoutTab(selectedTabNode.getId(), "float"));
         }
@@ -115,24 +119,94 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
 
     const renderTabs = () => {
         const tabButtons: React.ReactNode[] = [];
-        for (let i = 0; i < borderNode.getChildren().length; i++) {
-            const isSelected = borderNode.getSelected() === i;
-            const child = borderNode.getChildren()[i] as TabNode;
-
+        const isSplitPill = controller.getModel().getTabGroupType() === "splitpill";
+        let flatIndex = 0;
+        let hasPrev = false;
+        let dividerKey = 0;
+        const makeDivider = () => <div key={"divider" + dividerKey++} className={cm(CLASSES.FLEXLAYOUT__BORDER_TAB_DIVIDER)}></div>;
+        const isLeftBorderUp = borderNode.getLocation() === DockLocation.LEFT && controller.getModel().getBorderLeftTabDirection() !== "down";
+        for (const child of borderNode.getChildren()) {
+            if (child instanceof TabGroupNode) {
+                const groupTabs = child.getChildren() as TabNode[];
+                if (isLeftBorderUp && child.isOpened()) {
+                    // reversed: end marker first, tabs in reverse, pill last
+                    if (hasPrev) {
+                        tabButtons.push(makeDivider());
+                    }
+                    if (isSplitPill) {
+                        tabButtons.push(<GroupEndMarker key={child.getId() + "/end"} controller={controller} groupNode={child} path={child.getPath() + "/end"} />);
+                    }
+                    const groupStartIndex = flatIndex;
+                    for (let j = groupTabs.length - 1; j >= 0; j--) {
+                        const isSelected = borderNode.getSelected() === groupStartIndex + j;
+                        if (j < groupTabs.length - 1) {
+                            tabButtons.push(makeDivider());
+                        }
+                        tabButtons.push(
+                            <BorderButton
+                                controller={controller}
+                                border={borderNode.getLocation().getName()}
+                                tabNode={groupTabs[j]}
+                                path={borderNode.getPath() + "/tb" + (groupStartIndex + j)}
+                                key={groupTabs[j].getId()}
+                                selected={isSelected}
+                                icons={icons}
+                            />,
+                        );
+                    }
+                    flatIndex += groupTabs.length;
+                    tabButtons.push(<GroupPill key={child.getId()} controller={controller} groupNode={child} path={child.getPath()} />);
+                    hasPrev = true;
+                } else {
+                    if (hasPrev) {
+                        tabButtons.push(makeDivider());
+                    }
+                    tabButtons.push(<GroupPill key={child.getId()} controller={controller} groupNode={child} path={child.getPath()} />);
+                    hasPrev = true;
+                    if (child.isOpened()) {
+                        for (let j = 0; j < groupTabs.length; j++) {
+                            const isSelected = borderNode.getSelected() === flatIndex;
+                            if (j > 0) {
+                                tabButtons.push(makeDivider());
+                            }
+                            tabButtons.push(
+                                <BorderButton
+                                    controller={controller}
+                                    border={borderNode.getLocation().getName()}
+                                    tabNode={groupTabs[j]}
+                                    path={borderNode.getPath() + "/tb" + flatIndex}
+                                    key={groupTabs[j].getId()}
+                                    selected={isSelected}
+                                    icons={icons}
+                                />,
+                            );
+                            flatIndex++;
+                        }
+                        if (isSplitPill) {
+                            tabButtons.push(<GroupEndMarker key={child.getId() + "/end"} controller={controller} groupNode={child} path={child.getPath() + "/end"} />);
+                        }
+                    }
+                }
+                continue;
+            }
+            const tab = child as TabNode;
+            const isSelected = borderNode.getSelected() === flatIndex;
+            if (hasPrev) {
+                tabButtons.push(makeDivider());
+            }
             tabButtons.push(
                 <BorderButton
                     controller={controller}
                     border={borderNode.getLocation().getName()}
-                    tabNode={child}
-                    path={borderNode.getPath() + "/tb" + i}
-                    key={child.getId()}
+                    tabNode={tab}
+                    path={borderNode.getPath() + "/tb" + flatIndex}
+                    key={tab.getId()}
                     selected={isSelected}
                     icons={icons}
                 />,
             );
-            if (i < borderNode.getChildren().length - 1) {
-                tabButtons.push(<div key={"divider" + i} className={cm(CLASSES.FLEXLAYOUT__BORDER_TAB_DIVIDER)}></div>);
-            }
+            hasPrev = true;
+            flatIndex++;
         }
         return tabButtons;
     };
@@ -178,8 +252,9 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
             const overflowTitle = controller.i18nName(I18nLabel.Overflow_Menu_Tooltip);
             let overflowContent;
             if (typeof icons.more === "function") {
+                const tabs = borderNode.getTabNodes();
                 const items = hiddenTabs.map((h) => {
-                    return { index: h, node: borderNode.getChildren()[h] as TabNode };
+                    return { index: h, node: tabs[h] };
                 });
 
                 overflowContent = icons.more(borderNode, items);
@@ -220,7 +295,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
 
         const selectedIndex = borderNode.getSelected();
         if (selectedIndex !== -1) {
-            const selectedTabNode = borderNode.getChildren()[selectedIndex] as TabNode;
+            const selectedTabNode = borderNode.getSelectedNode();
 
             if (selectedTabNode !== undefined && controller.isMainLayout()) {
                 if (selectedTabNode.isEnablePopoutFloatIcon()) {

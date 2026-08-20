@@ -2,6 +2,7 @@ import { ICloseType } from "./ICloseType";
 export type IBorderLocation = "top" | "bottom" | "left" | "right";
 export type ITabLocation = "top" | "bottom";
 export type IBorderTabDirection = "up" | "down";
+export type ITabGroupType = "splitpill" | "underline";
 export type ILayoutType = "window" | "float" | "tab";
 
 export interface IJsonModel {
@@ -32,7 +33,7 @@ export type IJsonPopout = IJsonSubLayout;
 
 export interface IJsonBorderNode extends IBorderAttributes {
     location: IBorderLocation;
-    children?: IJsonTabNode[];
+    children?: (IJsonTabNode | IJsonTabGroupNode)[];
 }
 
 export interface IJsonRowNode extends IRowAttributes {
@@ -46,6 +47,10 @@ export interface IJsonTabSetNode extends ITabSetAttributes {
     /** Marks this tab set as being maximized, read from initial json but
      * must subseqently be set on the model (only one tab set can be maximized) */
     maximized?: boolean;
+    children?: (IJsonTabNode | IJsonTabGroupNode)[];
+}
+
+export interface IJsonTabGroupNode extends ITabGroupAttributes {
     children?: IJsonTabNode[];
 }
 
@@ -309,6 +314,13 @@ export interface IGlobalAttributes {
 	  Default: true
 	 */
     tabEnableScrollbars?: boolean;
+
+    /**
+	  how a tab group is visually indicated: 'splitpill' encloses the group's tabs in a pill (left/right caps), 'underline' draws a colored underline under each grouped tab
+
+	  Default: "splitpill"
+	 */
+    tabGroupType?: ITabGroupType;
 
     /**
 	  Value for TabNode attribute icon if not overridden
@@ -1048,6 +1060,56 @@ export interface IBorderAttributes {
 	  
 
 	  Fixed value: "border"
+	 */
+    type?: string;
+}
+export interface ITabGroupAttributes {
+    /**
+	  the color of the group pill and the underline of its tabs (a css color)
+
+	  Default: "#9e9e9e"
+	 */
+    color?: string;
+
+    /**
+	  a place to hold json config used in your own code
+
+	  Default: undefined
+	 */
+    config?: any;
+
+    /**
+	  whether the user can drag the group pill to a new location
+
+	  Default: true
+	 */
+    enableDrag?: boolean;
+
+    /**
+	  the unique id of the group, if left undefined a uuid will be assigned
+
+	  Default: undefined
+	 */
+    id?: string;
+
+    /**
+	  the name of the group shown in its pill
+
+	  Default: "Group"
+	 */
+    name?: string;
+
+    /**
+	  whether the group is expanded to show its tabs; when false only the pill is shown
+
+	  Default: true
+	 */
+    opened?: boolean;
+
+    /**
+	  
+
+	  Fixed value: "tabgroup"
 	 */
     type?: string;
 }

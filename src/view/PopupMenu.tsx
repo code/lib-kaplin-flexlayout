@@ -2,6 +2,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { TabNode } from "../model/TabNode";
+import { TabGroupNode } from "../model/TabGroupNode";
 import { CLASSES } from "./CSSClassNames";
 import { I18nLabel } from "./I18nLabel";
 import { LayoutController } from "./layout/LayoutInternal";
@@ -185,8 +186,12 @@ export const PopupMenu = (props: IPopupMenuProps) => {
 
     // focus the first item on mount, return focus to the trigger on unmount
     React.useEffect(() => {
-        const first = menuRef.current?.querySelector('[role="menuitem"]:not([aria-disabled="true"])') as HTMLElement | null;
-        (first ?? menuRef.current)?.focus();
+        const doc = container.ownerDocument;
+        // respect an element that already auto-focused itself inside the menu (e.g. an inline rename input)
+        if (!menuRef.current?.contains(doc.activeElement)) {
+            const first = menuRef.current?.querySelector('[role="menuitem"]:not([aria-disabled="true"])') as HTMLElement | null;
+            (first ?? menuRef.current)?.focus();
+        }
         const returnTo = props.returnFocusTo ?? (isElementAnchor(anchor) ? anchor : undefined);
         return () => {
             returnTo?.focus?.();
@@ -357,9 +362,18 @@ export function showOverflowMenu(
 
     const renderItem = (item: IPopupMenuItem, i: number, api: IPopupMenuItemApi) => {
         const it = items[i];
+        const group = it.node.getParent() instanceof TabGroupNode ? (it.node.getParent() as TabGroupNode) : undefined;
+        const isGrouped = group !== undefined;
         let classes = cm(CLASSES.FLEXLAYOUT__POPUP_MENU_ITEM);
+        if (isGrouped) {
+            classes += " " + cm(CLASSES.FLEXLAYOUT__POPUP_MENU_ITEM_GROUPED);
+        }
         if (parentNode.getSelected() === it.index) {
             classes += " " + cm(CLASSES.FLEXLAYOUT__POPUP_MENU_ITEM__SELECTED);
+        }
+        const style: React.CSSProperties = {};
+        if (isGrouped) {
+            (style as Record<string, string>)["--flexlayout-group-color"] = group!.getColor();
         }
         return (
             <div
@@ -369,6 +383,7 @@ export function showOverflowMenu(
                 aria-label={it.node.getNameForOverflowMenu()}
                 tabIndex={-1}
                 data-layout-path={"/popup-menu/tb" + i}
+                style={style}
                 onClick={(event) => {
                     api.select();
                     event.stopPropagation();

@@ -13,6 +13,8 @@ export enum I18nLabel {
     Move_Tabset = "Move tab set",
     /** the drag image text shown while dragging multiple tabs ("?" is replaced with the tab count) */
     Move_Tabs = "Move tabs (?)",
+    /** the drag image text shown while dragging a group ("?" is replaced with the tab count) */
+    Move_Group = "Move group (?)",
     /** the tabset maximize button tooltip */
     Maximize = "Maximize tab set",
     /** the tabset restore button tooltip */
@@ -63,4 +65,22 @@ export enum I18nLabel {
     Menu_Close_Right = "Close to the Right",
     /** the context menu item that closes every closeable tab but the tab itself */
     Menu_Close_Others = "Close Others",
+    /** the context menu item that adds the tab to a new group */
+    Menu_Add_To_New_Group = "Add to new group",
+    /** the context menu item that adds the tab to an existing group */
+    Menu_Add_To_Group = "Add to group",
+    /** the context menu item that moves a tab out of its group */
+    Menu_Remove_From_Group = "Remove from group",
+    /** the context menu item that ungroups a group, moving all its tabs back into the tabset */
+    Menu_Ungroup = "Ungroup",
+    /** the context menu item that expands a collapsed group */
+    Menu_Expand = "Expand",
+    /** the context menu item that collapses an expanded group */
+    Menu_Collapse = "Collapse",
+    /** the aria-label of the inline group rename textbox */
+    Rename_Group = "Rename group",
+    /** the accessible name of the group color chooser */
+    Group_Color = "Group color",
+    /** the group pill tooltip */
+    Group_Pill_Tooltip = "Tab Group, click or press Enter to expand/collapse",
 }

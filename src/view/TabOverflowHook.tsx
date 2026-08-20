@@ -364,22 +364,47 @@ export const useTabOverflow = (
     }, [checkForOverflow, scrollIntoView, updateScrollMetrics, updateHiddenTabs, orientation, selectedNode]);
 
     // strip geometry changes no longer cause a react render (they are applied imperatively by the
-    // layout), so watch the strip element itself for size changes
+    // layout), so watch the strip element itself for size changes and its children for add/remove
     React.useLayoutEffect(() => {
         const strip = tabStripRef.current;
         if (!strip) {
             return;
         }
-        const resizeObserver = new strip.ownerDocument.defaultView!.ResizeObserver(() => {
-            userControlledPositionRef.current = false;
+        const win = strip.ownerDocument.defaultView!;
+        const resizeObserver = new win.ResizeObserver(() => {
             checkForOverflow();
-            scrollIntoView();
+            // only snap the selected tab back into view on a genuine geometry change; if the
+            // resize is a consequence of the user's own scroll (the overflow/sticky buttons
+            // toggling change the strip width), respect the scroll position they chose.
+            // a splitter drag is always a genuine geometry change: keep the selected tab in view
+            // even when the user had previously scrolled away (see isSplitterDragging)
+            const splitterDragging = controller.isSplitterDragging();
+            if (!userControlledPositionRef.current || splitterDragging) {
+                if (splitterDragging) {
+                    userControlledPositionRef.current = false;
+                }
+                scrollIntoView();
+            }
             updateScrollMetrics();
             updateHiddenTabs();
         });
         resizeObserver.observe(strip);
-        return () => resizeObserver.disconnect();
-    }, [checkForOverflow, scrollIntoView, updateScrollMetrics, updateHiddenTabs, tabStripRef]);
+
+        // watch the tab container for child list changes (e.g. group expand/collapse
+        // adds or removes tab buttons and markers from the DOM)
+        const tabContainer = strip.firstElementChild;
+        const mutationObserver = new win.MutationObserver(() => {
+            updateHiddenTabs();
+        });
+        if (tabContainer) {
+            mutationObserver.observe(tabContainer, { childList: true, subtree: true });
+        }
+
+        return () => {
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+        };
+    }, [checkForOverflow, scrollIntoView, updateScrollMetrics, updateHiddenTabs, tabStripRef, controller]);
 
     // no deps: the strip element can change between renders (e.g. tab wrap toggled)
     React.useEffect(() => {

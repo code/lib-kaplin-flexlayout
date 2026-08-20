@@ -1,5 +1,16 @@
 import { DockLocation } from "./DockLocation";
-import { IGlobalAttributes, IJsonRect, IJsonRowNode, IJsonTabNode, IRowAttributes, ISubLayoutAttributes, ITabAttributes, ITabSetAttributes } from "./IJsonModel";
+import {
+    IGlobalAttributes,
+    ITabGroupAttributes,
+    IJsonRect,
+    IJsonRowNode,
+    IJsonTabNode,
+    IRowAttributes,
+    ISubLayoutAttributes,
+    ITabAttributes,
+    ITabSetAttributes,
+    IBorderAttributes,
+} from "./IJsonModel";
 import { ILayoutType } from "./IJsonModel";
 import { Rect } from "./Rect";
 
@@ -30,6 +41,10 @@ export class Actions {
     static POPOUT_FLOAT = "FlexLayout_PopoutFloat";
 
     static CREATE_SUBLAYOUT = "FlexLayout_CreateSubLayout";
+
+    static ADD_TAB_TO_NEW_GROUP = "FlexLayout_AddTabToNewGroup";
+    static UNGROUP = "FlexLayout_Ungroup";
+    static REMOVE_TAB_FROM_GROUP = "FlexLayout_RemoveTabFromGroup";
 
     static GROUP = "FlexLayout_Group";
 
@@ -201,7 +216,7 @@ export class Actions {
      * @param attributes the json attributes to update (merge with the existing attributes)
      * @returns {Action} the action
      */
-    static updateNodeAttributes(nodeId: string, attributes: IRowAttributes | ITabSetAttributes | ITabAttributes): Action {
+    static updateNodeAttributes(nodeId: string, attributes: IRowAttributes | ITabSetAttributes | ITabAttributes | ITabGroupAttributes | IBorderAttributes): Action {
         return new Action(Actions.UPDATE_NODE_ATTRIBUTES, { node: nodeId, json: attributes });
     }
 
@@ -300,6 +315,38 @@ export class Actions {
      */
     static createPopout(layout: IJsonRowNode, rect: IJsonRect, type: ILayoutType): Action {
         return this.createSubLayout(layout, rect, type);
+    }
+
+    /**
+     * Creates a new group in the tab's parent tabset/border and moves the tab into it. The group is
+     * inserted at the tab's position, so the tab becomes the first (and initially only) member.
+     * @param tabNodeId the id of the tab to move into the new group
+     * @param name optional name for the new group
+     * @param color optional color for the new group (a css color)
+     * @returns {Action} the action
+     */
+    static addTabToNewGroup(tabNodeId: string, name?: string, color?: string): Action {
+        return new Action(Actions.ADD_TAB_TO_NEW_GROUP, { node: tabNodeId, name, color });
+    }
+
+    /**
+     * Moves every tab of the given group back into the group's parent tabset/border (at the group's
+     * position) and deletes the now-empty group. The group's color/name is lost.
+     * @param groupNodeId the id of the group to ungroup
+     * @returns {Action} the action
+     */
+    static ungroup(groupNodeId: string): Action {
+        return new Action(Actions.UNGROUP, { node: groupNodeId });
+    }
+
+    /**
+     * Moves a tab out of its group into the group's parent tabset/border, directly after the group.
+     * The group is deleted if it becomes empty.
+     * @param tabNodeId the id of the tab to remove from its group
+     * @returns {Action} the action
+     */
+    static removeTabFromGroup(tabNodeId: string): Action {
+        return new Action(Actions.REMOVE_TAB_FROM_GROUP, { node: tabNodeId });
     }
 
     /**

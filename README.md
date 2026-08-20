@@ -17,19 +17,16 @@ Try it now using [CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf)
 FlexLayout's only dependency is React.
 
 Features:
-* Splitters for resizing
 * Tabs (scrolling or wrapped)
-* Tab dragging and ordering
-* Pinnable tabs (kept at the start of the tabstrip, via `Actions.setTabPinned`)
+* Pinnable tabs
+* Tab groups (Chrome-style colored group pills) — see [Tab Groups](#tab-groups)
+* Border tabsets: splitting the layout or overlaying it, with autohide when empty option.
 * Tabset dragging (move all tabs in a tabset in one operation)
 * Docking to tabsets or edges of the frame
 * Maximizing tabsets (double-click tabset header or use icon)
 * Tab overflow (menu for hidden tabs, mouse wheel scrolling)
-* Border tabsets
-* Overlay borders (border panels overlay the main layout, via `Actions.setBorderType`)
 * Popout tabs into floating panels or new browser windows
 * Submodels (layouts inside layouts)
-* Tab renaming (double-click tab text)
 * Theming (light, dark, underline, etc., and combined)
 * Accessibility (ARIA roles, keyboard operation with a configurable keymap, visible focus) — see [Accessibility](#accessibility)
 * Mobile support (iPad, Android)
@@ -37,7 +34,6 @@ Features:
 * Comprehensive tab and tabset attributes (`enableTabStrip`, `enableDock`, `enableDrop`, etc.)
 * Customizable tab and tabset rendering
 * Preservation of component state when tabs are moved
-* Playwright tests
 * TypeScript type declarations
 
 ## Example Interaction
@@ -454,7 +450,71 @@ Note: Tabsets are dynamically created as tabs are moved and deleted when their l
 
 [Border Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/IJsonBorderNode.html)
 
+## Tab Groups
 
+Tabs can be grouped into Chrome-style groups, rendered as a colored pill in the tab strip. A group is a `"tabgroup"` node that is a direct child of a tabset or border and holds the group's tabs as children.
+
+A group is shown in one of two visual styles, chosen by the global attribute `tabGroupType` (`"splitpill"` by default, or `"underline"`):
+
+```json
+{
+    "global": { "tabGroupType": "splitpill" }
+}
+```
+
+`"splitpill"` encloses the group's tabs in a pill with left/right caps:
+
+<img src="screenshots/Screenshot_tab_groups_splitpill.png?raw=true" alt="Tab groups (split pill)" title="Tab groups (split pill)" />
+
+`"underline"` shows a fully-rounded pill followed by tabs that each carry the group color as an underline:
+
+<img src="screenshots/Screenshot_tab_groups_underline.png?raw=true" alt="Tab groups (underline)" title="Tab groups (underline)" />
+
+```json
+{
+    "type": "tabgroup",
+    "id": "g1",
+    "name": "Design",
+    "color": "#7895c4",
+    "opened": true,
+    "children": [
+        { "type": "tab", "name": "Colors", "component": "label" },
+        { "type": "tab", "name": "Typography", "component": "label" }
+    ]
+}
+```
+
+The group pill shows the group's `name` and is filled with the group's `color`. Clicking the pill collapses/expands the group; when collapsed (`"opened": false`) only the pill is shown, with a count of its hidden tabs.
+
+Groups support drag-and-drop: drag a tab onto a pill to add it to the group, drag a tab out to remove it, and drag the pill itself to reorder or move the whole group. Right-clicking a pill opens a menu to rename the group, change its color, collapse/expand, or ungroup it.
+
+Use these actions to manage groups programmatically:
+
+```js
+model.doAction(Actions.addTabToNewGroup("tab5", "Design", "#7895c4")); // move a tab into a new group
+model.doAction(Actions.ungroup("g1"));                                 // return a group's tabs to the tabset
+model.doAction(Actions.removeTabFromGroup("tab2"));                    // move a tab out of its group
+```
+
+For an example see the `Tab Groups` layout in the demo app.
+
+### Tab group colors
+
+The group pill text color, default group color (used when creating a new group), and color chooser palette are controlled by CSS custom properties. Override them via `--flexlayout-<name>` on a common ancestor (e.g. `:root`):
+
+```css
+:root {
+    --flexlayout-color-tabgroup-pill-text: white;                          /* pill text color */
+    --flexlayout-color-tabgroup-default: #2196f3;                         /* color for new groups (action default) */
+    --flexlayout-color-tabgroup-menu-palette: #f00, #0f0, #00f, #ff0;    /* comma-separated color list */
+}
+```
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `--flexlayout-color-tabgroup-pill-text` | `var(--color-text)` | Text color inside the group pill |
+| `--flexlayout-color-tabgroup-default` | `#9e9e9e` | Default group color when creating a group via the context menu or action without a color |
+| `--flexlayout-color-tabgroup-menu-palette` | *(10 muted hex colors)* | Comma-separated list of preset swatch colors shown in the pill's right-click color picker |
 
 
 ## Layout API Methods to Create New Tabs
@@ -610,6 +670,7 @@ FlexLayout has keyboard operability, ARIA semantics and visible focus styling bu
 * The tab overflow menu (and the reusable popup menu below) use `role="menu"`/`role="menuitem"`; the button that opens the overflow menu advertises `aria-haspopup` and `aria-expanded`.
 * Decorative icons are hidden from assistive technology with `aria-hidden`.
 * Tabs carry explicit accessible names (including pinned state), advertise their keyboard shortcuts via `aria-keyshortcuts`, and toggle buttons expose their state via `aria-pressed`.
+* Group pills are exposed as disclosure buttons (`role="button"` with `aria-expanded`) named after the group.
 
 ### Keyboard operation
 
@@ -620,6 +681,8 @@ FlexLayout has keyboard operability, ARIA semantics and visible focus styling bu
 | Tabs | Ctrl+Delete (default, rebindable) | Close the focused tab (when it is closeable)                                   |
 | Tabs | F2 (default, rebindable) | Rename the focused tab (when it is renameable)                                 |
 | Tabs | `focusTabToggle` binding (off by default) | Toggle focus between the selected tab button and its content                   |
+| Group pills | Enter / Space | Collapse or expand the focused group                                           |
+| Group pills | ContextMenu / Shift+F10 | Open the group menu (rename, color, collapse/expand, ungroup)                  |
 | Layout | `focusNextTabset` / `focusPreviousTabset` bindings (off by default) | Move focus to the next / previous tabset, mapped to Ctrl+[, Ctrl+] in the demo |
 | Splitters | Arrow keys | Resize                                                                         |
 | Overlay borders | Escape (default, rebindable) | Close the open overlay panel (focus returns to the border tab)                 |
@@ -661,7 +724,9 @@ Every element the library renders carries a `data-layout-path` attribute describ
 | --- | --- |
 | `/r<n>` / `/ts<n>` | Row / tabset (`n` is the index within the parent), nested as in the model, e.g. `/r1/ts0` |
 | `/border/<location>` | Border strip (`top`, `bottom`, `left`, `right`) |
-| `.../tb<n>` | Tab button `n` within a tabset or border path |
+| `.../tb<n>` | Tab button `n` (flat index over visible tabs; grouped/collapsed tabs are omitted) |
+| `.../g<n>` | Group pill `n` (e.g. `/ts0/g0`, `/border/right/g0`) |
+| `.../g<n>/end` | Group end marker (right cap of a split pill, e.g. `/ts0/g0/end`) |
 | `.../t<n>` | Tab panel `n` within a tabset or border path |
 | `.../tabstrip` | A tabset's tab strip |
 | `.../s<n>` | Splitter after child `n` of a row (e.g. `/s0`), or a border's splitter |

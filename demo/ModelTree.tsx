@@ -1,5 +1,5 @@
 import * as React from "react";
-import { BorderNode, Model, ModelLayout, Node, RowNode, TabNode, TabSetNode } from "../src/index";
+import { BorderNode, TabGroupNode, Model, ModelLayout, Node, RowNode, TabNode, TabSetNode } from "../src/index";
 
 export interface ITreeItem {
     id: string;
@@ -22,6 +22,9 @@ export const getNodeLabel = (node: Node): string => {
     }
     if (node instanceof BorderNode) {
         return "Border: " + node.getLocation().getName();
+    }
+    if (node instanceof TabGroupNode) {
+        return "Group: " + node.getName();
     }
     return node.getType();
 };

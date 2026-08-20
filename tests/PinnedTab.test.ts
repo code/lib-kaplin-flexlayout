@@ -91,6 +91,43 @@ describe("setTabPinned action", () => {
         model2.doAction(Actions.setTabPinned("t3", true));
         expect((model2.getNodeById("t3") as TabNode).isPinned()).equal(false);
     });
+
+    it("preserves selection on a grouped tab when a different tab is pinned", () => {
+        // tabset with a group containing t1 and t2, plus an ungrouped t3
+        const groupedJson: IJsonModel = {
+            global: {},
+            layout: {
+                type: "row",
+                children: [
+                    {
+                        type: "tabset",
+                        id: "ts0",
+                        children: [
+                            {
+                                type: "tabgroup",
+                                id: "g1",
+                                name: "Design",
+                                children: [
+                                    { type: "tab", id: "t0", name: "Tab0" },
+                                    { type: "tab", id: "t1", name: "Tab1" },
+                                ],
+                            },
+                            { type: "tab", id: "t2", name: "Tab2" },
+                        ],
+                    },
+                ],
+            },
+        };
+        const m = Model.fromJson(groupedJson);
+        const ts0 = m.getNodeById("ts0") as TabSetNode;
+        // select t0 (inside group), visible flat index 0
+        m.doAction(Actions.selectTab("t0"));
+        expect(ts0.getSelectedNode()?.getId()).toBe("t0");
+        // pin t2 (ungrouped) — moves it to the front, shifting flat indices
+        m.doAction(Actions.setTabPinned("t2", true));
+        // t0 should still be selected (flat index shifted from 0 to 1)
+        expect(ts0.getSelectedNode()?.getId()).toBe("t0");
+    });
 });
 
 describe("closability", () => {

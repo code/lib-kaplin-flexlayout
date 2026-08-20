@@ -1,6 +1,7 @@
 import { DockLocation } from "./DockLocation";
 import { DropInfo } from "./DropInfo";
 import { BorderNode } from "./BorderNode";
+import { TabGroupNode } from "./TabGroupNode";
 import { IDraggable } from "./IDraggable";
 import { Model } from "./Model";
 import { Node } from "./Node";
@@ -57,7 +58,11 @@ export class BorderSet {
             borderNode.setPath(path);
             let i = 0;
             for (const node of borderNode.getChildren()) {
-                node.setPath(path + "/t" + i);
+                if (node.getType() === TabGroupNode.TYPE) {
+                    node.setPath(path + "/g" + i);
+                } else {
+                    node.setPath(path + "/t" + i);
+                }
                 i++;
             }
         }

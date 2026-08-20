@@ -3,6 +3,9 @@ import { I18nLabel } from "./I18nLabel";
 import { Actions } from "../model/Actions";
 import { TabNode } from "../model/TabNode";
 import { TabSetNode } from "../model/TabSetNode";
+import { TabGroupNode } from "../model/TabGroupNode";
+import { GroupPill } from "./GroupPill";
+import { GroupEndMarker } from "./GroupEndMarker";
 import { showOverflowMenu } from "./PopupMenu";
 import { ITabSetRenderValues } from "./layout/LayoutTypes";
 import { LayoutController } from "./layout/LayoutInternal";
@@ -76,8 +79,9 @@ export const TabSet = (props: ITabSetProps) => {
 
     const onOverflowClick = (event: React.MouseEvent<HTMLElement, MouseEvent>) => {
         const callback = controller.getShowOverflowMenu();
+        const tabs = tabsetNode.getTabNodes();
         const items = hiddenTabs.map((h) => {
-            return { index: h, node: tabsetNode.getChildren()[h] as TabNode };
+            return { index: h, node: tabs[h] };
         });
         if (callback !== undefined) {
             callback(tabsetNode, event, items, onOverflowItemSelect);
@@ -172,51 +176,85 @@ export const TabSet = (props: ITabSetProps) => {
     const cm = controller.getClassName;
     const selectedTabNode: TabNode = tabsetNode.getSelectedNode() as TabNode;
     const path = tabsetNode.getPath();
+    const children = tabsetNode.getChildren();
+    const isSingleTabStretched = tabsetNode.isEnableSingleTabStretch() && children.length === 1 && children[0] instanceof TabNode;
+
+    const makeSpacer = (key: number, isSelected: boolean, lastOneSelected: boolean, showDivider: boolean) => {
+        let cns = cm(CLASSES.FLEXLAYOUT__TABSET_TAB_SPACER);
+        if (showDivider) {
+            cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER);
+        }
+        if (!tabsetNode.isEnableTabWrap() && !isSingleTabStretched) {
+            if (isSelected) {
+                cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_SELECTED_BEFORE);
+            } else if (lastOneSelected) {
+                cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_SELECTED_AFTER);
+            }
+        }
+        return (
+            <div key={"divider" + key} className={cns}>
+                <div className={cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_INNER)}></div>
+            </div>
+        );
+    };
 
     const renderTabs = () => {
         const tabs = [];
+        const isSplitPill = controller.getModel().getTabGroupType() === "splitpill";
+        let flatIndex = 0;
+        let spacerKey = 0;
         let lastOneSelected = false;
+        let lastWasTab = false;
+        let hasPrev = false;
         if (tabsetNode.isEnableTabStrip()) {
-            const isSingleTabStretched = tabsetNode.isEnableSingleTabStretch() && tabsetNode.getChildren().length === 1;
-            for (let i = 0; i < tabsetNode.getChildren().length; i++) {
-                const child = tabsetNode.getChildren()[i] as TabNode;
-                const isSelected = tabsetNode.getSelected() === i;
-
-                let cns = cm(CLASSES.FLEXLAYOUT__TABSET_TAB_SPACER);
-                if (i !== 0) {
-                    cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER);
-                }
-                if (!tabsetNode.isEnableTabWrap() && !isSingleTabStretched) {
-                    if (isSelected) {
-                        cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_SELECTED_BEFORE);
-                    } else if (lastOneSelected) {
-                        cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_SELECTED_AFTER);
+            for (const child of children) {
+                if (child instanceof TabGroupNode) {
+                    // a divider spacer before the pill, like before any other tab
+                    tabs.push(makeSpacer(spacerKey++, false, lastOneSelected, hasPrev));
+                    tabs.push(<GroupPill key={child.getId()} controller={controller} groupNode={child} path={child.getPath()} />);
+                    hasPrev = true;
+                    lastWasTab = false;
+                    if (child.isOpened()) {
+                        const groupTabs = child.getChildren() as TabNode[];
+                        for (let j = 0; j < groupTabs.length; j++) {
+                            const groupTab = groupTabs[j];
+                            const isSelected = tabsetNode.getSelected() === flatIndex;
+                            // the pill leads its own tabs, so only later group tabs get a divider
+                            tabs.push(makeSpacer(spacerKey++, isSelected, lastOneSelected, j > 0));
+                            tabs.push(<TabButton controller={controller} tabNode={groupTab} path={path + "/tb" + flatIndex} key={groupTab.getId()} selected={isSelected} />);
+                            lastOneSelected = isSelected;
+                            lastWasTab = true;
+                            hasPrev = true;
+                            flatIndex++;
+                        }
+                        // end marker closes the split pill (right cap, no behaviour)
+                        if (isSplitPill) {
+                            tabs.push(makeSpacer(spacerKey++, false, lastOneSelected, false));
+                            tabs.push(<GroupEndMarker key={child.getId() + "/end"} controller={controller} groupNode={child} path={child.getPath() + "/end"} />);
+                            lastOneSelected = false; // end marker is not a tab; don't propagate selection to next divider
+                        }
                     }
+                    continue;
                 }
-
-                // tab spacer
+                const tab = child as TabNode;
+                const isSelected = tabsetNode.getSelected() === flatIndex;
+                tabs.push(makeSpacer(spacerKey++, isSelected, lastOneSelected, hasPrev));
+                tabs.push(<TabButton controller={controller} tabNode={tab} path={path + "/tb" + flatIndex} key={tab.getId()} selected={isSelected} />);
+                lastOneSelected = isSelected;
+                lastWasTab = true;
+                hasPrev = true;
+                flatIndex++;
+            }
+            if (lastWasTab) {
+                let cns = cm(CLASSES.FLEXLAYOUT__TABSET_TAB_SPACER);
+                if (!tabsetNode.isEnableTabWrap() && !isSingleTabStretched && lastOneSelected) {
+                    cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_SELECTED_AFTER);
+                }
                 tabs.push(
-                    <div key={"divider" + i} className={cns}>
+                    <div key={"divider" + spacerKey} className={cns}>
                         <div className={cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_INNER)}></div>
                     </div>,
                 );
-
-                tabs.push(<TabButton controller={controller} tabNode={child} path={path + "/tb" + i} key={child.getId()} selected={isSelected} />);
-
-                // last spacer
-                if (i === tabsetNode.getChildren().length - 1) {
-                    cns = cm(CLASSES.FLEXLAYOUT__TABSET_TAB_SPACER);
-                    if (!tabsetNode.isEnableTabWrap() && !isSingleTabStretched && isSelected) {
-                        cns += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_SELECTED_AFTER);
-                    }
-                    tabs.push(
-                        <div key={"divider" + (i + 1)} className={cns}>
-                            <div className={cm(CLASSES.FLEXLAYOUT__TABSET_TAB_DIVIDER_INNER)}></div>
-                        </div>,
-                    );
-                }
-
-                lastOneSelected = isSelected;
             }
         }
         return tabs;
@@ -234,7 +272,7 @@ export const TabSet = (props: ITabSetProps) => {
         stickyButtons = renderState.stickyButtons;
         buttons = renderState.buttons;
 
-        const isTabStretch = tabsetNode.isEnableSingleTabStretch() && tabsetNode.getChildren().length === 1;
+        const isTabStretch = isSingleTabStretched;
         let showClose = (isTabStretch && (tabsetNode.getChildren()[0] as TabNode).isCloseable()) || tabsetNode.isCloseable();
         showClose = showClose && tabsetNode.isEnableCloseButton();
 
@@ -269,8 +307,9 @@ export const TabSet = (props: ITabSetProps) => {
                 const overflowTitle = controller.i18nName(I18nLabel.Overflow_Menu_Tooltip);
                 let overflowContent;
                 if (typeof icons.more === "function") {
+                    const tabs = tabsetNode.getTabNodes();
                     const items = hiddenTabs.map((h) => {
-                        return { index: h, node: tabsetNode.getChildren()[h] as TabNode };
+                        return { index: h, node: tabs[h] };
                     });
                     overflowContent = icons.more(tabsetNode, items);
                 } else {
@@ -437,7 +476,7 @@ export const TabSet = (props: ITabSetProps) => {
             tabStripClasses += " " + cm(CLASSES.FLEXLAYOUT__TABSET_MAXIMIZED);
         }
 
-        const isTabStretch = tabsetNode.isEnableSingleTabStretch() && tabsetNode.getChildren().length === 1;
+        const isTabStretch = isSingleTabStretched;
         if (isTabStretch) {
             const tabNode = tabsetNode.getChildren()[0] as TabNode;
             if (tabNode.getTabSetClassName() !== undefined) {
@@ -537,7 +576,7 @@ export const TabSet = (props: ITabSetProps) => {
 
     const renderContent = (tabStrip: React.ReactNode) => {
         let emptyTabset: React.ReactNode;
-        if (tabsetNode.getChildren().length === 0) {
+        if (tabsetNode.getTabNodes().length === 0) {
             const placeHolderCallback = controller.getTabSetPlaceHolderCallback();
             if (placeHolderCallback) {
                 emptyTabset = placeHolderCallback(tabsetNode);

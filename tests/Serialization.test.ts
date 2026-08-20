@@ -63,6 +63,14 @@ describe("toJson default omission", () => {
         expect(round.getBorderLeftTabDirection()).equal("down");
     });
 
+    it("defaults tabGroupType to splitpill and round-trips an override", () => {
+        expect(model.getTabGroupType()).equal("splitpill");
+        expect(model.toJson().global!.tabGroupType).equal(undefined); // default not serialized
+        model.doAction(Actions.updateModelAttributes({ tabGroupType: "underline" }));
+        const round = Model.fromJson(model.toJson());
+        expect(round.getTabGroupType()).equal("underline");
+    });
+
     it("preserves tab order and selection across a round trip", () => {
         model = Model.fromJson({
             global: {},

@@ -1,4 +1,4 @@
-import { expect, Page, Locator } from "@playwright/test";
+import { expect, Page, Locator, BrowserContext } from "@playwright/test";
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -34,6 +34,30 @@ export async function waitForBox(locator: Locator, label: string): Promise<Box> 
 export const findAllTabSets = (page: Page) => {
     return page.locator(".flexlayout__tabset");
 };
+
+/**
+ * Wait for a popout window and return its page. Under react strict mode (dev) the popout component
+ * double-mounts: the first window opens and immediately closes and the reopened one stays, so a
+ * single sample of `context.pages()` can catch the doomed first window (or the gap between the
+ * two windows, where no live popout exists at all). Requires the same live non-main page on two
+ * consecutive samples 250ms apart, which the short-lived first window cannot satisfy.
+ */
+export async function waitForPopout(context: BrowserContext, mainPage: Page): Promise<Page> {
+    let candidate: Page | null = null;
+    await expect
+        .poll(
+            async () => {
+                const live = context.pages().filter((p) => p !== mainPage && !p.isClosed());
+                const next = live.length === 1 ? live[0] : null;
+                const stable = next !== null && next === candidate;
+                candidate = next;
+                return stable;
+            },
+            { timeout: 15000, message: "timed out waiting for the popout window to stay open", intervals: [250] },
+        )
+        .toBe(true);
+    return candidate!;
+}
 
 export const findPath = (page: Page, path: string) => {
     return page.locator(`[data-layout-path="${path}"]`);
@@ -144,6 +168,9 @@ export async function dragToEdge(page: Page, from: Locator, edgeIndex: number) {
     await page.mouse.down();
     await page.waitForTimeout(50); // let the native drag start before moving
     await page.mouse.move(cf.x + 10, cf.y + 10); // start move to make edges show
+    // firefox needs a second movement before the native drag session engages (dragover/dragenter
+    // only start firing after ~two discrete moves), without which the edge rects never appear
+    await page.mouse.move(cf.x + 11, cf.y + 11);
     const edgeRects = page.locator(".flexlayout__edge_rect");
     const edge = edgeRects.nth(edgeIndex);
     // the edge rects appear asynchronously after the drag starts, so wait for one
@@ -194,6 +221,15 @@ export async function dragSplitter(page: Page, from: Locator, upDown: boolean, d
 
     const cf = { x: fr.x + fr.width / 2, y: fr.y + fr.height / 2 };
     const ct = { x: cf.x + (upDown ? 0 : distance), y: cf.y + (upDown ? distance : 0) };
+
+    // firefox drops input events with coordinates outside the viewport; clamp the target to the
+    // viewport edges. the splitter position is clamped to the layout bounds by the library itself,
+    // so an oversized drag lands on the same bound either way
+    const vp = page.viewportSize();
+    if (vp) {
+        ct.x = Math.max(0, Math.min(vp.width - 1, ct.x));
+        ct.y = Math.max(0, Math.min(vp.height - 1, ct.y));
+    }
 
     await page.mouse.move(cf.x, cf.y);
     await page.mouse.down();

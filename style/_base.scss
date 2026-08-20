@@ -315,6 +315,169 @@
             box-sizing: border-box;
         }
 
+        &__group_pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35em;
+            padding: 2px 8px 2px 8px;
+            margin: 2px 2px;
+            border-radius: var(--tabgroup-pill-radius) 0 0 var(--tabgroup-pill-radius); // flat right when expanded (left cap of split pill)
+            border: 1px solid var(--color-tabset-divider-line);
+            border-right: none;
+            background-color: var(--color-base);
+            color: var(--color-tabgroup-pill-text);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            box-sizing: border-box;
+
+            &:focus-visible {
+                outline: 2px solid var(--color-focus);
+            }
+
+            // collapsed: fully rounded pill (no end marker)
+            &_collapsed {
+                border-radius: var(--tabgroup-pill-radius);
+                border-right: 1px solid var(--color-tabset-divider-line);
+            }
+
+            // underline group type: the pill is always fully rounded (the grouped tabs
+            // carry the color as an underline instead of being enclosed by pill caps)
+            &_underline {
+                border-radius: var(--tabgroup-pill-radius);
+                border-right: 1px solid var(--color-tabset-divider-line);
+            }
+
+            &_name {
+                max-width: 10em;
+                overflow: hidden;
+                text-overflow: ellipsis;
+
+                // keep the pill's line box (and height) when the group has no name
+                &::before {
+                    content: "\200B";
+                }
+            }
+
+            &_count {
+                opacity: 0.7;
+                font-size: 0.85em;
+            }
+        }
+
+        &__group_end_marker {
+            display: inline-block;
+            border-radius: 0 var(--tabgroup-pill-radius) var(--tabgroup-pill-radius) 0; // flat left (right cap of split pill)
+            border: 1px solid var(--color-tabset-divider-line);
+            border-left: none;
+            background-color: var(--color-base);
+            padding: 2px 7px 2px 7px;
+            margin: 2px 2px;
+            cursor: pointer;
+            box-sizing: border-box;
+
+            // the marker has no text, so the zero-width space gives it the same line box
+            // (and therefore height) as the pill's name, keeping both caps equal
+            &::before {
+                content: "\200B";
+            }
+        }
+
+        &__tab_button_grouped {
+            // semantic marker only; the split-pill caps provide visual group enclosure
+        }
+
+        &__tab_button_grouped_underline {
+            // the group color underline is drawn with a pseudo-element under the whole tab button
+            // (not a border on the content, which would only span the text width)
+            position: relative;
+
+            &::after {
+                content: "";
+                position: absolute;
+                left: 10px;
+                right: 10px;
+                bottom: 0;
+                height: var(--underline_height, 2px);
+                border-radius: calc(var(--underline_height, 2px) / 2);
+                background-color: var(--flexlayout-group-color, transparent);
+                pointer-events: none;
+            }
+        }
+
+        &__group_rename {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+
+            &_input {
+                padding: 3px;
+                border-radius: 5px;
+                border: 1px solid var(--color-popup-border);
+                background-color: var(--color-tab-textbox-background, var(--color-3));
+                color: var(--color-tab-textbox, var(--color-text));
+            }
+        }
+
+        &__group_picker {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 2px 0;
+            max-width: 18em;
+
+            &_item {
+                border: 1px solid var(--color-popup-border);
+                border-radius: 10px;
+                padding: 0 8px;
+                line-height: 1.6em;
+                font-size: 0.9em;
+                cursor: pointer;
+                background-color: var(--color-base);
+                color: var(--color-popup-unselected);
+
+                &:hover {
+                    filter: brightness(0.95);
+                }
+            }
+        }
+
+        &__group_color_picker {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 0;
+            max-width: 14em;
+
+            &_swatch {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                border: 1px solid var(--color-popup-border);
+                cursor: pointer;
+                padding: 0;
+
+                &:hover {
+                    transform: scale(1.1);
+                }
+            }
+
+            &_custom {
+                display: inline-flex;
+                align-items: center;
+
+                input[type="color"] {
+                    // width: 22px;
+                    // height: 22px;
+                    // padding: 0;
+                    // border: none;
+                    // background: none;
+                    cursor: pointer;
+                }
+            }
+        }
+
         &__tab {
             overflow: hidden;
             box-sizing: border-box;
@@ -797,12 +960,18 @@
             font-size: var(--font-size);
             font-family: var(--font-family);
             font-weight: var(--font-weight);
-
             &_item {
+
                 padding: 2px 0.5em;
                 white-space: nowrap;
                 cursor: pointer;
                 border-radius: 2px;
+
+                &.flexlayout__popup_menu_item_grouped {
+                    border-left: 5px solid var(--flexlayout-group-color, var(--color-tabgroup-default));
+                    padding-left: calc(0.5em - 5px);
+                    border-radius: 0 !important;
+                }
 
                 &:focus-visible {
                     outline: 2px solid var(--color-focus);
