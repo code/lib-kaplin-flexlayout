@@ -62,7 +62,10 @@ export interface IUseUndoResult {
  */
 export function useUndo(initialModel?: Model | null | (() => Model | null), options?: IUndoOptions): IUseUndoResult {
     const maxBufferSize = options?.maxBufferSize ?? 100;
-    const ignoreActionTypes = options?.ignoreActionTypes ?? DEFAULT_IGNORE_ACTION_TYPES;
+    const ignoreActionTypesRef = React.useRef(options?.ignoreActionTypes ?? DEFAULT_IGNORE_ACTION_TYPES);
+    React.useEffect(() => {
+        ignoreActionTypesRef.current = options?.ignoreActionTypes ?? DEFAULT_IGNORE_ACTION_TYPES;
+    });
 
     const [model, setModelState] = React.useState<Model | null>(() => {
         if (typeof initialModel === "function") {
@@ -96,7 +99,7 @@ export function useUndo(initialModel?: Model | null | (() => Model | null), opti
                         modelBeforeAdjusting.current = JSON.stringify(modelRef.current!.toJson());
                     }
                 } else {
-                    if (!ignoreActionTypes.includes(action.type)) {
+                    if (!ignoreActionTypesRef.current.includes(action.type)) {
                         undoBuffer.current.push(modelBeforeAdjusting.current ?? JSON.stringify(modelRef.current!.toJson()));
                         if (undoBuffer.current.length > maxBufferSize) {
                             undoBuffer.current.shift();
@@ -113,7 +116,7 @@ export function useUndo(initialModel?: Model | null | (() => Model | null), opti
         return () => {
             model.removeChangeListener(changeListener);
         };
-    }, [model, maxBufferSize, ignoreActionTypes]);
+    }, [model, maxBufferSize]);
 
     const setModel = React.useCallback((m: Model, resetHistory = true) => {
         modelRef.current = m;

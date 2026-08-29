@@ -159,4 +159,27 @@ describe("Layout render", () => {
         });
         await waitFor(() => expect(screen.getByRole("tab", { name: "Tab One" })).not.toBeNull());
     });
+
+    it("re-invokes the factory when the host re-renders by default", async () => {
+        const countingFactory = vi.fn(factory);
+        const { model, view } = renderLayout(baseJson, { factory: countingFactory });
+        await waitFor(() => expect(screen.getAllByTestId("tab-content").length).toBeGreaterThan(0));
+        const initialCalls = countingFactory.mock.calls.length;
+
+        // an unrelated re-render of <Layout> invalidates memoized tab content by default
+        view.rerender(<Layout model={model} factory={countingFactory} />);
+        await waitFor(() => expect(countingFactory.mock.calls.length).toBeGreaterThan(initialCalls));
+    });
+
+    it("keeps memoized tab content across host re-renders with invalidateTabContentOnParentRender false", async () => {
+        const countingFactory = vi.fn(factory);
+        const { model, view } = renderLayout(baseJson, { factory: countingFactory, invalidateTabContentOnParentRender: false });
+        await waitFor(() => expect(screen.getAllByTestId("tab-content").length).toBeGreaterThan(0));
+        const initialCalls = countingFactory.mock.calls.length;
+        expect(initialCalls).toBeGreaterThan(0);
+
+        // content only refreshes on model changes / redraw(), so an unrelated re-render is free
+        view.rerender(<Layout model={model} factory={countingFactory} invalidateTabContentOnParentRender={false} />);
+        expect(countingFactory.mock.calls.length).toEqual(initialCalls);
+    });
 });

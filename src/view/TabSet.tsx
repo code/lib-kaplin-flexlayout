@@ -12,8 +12,8 @@ import { LayoutController } from "./layout/LayoutInternal";
 import { TabButton } from "./TabButton";
 import { useTabOverflow } from "./TabOverflowHook";
 import { Orientation } from "../model/Orientation";
-import { CLASSES } from "./CSSClassNames";
-import { isAuxMouseEvent, toAriaKeyShortcuts } from "./Utils";
+import { CLASSES } from "../CSSClassNames";
+import { isAuxMouseEvent, tabButtonPath, toAriaKeyShortcuts } from "./Utils";
 import { createPortal } from "react-dom";
 
 /** @internal */
@@ -114,6 +114,10 @@ export const TabSet = (props: ITabSetProps) => {
         }
     };
 
+    const onDragEnd = (_event: React.DragEvent<HTMLElement>) => {
+        controller.getDragDropManager().onDragEnded();
+    };
+
     const onPointerDown = (event: React.PointerEvent<HTMLElement>) => {
         if (!isAuxMouseEvent(event) && !tabsetNode.isActive()) {
             controller.doAction(Actions.setActiveTabset(tabsetNode.getId(), controller.getLayoutId()));
@@ -174,7 +178,7 @@ export const TabSet = (props: ITabSetProps) => {
     // Start Render
 
     const cm = controller.getClassName;
-    const selectedTabNode: TabNode = tabsetNode.getSelectedNode() as TabNode;
+    const selectedTabNode = tabsetNode.getSelectedNode() as TabNode | undefined;
     const path = tabsetNode.getPath();
     const children = tabsetNode.getChildren();
     const isSingleTabStretched = tabsetNode.isEnableSingleTabStretch() && children.length === 1 && children[0] instanceof TabNode;
@@ -221,7 +225,7 @@ export const TabSet = (props: ITabSetProps) => {
                             const isSelected = tabsetNode.getSelected() === flatIndex;
                             // the pill leads its own tabs, so only later group tabs get a divider
                             tabs.push(makeSpacer(spacerKey++, isSelected, lastOneSelected, j > 0));
-                            tabs.push(<TabButton controller={controller} tabNode={groupTab} path={path + "/tb" + flatIndex} key={groupTab.getId()} selected={isSelected} />);
+                            tabs.push(<TabButton controller={controller} tabNode={groupTab} path={tabButtonPath(groupTab)} key={groupTab.getId()} selected={isSelected} />);
                             lastOneSelected = isSelected;
                             lastWasTab = true;
                             hasPrev = true;
@@ -239,7 +243,7 @@ export const TabSet = (props: ITabSetProps) => {
                 const tab = child as TabNode;
                 const isSelected = tabsetNode.getSelected() === flatIndex;
                 tabs.push(makeSpacer(spacerKey++, isSelected, lastOneSelected, hasPrev));
-                tabs.push(<TabButton controller={controller} tabNode={tab} path={path + "/tb" + flatIndex} key={tab.getId()} selected={isSelected} />);
+                tabs.push(<TabButton controller={controller} tabNode={tab} path={tabButtonPath(tab)} key={tab.getId()} selected={isSelected} />);
                 lastOneSelected = isSelected;
                 lastWasTab = true;
                 hasPrev = true;
@@ -466,7 +470,7 @@ export const TabSet = (props: ITabSetProps) => {
         if (tabsetNode.getClassNameTabStrip() !== undefined) {
             tabStripClasses += " " + tabsetNode.getClassNameTabStrip();
         }
-        tabStripClasses += " " + CLASSES.FLEXLAYOUT__TABSET_TABBAR_OUTER_ + tabsetNode.getTabLocation();
+        tabStripClasses += " " + cm(CLASSES.FLEXLAYOUT__TABSET_TABBAR_OUTER_ + tabsetNode.getTabLocation());
 
         if (tabsetNode.isActive()) {
             tabStripClasses += " " + cm(CLASSES.FLEXLAYOUT__TABSET_SELECTED);
@@ -504,6 +508,7 @@ export const TabSet = (props: ITabSetProps) => {
                         onAuxClick={onAuxMouseClick}
                         draggable={true}
                         onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
                     >
                         {leadingContainer}
                         {/* display: contents so the tabs keep wrapping in the strip's flex flow;
@@ -541,6 +546,7 @@ export const TabSet = (props: ITabSetProps) => {
                         draggable={true}
                         onWheel={onMouseWheel}
                         onDragStart={onDragStart}
+                        onDragEnd={onDragEnd}
                     >
                         {leadingContainer}
                         <div className={cm(CLASSES.FLEXLAYOUT__MINI_SCROLLBAR_CONTAINER)}>

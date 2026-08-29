@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { drag, findPath, findTabButton, Location } from "./helpers";
+import { drag, findPath, Location, waitForBox } from "./helpers";
 
 // Unwrapped Groups layout: dragging a tab inside the Design group must reorder within the group,
 // landing exactly where the drop indicator points (not shifted by the removal of the dragged tab).
@@ -15,7 +15,7 @@ test.describe("unwrapped group tab reorder", () => {
         await page.goto("/demo?layout=groups");
         await expect(page).toHaveTitle(/FlexLayout Demo/);
 
-        const colors = await findTabButton(page, "/ts0", 0).boundingBox();
+        const colors = await findPath(page, "/ts0/g0/tb0").boundingBox();
         expect(colors).not.toBeNull();
 
         // drag Colors to the gap between Colors and Typography (just after Colors, i.e. before
@@ -27,7 +27,7 @@ test.describe("unwrapped group tab reorder", () => {
         await page.mouse.down();
         await page.waitForTimeout(50);
         await page.mouse.move(to.x, to.y, { steps: 10 });
-        await page.waitForTimeout(100);
+        await waitForBox(page.locator(".flexlayout__outline_rect"), "drop outline");
 
         // the drop indicator is a thin vertical bar (not the wide pill outline)
         const outline = await page.evaluate(() => {
@@ -41,7 +41,6 @@ test.describe("unwrapped group tab reorder", () => {
         expect(outline!.width).toBeLessThan(10);
 
         await page.mouse.up();
-        await page.waitForTimeout(200);
 
         // Colors already precedes Typography, so the order is unchanged
         expect(await groupOrder(page)).toEqual(["t1", "t2", "t3"]);
@@ -51,9 +50,8 @@ test.describe("unwrapped group tab reorder", () => {
         await page.goto("/demo?layout=groups");
         await expect(page).toHaveTitle(/FlexLayout Demo/);
 
-        // drag Colors onto the left edge of the Icons tab button
-        await drag(page, findTabButton(page, "/ts0", 0), findTabButton(page, "/ts0", 2), Location.LEFT);
-        await page.waitForTimeout(200);
+        // drag Colors onto the left edge of the Icons tab button (both in the Design group)
+        await drag(page, findPath(page, "/ts0/g0/tb0"), findPath(page, "/ts0/g0/tb2"), Location.LEFT);
 
         // Colors ends up between Typography and Icons, exactly where the indicator pointed
         expect(await groupOrder(page)).toEqual(["t2", "t1", "t3"]);
@@ -81,7 +79,6 @@ test.describe("unwrapped group tab reorder", () => {
             undefined,
             { timeout: 10000 },
         );
-        await page.waitForTimeout(200);
 
         // the last child is now the (collapsed) Personal group
         const last = await page.evaluate(() => {
@@ -93,17 +90,15 @@ test.describe("unwrapped group tab reorder", () => {
         expect(last.id).toBe("g3");
 
         const pill = (await findPath(page, "/ts0/g2").boundingBox())!;
-        // drag Colors (tb0) into the empty space just after the Personal pill (past its right edge)
-        const colors = (await findTabButton(page, "/ts0", 0).boundingBox())!;
+        // drag Colors (in the Design group) into the empty space just after the Personal pill (past its right edge)
+        const colors = (await findPath(page, "/ts0/g0/tb0").boundingBox())!;
         const from = { x: colors.x + colors.width / 2, y: colors.y + colors.height / 2 };
         const to = { x: pill.x + pill.width + 20, y: pill.y + pill.height / 2 };
         await page.mouse.move(from.x, from.y);
         await page.mouse.down();
         await page.waitForTimeout(50);
         await page.mouse.move(to.x, to.y, { steps: 10 });
-        await page.waitForTimeout(100);
         await page.mouse.up();
-        await page.waitForTimeout(200);
 
         const result = await page.evaluate(() => {
             const model = (window as any).__flexModel();

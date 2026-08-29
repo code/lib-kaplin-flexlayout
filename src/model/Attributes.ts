@@ -38,7 +38,7 @@ export class Attributes {
     toJson(jsonObj: any, obj: any) {
         for (const attr of this.attributes) {
             const fromValue = obj[attr.name];
-            if (attr.alwaysWriteJson || fromValue !== attr.defaultValue) {
+            if (attr.alwaysWriteJson || (fromValue !== undefined && fromValue !== attr.defaultValue)) {
                 jsonObj[attr.name] = fromValue;
             }
         }
@@ -60,8 +60,12 @@ export class Attributes {
 
     update(jsonObj: any, obj: any) {
         for (const attr of this.attributes) {
-            if (Object.prototype.hasOwnProperty.call(jsonObj, attr.name)) {
-                const fromValue = jsonObj[attr.name];
+            let key = attr.name;
+            if (!Object.prototype.hasOwnProperty.call(jsonObj, key) && attr.alias !== undefined && Object.prototype.hasOwnProperty.call(jsonObj, attr.alias)) {
+                key = attr.alias;
+            }
+            if (Object.prototype.hasOwnProperty.call(jsonObj, key)) {
+                const fromValue = jsonObj[key];
                 if (fromValue === undefined) {
                     delete obj[attr.name];
                 } else {
@@ -90,7 +94,7 @@ export class Attributes {
 
     toTypescriptInterface(name: string, parentAttributes: Attributes | undefined) {
         const lines = [];
-        const sorted = this.attributes.sort((a, b) => a.name.localeCompare(b.name));
+        const sorted = [...this.attributes].sort((a, b) => a.name.localeCompare(b.name));
         lines.push("export interface I" + name + "Attributes {");
         for (let i = 0; i < sorted.length; i++) {
             const c = sorted[i];

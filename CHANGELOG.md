@@ -1,3 +1,7 @@
+## 0.10.7 - 2026-08-29
+* **Fixed:** single-tab group self-drop orphaning the group.
+* **Fixed:** tab button `data-layout-path` now includes its group (`/ts0/g0/tb0` matches panel `/ts0/g0/t0`).
+
 ## 0.10.6 - 2026-08-25
 * **Added:** Tab groups (Chrome-style colored group pills). A new `tabgroup` node type holds tabs as children and renders a colored pill in the tab strip; clicking a pill collapses/expands its tabs, and right-clicking offers rename, color, collapse/expand and ungroup. Groups support drag-and-drop: drop a tab onto a pill to add it, drag a tab out to remove it, and drag the pill to reorder or move the whole group.
 * **Added:** New actions `Actions.addTabToNewGroup(tabNodeId, name?, color?)`, `Actions.ungroup(groupNodeId)` and `Actions.removeTabFromGroup(tabNodeId)`.

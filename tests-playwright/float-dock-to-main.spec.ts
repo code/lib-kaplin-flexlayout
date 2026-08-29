@@ -41,13 +41,12 @@ const dropOnMainLayout = (page: import("@playwright/test").Page, x: number, y: n
 test.beforeEach(async ({ page }) => {
     await page.goto("/demo?layout=test_three_tabs");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(500);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 });
 
 test("docks a floating panel into the main layout by splitting a tabset", async ({ page }) => {
     await createFloat(page, "Dock Me");
-    await page.waitForSelector(".flexlayout__float_window");
-    await page.waitForTimeout(300);
+    await waitForBox(page.locator(".flexlayout__float_window"), "float window");
 
     const mainTabSets = page.locator('.flexlayout__tabset:not([data-layout-path^="/sub"])');
     const before = await mainTabSets.count();
@@ -58,7 +57,6 @@ test("docks a floating panel into the main layout by splitting a tabset", async 
 
     // drop near the right edge of a tabset's content (splitting the rightmost tabset)
     await dropOnMainLayout(page, mainBox.x + mainBox.width - 10, mainBox.y + mainBox.height * 0.4);
-    await page.waitForTimeout(500);
 
     // the float window is gone and its tab now lives in the main layout
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(0);
@@ -69,8 +67,7 @@ test("docks a floating panel into the main layout by splitting a tabset", async 
 
 test("docks a floating panel onto the main layout edge", async ({ page }) => {
     await createFloat(page, "Dock Me");
-    await page.waitForSelector(".flexlayout__float_window");
-    await page.waitForTimeout(300);
+    await waitForBox(page.locator(".flexlayout__float_window"), "float window");
 
     const mainTabSets = page.locator('.flexlayout__tabset:not([data-layout-path^="/sub"])');
     const before = await mainTabSets.count();
@@ -81,7 +78,6 @@ test("docks a floating panel onto the main layout edge", async ({ page }) => {
 
     // drop on the right edge of the main layout (edge dock to the root row)
     await dropOnMainLayout(page, mainBox.x + mainBox.width - 5, mainBox.y + mainBox.height / 2);
-    await page.waitForTimeout(500);
 
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(0);
     await expect(mainTabSets).toHaveCount(before + 1);
@@ -106,15 +102,13 @@ test("docks a floating panel into a sublayout hosted in a main tab", async ({ pa
     await expect(subRoot).toHaveCount(1);
 
     await createFloat(page, "Dock Me");
-    await page.waitForSelector(".flexlayout__float_window");
-    await page.waitForTimeout(300);
+    await waitForBox(page.locator(".flexlayout__float_window"), "float window");
 
     await startDockDrag(page);
     const subBox = await waitForBox(subRoot, "sublayout");
 
     // drop on the sublayout's own content area
     await dropOnLayout(page, subRoot, subBox.x + subBox.width - 10, subBox.y + subBox.height * 0.4);
-    await page.waitForTimeout(500);
 
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(0);
     // the float's tab now lives inside the sublayout
@@ -125,7 +119,7 @@ test("docks a floating panel into a popout window", async ({ page, context }) =>
     // popouts need popoutable tabs, so use the default layout rather than the beforeEach's
     await page.goto("/demo?layout=default");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(500);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 
     // open a popout window from the main layout
     await page.locator('[data-layout-path="/r1/ts1/button/popout"]').click();
@@ -133,7 +127,6 @@ test("docks a floating panel into a popout window", async ({ page, context }) =>
     const popout = context.pages().filter((p) => p !== page && !p.isClosed())[0];
     await popout.waitForLoadState();
     await popout.waitForSelector('[role="tab"]');
-    await popout.waitForTimeout(300);
 
     // create a float whose tab can live in a window
     await page.evaluate(() => {
@@ -145,12 +138,10 @@ test("docks a floating panel into a popout window", async ({ page, context }) =>
             ),
         );
     });
-    await page.waitForSelector(".flexlayout__float_window");
-    await page.waitForTimeout(300);
+    await waitForBox(page.locator(".flexlayout__float_window"), "float window");
 
     // drag the float's checkerboard handle into the popout's layout
     await dragAcrossWindows(page.locator('[data-layout-path="/floatwindow/drag-handle"]'), popout, popout.locator(".flexlayout__layout").first(), Location.RIGHT);
-    await page.waitForTimeout(500);
 
     // the float is gone and its tab now lives in the popout window
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(0);
@@ -159,7 +150,7 @@ test("docks a floating panel into a popout window", async ({ page, context }) =>
 
 test("docks a floating panel into another floating panel", async ({ page }) => {
     await createFloat(page, "Receiver");
-    await page.waitForSelector(".flexlayout__float_window");
+    await waitForBox(page.locator(".flexlayout__float_window"), "float window");
     await page.evaluate(() => {
         (window as any).__flexDispatch(
             (window as any).__flexActions.createSubLayout(
@@ -169,7 +160,6 @@ test("docks a floating panel into another floating panel", async ({ page }) => {
             ),
         );
     });
-    await page.waitForTimeout(300);
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(2);
 
     // drag the "Dock Me" float's checkerboard handle into the "Receiver" float
@@ -181,7 +171,6 @@ test("docks a floating panel into another floating panel", async ({ page }) => {
     const receiverLayout = page.locator(".flexlayout__float_window").nth(0).locator(".flexlayout__layout");
     const receiverBox = await waitForBox(receiverLayout, "receiver float");
     await dropOnLayout(page, receiverLayout, receiverBox.x + receiverBox.width - 10, receiverBox.y + receiverBox.height * 0.4);
-    await page.waitForTimeout(500);
 
     // the "Dock Me" float is gone; its tab now lives in the receiver float
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(1);
@@ -190,8 +179,7 @@ test("docks a floating panel into another floating panel", async ({ page }) => {
 
 test("splits the tabset when dropped near its center (a float dock never merges)", async ({ page }) => {
     await createFloat(page, "Dock Me");
-    await page.waitForSelector(".flexlayout__float_window");
-    await page.waitForTimeout(300);
+    await waitForBox(page.locator(".flexlayout__float_window"), "float window");
 
     const mainTabSets = page.locator('.flexlayout__tabset:not([data-layout-path^="/sub"])');
     const before = await mainTabSets.count();
@@ -202,7 +190,6 @@ test("splits the tabset when dropped near its center (a float dock never merges)
 
     // dropping in the middle of a tabset can never merge (center dock), so it resolves to a split
     await dropOnMainLayout(page, mainBox.x + mainBox.width / 2, mainBox.y + mainBox.height * 0.4);
-    await page.waitForTimeout(500);
 
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(0);
     await expect(mainTabSets).toHaveCount(before + 1);

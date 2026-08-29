@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForBox } from "./helpers";
 
 // regression: theme variables are defined as `var(--flexlayout-<name>, <default>)`. Overriding a
 // global --flexlayout-* variable (on the layout root or :root) must reach every nested layout,
@@ -6,7 +7,7 @@ import { test, expect } from "@playwright/test";
 test("global theme override reaches a floating panel", async ({ page }) => {
     await page.goto("/demo?layout=default");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(600);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 
     await page.evaluate(() => {
         (window as any).__flexDispatch(
@@ -18,7 +19,7 @@ test("global theme override reaches a floating panel", async ({ page }) => {
         );
     });
     await page.waitForSelector(".flexlayout__float_window .flexlayout__tabset", { state: "attached", timeout: 8000 });
-    await page.waitForTimeout(500);
+    await waitForBox(page.locator(".flexlayout__float_window .flexlayout__tabset"), "float tabset");
 
     const backgrounds = () =>
         page.evaluate(() => {
@@ -35,14 +36,12 @@ test("global theme override reaches a floating panel", async ({ page }) => {
     await page.evaluate(() => {
         (window as any).__flexLayout().getRootDiv().style.setProperty("--flexlayout-color-1", "rgb(0, 128, 0)");
     });
-    await page.waitForTimeout(300);
-    expect(await backgrounds()).toEqual({ main: "rgb(0, 128, 0)", float: "rgb(0, 128, 0)" });
+    await expect.poll(backgrounds).toEqual({ main: "rgb(0, 128, 0)", float: "rgb(0, 128, 0)" });
 
     // a global override on :root reaches layouts too
     await page.evaluate(() => {
         (window as any).__flexLayout().getRootDiv().style.removeProperty("--flexlayout-color-1");
         document.documentElement.style.setProperty("--flexlayout-color-1", "rgb(0, 0, 255)");
     });
-    await page.waitForTimeout(300);
-    expect(await backgrounds()).toEqual({ main: "rgb(0, 0, 255)", float: "rgb(0, 0, 255)" });
+    await expect.poll(backgrounds).toEqual({ main: "rgb(0, 0, 255)", float: "rgb(0, 0, 255)" });
 });

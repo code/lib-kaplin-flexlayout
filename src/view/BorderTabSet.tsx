@@ -13,8 +13,8 @@ import { Actions } from "../model/Actions";
 import { I18nLabel } from "./I18nLabel";
 import { useTabOverflow } from "./TabOverflowHook";
 import { Orientation } from "../model/Orientation";
-import { CLASSES } from "./CSSClassNames";
-import { isAuxMouseEvent } from "./Utils";
+import { CLASSES } from "../CSSClassNames";
+import { isAuxMouseEvent, tabButtonPath } from "./Utils";
 
 /** @internal */
 export interface IBorderTabSetProps {
@@ -147,7 +147,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
                                 controller={controller}
                                 border={borderNode.getLocation().getName()}
                                 tabNode={groupTabs[j]}
-                                path={borderNode.getPath() + "/tb" + (groupStartIndex + j)}
+                                path={tabButtonPath(groupTabs[j])}
                                 key={groupTabs[j].getId()}
                                 selected={isSelected}
                                 icons={icons}
@@ -174,7 +174,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
                                     controller={controller}
                                     border={borderNode.getLocation().getName()}
                                     tabNode={groupTabs[j]}
-                                    path={borderNode.getPath() + "/tb" + flatIndex}
+                                    path={tabButtonPath(groupTabs[j])}
                                     key={groupTabs[j].getId()}
                                     selected={isSelected}
                                     icons={icons}
@@ -195,15 +195,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
                 tabButtons.push(makeDivider());
             }
             tabButtons.push(
-                <BorderButton
-                    controller={controller}
-                    border={borderNode.getLocation().getName()}
-                    tabNode={tab}
-                    path={borderNode.getPath() + "/tb" + flatIndex}
-                    key={tab.getId()}
-                    selected={isSelected}
-                    icons={icons}
-                />,
+                <BorderButton controller={controller} border={borderNode.getLocation().getName()} tabNode={tab} path={tabButtonPath(tab)} key={tab.getId()} selected={isSelected} icons={icons} />,
             );
             hasPrev = true;
             flatIndex++;

@@ -2,7 +2,7 @@ import { Attribute, Attributes } from "./Attributes";
 import { DockLocation } from "./DockLocation";
 import { DropInfo } from "./DropInfo";
 import { Rect } from "./Rect";
-import { CLASSES } from "../view/CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
 import { ITabGroupAttributes, IJsonTabGroupNode } from "./IJsonModel";
@@ -35,9 +35,12 @@ export class TabGroupNode extends Node implements IDraggable, IDropTarget {
         return newLayoutNode;
     }
 
+    /** @internal */
     private static attributeDefinitions: Attributes = TabGroupNode.createAttributeDefinitions();
 
+    /** @internal */
     private pillRect: Rect = Rect.empty();
+    /** @internal */
     private endMarkerRect: Rect = Rect.empty();
 
     /** @internal
@@ -421,7 +424,13 @@ export class TabGroupNode extends Node implements IDraggable, IDropTarget {
         if (dragParent !== undefined) {
             if (dragParent instanceof TabGroupNode) {
                 fromIndex = dragParent.getChildren().indexOf(dragNode);
-                dragParent.remove(dragNode);
+                if (dragParent === this) {
+                    // intra-group reorder: avoid auto-deleting the group when the last tab is
+                    // temporarily removed (single-tab self-drop would orphan the group)
+                    dragParent.removeChild(dragNode);
+                } else {
+                    dragParent.remove(dragNode);
+                }
             } else if (dragParent instanceof TabSetNode || dragParent instanceof BorderNode) {
                 dragParent.removeChild(dragNode);
                 dragParent.repairSelected();

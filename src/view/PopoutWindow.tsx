@@ -1,14 +1,12 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { LayoutController } from "./layout/LayoutInternal";
 import { ModelLayout } from "../model/ModelLayout";
 
-// fallback so a stylesheet that never fires load/error (blocked, hung) cannot permanently
-// stall the popout from rendering its content
+// Timeout for blocked stylesheets
 const STYLE_LOAD_TIMEOUT_MS = 2000;
-// css-in-js rules added via the CSSOM sheet.insertRule api are invisible to the MutationObserver,
-// so the copied style tags are polled for rule-count changes while the popout is open
+// Poll CSSOM rules (MutationObserver misses insertRule)
 const STYLE_POLL_INTERVAL_MS = 750;
 
 /** @internal */
@@ -34,6 +32,9 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
     const initializedRef = React.useRef(false);
     const observerRef = React.useRef<MutationObserver | null>(null);
     const pollTimerRef = React.useRef<number | null>(null);
+    // releases the resources of the most recently loaded popout document (main-head observer,
+    // poll timer, beforeunload handler) - re-run when the popout reloads or the component unmounts
+    const cleanupPopoutResourcesRef = React.useRef<(() => void) | null>(null);
     // per-source css rule count, to only re-sync css-in-js tags whose rules actually changed
     const lastRuleCountRef = React.useRef<Map<HTMLElement, number>>(new Map());
 
@@ -70,6 +71,11 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
 
                 popoutWindow.current.addEventListener("load", () => {
                     if (popoutWindow.current) {
+                        // a reload of the popout re-fires load on the same Window: release the
+                        // previous document's observer/timer/handler before re-initializing
+                        cleanupPopoutResourcesRef.current?.();
+                        initializedRef.current = false;
+                        const currentWindow = popoutWindow.current;
                         popoutWindow.current.focus();
 
                         // note: resizeto must be before moveto in chrome otherwise the window will end up at 0,0
@@ -122,19 +128,25 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
                             }, STYLE_POLL_INTERVAL_MS) ?? null;
 
                         // listen for popout unloading (needs to be after load for safari)
-                        popoutWindow.current.addEventListener("beforeunload", () => {
+                        const onPopoutBeforeUnload = () => {
                             if (popoutWindow.current) {
                                 controller.getProps().onPopoutClose?.(layout, popoutWindow.current, popoutDocument);
                                 onCloseLayout(layout); // remove the layout in the model
                                 popoutWindow.current = null;
-                                observerRef.current?.disconnect();
-                                observerRef.current = null;
-                                if (pollTimerRef.current != null) {
-                                    popoutDocument.defaultView?.clearInterval(pollTimerRef.current);
-                                    pollTimerRef.current = null;
-                                }
+                                cleanupPopoutResourcesRef.current?.();
                             }
-                        });
+                        };
+                        currentWindow.addEventListener("beforeunload", onPopoutBeforeUnload);
+
+                        cleanupPopoutResourcesRef.current = () => {
+                            observerRef.current?.disconnect();
+                            observerRef.current = null;
+                            if (pollTimerRef.current != null) {
+                                popoutDocument.defaultView?.clearInterval(pollTimerRef.current);
+                                pollTimerRef.current = null;
+                            }
+                            currentWindow.removeEventListener("beforeunload", onPopoutBeforeUnload);
+                        };
                     }
                 });
             } else {
@@ -146,11 +158,8 @@ export const PopoutWindow = (props: React.PropsWithChildren<IPopoutWindowProps>)
             window.removeEventListener("beforeunload", onMainWindowBeforeUnload);
             popoutWindow.current?.close();
             popoutWindow.current = null;
-            observerRef.current?.disconnect();
-            observerRef.current = null;
-            if (pollTimerRef.current != null) {
-                pollTimerRef.current = null;
-            }
+            // release the popout document resources even if the window failed to close
+            cleanupPopoutResourcesRef.current?.();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

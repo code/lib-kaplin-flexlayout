@@ -4,7 +4,7 @@ import { LayoutController } from "./layout/LayoutInternal";
 import { BorderNode } from "../model/BorderNode";
 import { Splitter } from "./Splitter";
 import { DockLocation } from "../model/DockLocation";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 
 /** @internal */
 export interface IBorderTabProps {

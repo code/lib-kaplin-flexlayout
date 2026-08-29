@@ -171,11 +171,7 @@ export abstract class Node {
         return val;
     }
 
-    /**
-     * Returns the value of the named attribute as set on this node, without falling back to the
-     * global model attribute. For an inherited attribute this is undefined unless the node
-     * overrides it, which can be used to detect an override.
-     */
+    // Get own attribute, no global fallback
     getAttributeOwn(name: string) {
         return this.attributes[name];
     }

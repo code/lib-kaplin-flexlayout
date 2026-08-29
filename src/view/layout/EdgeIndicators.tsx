@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CLASSES } from "../CSSClassNames";
+import { CLASSES } from "../../CSSClassNames";
 import { LayoutController, edgeRectLength, edgeRectWidth } from "./LayoutInternal";
 
 export interface IEdgeIndicatorsProps {

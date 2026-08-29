@@ -82,5 +82,11 @@ export enum I18nLabel {
     /** the accessible name of the group color chooser */
     Group_Color = "Group color",
     /** the group pill tooltip */
-    Group_Pill_Tooltip = "Tab Group, click or press Enter to expand/collapse",
+    Group_Pill_Tooltip = "Tab Group, click to expand/collapse",
+    /** the label text next to the group rename input */
+    Group_Name_Label = "Name",
+    /** the placeholder shown in the group rename input */
+    Group_Name_Placeholder = "Group Name",
+    /** the aria-label prefix for individual color swatches ("Group color 1", etc.) */
+    Group_Color_N = "Group color ?",
 }

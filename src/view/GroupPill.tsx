@@ -3,7 +3,7 @@ import { Actions } from "../model/Actions";
 import { TabGroupNode } from "../model/TabGroupNode";
 import { TabNode } from "../model/TabNode";
 import { LayoutController } from "./layout/LayoutInternal";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { I18nLabel } from "./I18nLabel";
 
 /** @internal */

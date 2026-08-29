@@ -1,8 +1,6 @@
 import * as React from "react";
-import { Node } from "../model/Node";
 import { TabNode } from "../model/TabNode";
 import { LayoutController } from "./layout/LayoutInternal";
-import { ModelLayout } from "../model/ModelLayout";
 import { defaultKeyMap, IKeyMap } from "./layout/LayoutTypes";
 
 /** @internal */
@@ -42,6 +40,13 @@ export function getRenderStateEx(controller: LayoutController, tabNode: TabNode,
 /** @internal */
 export function domId(prefix: string, nodeId: string) {
     return prefix + nodeId.replace(/\s/g, "_"); // aria id references cannot contain whitespace
+}
+
+/** @internal the tab button path of a tab: its node path with the trailing tab segment renamed to
+ *  a tab-button segment (e.g. /ts0/g0/t0 -> /ts0/g0/tb0), so the button path shares the tree
+ *  location of its pill and panel instead of using the flat strip index */
+export function tabButtonPath(tabNode: TabNode) {
+    return tabNode.getPath().replace(/\/t(\d+)$/, "/tb$1");
 }
 
 /** @internal the modifier/key fields shared by native and React keyboard events */
@@ -119,6 +124,10 @@ export let Utils_dragging: boolean = false;
 export function startDrag(doc: Document, event: React.PointerEvent<HTMLElement>, drag: (x: number, y: number) => void, dragEnd: () => void, dragCancel: () => void) {
     Utils_dragging = true;
     event.preventDefault();
+    // capture the pointer so pointerup/pointercancel fire even if the pointer leaves the browser window
+    if (event.currentTarget && typeof event.currentTarget.setPointerCapture === "function") {
+        event.currentTarget.setPointerCapture(event.pointerId);
+    }
 
     const pointerMove = (ev: PointerEvent) => {
         ev.preventDefault();
@@ -146,44 +155,6 @@ export function startDrag(doc: Document, event: React.PointerEvent<HTMLElement>,
     doc.addEventListener("pointermove", pointerMove);
     doc.addEventListener("pointerup", pointerUp);
     doc.addEventListener("pointercancel", pointerCancel);
-}
-
-export function findParentLayout(layout: ModelLayout): ModelLayout | undefined {
-    let parentLayout: ModelLayout | undefined = undefined;
-    const model = layout.getController()!.getModel();
-    model.visitNodes((node) => {
-        if (node instanceof TabNode && node.getSubLayoutId() === layout.getLayoutId()) {
-            parentLayout = node.getLayout();
-        }
-    });
-    return parentLayout;
-}
-
-export function canDockToLayout(node: Node, layout: ModelLayout) {
-    const type = layout.getType();
-    if (type === "window") {
-        return node.isAllowedInWindow();
-    } else if (type === "float") {
-        return true;
-    } else if (type === "tab") {
-        const parentLayout = findParentLayout(layout);
-        if (parentLayout && parentLayout.getType() === "window" && !parentLayout.isMainLayout() && !node.isAllowedInWindow()) {
-            return false;
-        }
-        // a tab sublayout cannot host tabs (or rows of tabs) that carry their own sublayout
-        if (containsTabSublayout(node)) {
-            return false;
-        }
-        return true;
-    }
-    return false;
-}
-
-function containsTabSublayout(node: Node): boolean {
-    if (node instanceof TabNode) {
-        return node.getSubLayoutId() !== undefined;
-    }
-    return node.getChildren().some((child) => containsTabSublayout(child));
 }
 
 export function copyInlineStyles(source: HTMLElement, target: HTMLElement): boolean {

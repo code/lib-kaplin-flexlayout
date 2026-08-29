@@ -1,6 +1,6 @@
 import { TabNode } from "../model/TabNode";
 import { LayoutController } from "./layout/LayoutInternal";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { getRenderStateEx } from "./Utils";
 
 /** @internal */

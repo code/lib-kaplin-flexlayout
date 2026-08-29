@@ -139,6 +139,11 @@ export async function drag(page: Page, from: Locator, to: Locator, loc: Location
     await page.mouse.move(cf.x, cf.y);
     await page.mouse.down();
     await page.waitForTimeout(50); // let the native drag start before moving
+    // native HTML5 drag requires a minimum movement before dragstart fires; the fuzz
+    // test picks random tab pairs that can be very close together, so move at least
+    // ~10px first to guarantee the drag session starts even when the final target is nearby
+    await page.mouse.move(cf.x + 10, cf.y + 10);
+    await page.mouse.move(cf.x + 11, cf.y + 11);
     await page.mouse.move(ct.x, ct.y, { steps: 10 });
     await page.waitForTimeout(50); // let dragover register before the drop
     await page.mouse.up();
@@ -154,6 +159,9 @@ export async function dragWithOffset(page: Page, from: Locator, to: Locator, loc
     await page.mouse.move(cf.x, cf.y);
     await page.mouse.down();
     await page.waitForTimeout(50); // let the native drag start before moving
+    // ensure native dragstart fires even for nearby targets (see drag() above)
+    await page.mouse.move(cf.x + 10, cf.y + 10);
+    await page.mouse.move(cf.x + 11, cf.y + 11);
     await page.mouse.move(ct.x + offsetX, ct.y + offsetY, { steps: 10 });
     await page.waitForTimeout(50); // let dragover register before the drop
     await page.mouse.up();
@@ -233,8 +241,28 @@ export async function dragSplitter(page: Page, from: Locator, upDown: boolean, d
 
     await page.mouse.move(cf.x, cf.y);
     await page.mouse.down();
-    // await page.mouse.move(cf.x + 10, cf.y + 10);
-    // await page.mouse.move((cf.x + ct.x) / 2, (cf.y + ct.y) / 2);
+    await page.waitForTimeout(50);
+    // pointer-based splitter drag needs a minimum movement before the drag outline appears;
+    // fuzz picks distances as small as 0-2px which never fire pointermove, so nudge first
+    // along the drag axis then proceed to the final target (still via steps for smoothness)
+    const nudge = 12;
+    const dir = distance === 0 ? 1 : Math.sign(distance);
+    const clamp = (p: { x: number; y: number }) => {
+        if (!vp) return p;
+        return { x: Math.max(0, Math.min(vp.width - 1, p.x)), y: Math.max(0, Math.min(vp.height - 1, p.y)) };
+    };
+    if (upDown) {
+        const n1 = clamp({ x: cf.x, y: cf.y + dir * nudge });
+        const n2 = clamp({ x: cf.x, y: cf.y + dir * (nudge + 1) });
+        await page.mouse.move(n1.x, n1.y);
+        await page.mouse.move(n2.x, n2.y);
+    } else {
+        const n1 = clamp({ x: cf.x + dir * nudge, y: cf.y });
+        const n2 = clamp({ x: cf.x + dir * (nudge + 1), y: cf.y });
+        await page.mouse.move(n1.x, n1.y);
+        await page.mouse.move(n2.x, n2.y);
+    }
     await page.mouse.move(ct.x, ct.y, { steps: 10 });
+    await page.waitForTimeout(50);
     await page.mouse.up();
 }

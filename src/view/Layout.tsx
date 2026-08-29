@@ -9,7 +9,7 @@ import { BorderNode } from "../model/BorderNode";
 import { Model } from "../model/Model";
 import { I18nLabel } from "./I18nLabel";
 import { DragRectRenderCallback, NodeMouseEvent, ShowOverflowMenuCallback, TabSetPlaceHolderCallback, ITabSetRenderValues, ITabRenderValues, IIcons, IKeyMap } from "./layout/LayoutTypes";
-import { LayoutInternal, LayoutController } from "./layout/LayoutInternal";
+import { getViewController, LayoutInternal, LayoutController } from "./layout/LayoutInternal";
 import { ModelLayout } from "../model/ModelLayout";
 
 export interface ILayoutProps {
@@ -73,6 +73,12 @@ export interface ILayoutProps {
     tabDragSpeed?: number;
     /** set to constrain floating panels to within the layout control */
     constrainFloatPanels?: boolean;
+    /** boolean value, defaults to true. When true every render of the host <Layout> element
+     * invalidates memoized tab content, so factories capturing host state stay fresh. Set to
+     * false when tab content does not depend on host render scope: content then refreshes only
+     * on model changes or an explicit redraw() call, so unrelated parent renders no longer
+     * re-invoke the factory for every visible tab */
+    invalidateTabContentOnParentRender?: boolean;
     /**
      * Wrap the content rendered into a popout window, e.g. to inject css-in-js styles into the
      * popout document via an emotion {@link https://emotion.sh/docs/cache-provider CacheProvider}
@@ -196,7 +202,7 @@ const Layout = React.forwardRef<ILayoutApi, ILayoutProps>((props, ref) => {
         editTabName: (tabNodeId: string) => {
             const node = controllerRef.current?.getModel().getNodeById(tabNodeId);
             if (node instanceof TabNode && node.isEnableRename()) {
-                node.getLayout().getController()?.setEditingTab(node);
+                getViewController(node.getLayout())?.setEditingTab(node);
             }
         },
         getRootDiv: () => {
@@ -204,8 +210,11 @@ const Layout = React.forwardRef<ILayoutApi, ILayoutProps>((props, ref) => {
         },
     }));
 
-    // fresh object per render to invalidate memoized tab contents
-    const renderMarker = {};
+    // fresh object per render to invalidate memoized tab contents (the default). Apps that pass
+    // invalidateTabContentOnParentRender={false} get a stable marker instead, so unrelated parent
+    // renders no longer re-invoke the factory for every visible tab
+    const stableMarker = useRef<object>({});
+    const renderMarker = props.invalidateTabContentOnParentRender === false ? stableMarker.current : {};
 
     return <LayoutInternal key={key.current} ref={controllerRef} {...props} parentRedrawRevision={renderMarker} />;
 });

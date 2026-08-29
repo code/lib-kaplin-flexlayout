@@ -2,7 +2,7 @@ import * as React from "react";
 import { DockLocation } from "../../model/DockLocation";
 import { BorderTabSet } from "../BorderTabSet";
 import { BorderTab } from "../BorderTab";
-import { CLASSES } from "../CSSClassNames";
+import { CLASSES } from "../../CSSClassNames";
 import { LayoutController } from "./LayoutInternal";
 
 export interface IBorderContainerProps {

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { Actions, IJsonModel, Model, Rect, TabNode } from "../src";
+import { Actions, IJsonModel, Model, Rect, TabGroupNode, TabNode } from "../src";
 
 const json: IJsonModel = {
     global: {},
@@ -50,6 +50,38 @@ describe("BorderSet", () => {
         expect(border("top").getPath()).equal("/border/top");
         expect((model.getNodeById("t1") as TabNode).getPath()).equal("/border/top/t0");
         expect((model.getNodeById("t2") as TabNode).getPath()).equal("/border/top/t1");
+    });
+
+    it("setPaths recurses into border groups so grouped tabs get unique paths", () => {
+        model = Model.fromJson({
+            global: {},
+            borders: [
+                {
+                    type: "border",
+                    location: "left",
+                    children: [
+                        { type: "tab", id: "bt0", name: "B0" },
+                        {
+                            type: "tabgroup",
+                            id: "bg1",
+                            name: "BGroup",
+                            children: [
+                                { type: "tab", id: "bt1", name: "B1" },
+                                { type: "tab", id: "bt2", name: "B2" },
+                            ],
+                        },
+                    ],
+                },
+            ],
+            layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [{ type: "tab", id: "t0", name: "T" }] }] },
+        } as IJsonModel);
+
+        model.getBorderSet().setPaths();
+        expect((model.getNodeById("bt0") as TabNode).getPath()).equal("/border/left/t0");
+        expect((model.getNodeById("bg1") as TabGroupNode).getPath()).equal("/border/left/g1");
+        // previously these stayed "" and collided on data-layout-path
+        expect((model.getNodeById("bt1") as TabNode).getPath()).equal("/border/left/g1/t0");
+        expect((model.getNodeById("bt2") as TabNode).getPath()).equal("/border/left/g1/t1");
     });
 
     it("getBorderMap indexes borders by their location", () => {

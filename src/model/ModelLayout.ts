@@ -3,11 +3,12 @@ import { IJsonSubLayout, ISubLayoutAttributes } from "./IJsonModel";
 import { Model } from "./Model";
 import { RowNode } from "./RowNode";
 import { Node } from "./Node";
+import { TabNode } from "./TabNode";
 import { TabSetNode } from "./TabSetNode";
-import { LayoutController } from "../view/layout/LayoutInternal";
 import { ILayoutType } from "./IJsonModel";
 import { Attribute } from "./Attributes";
 import { Attributes } from "./Attributes";
+import { ILayoutController } from "./ILayoutController";
 
 /**
  * A layout within the model: the main layout, a sublayout hosted in a tab, or a popout
@@ -17,18 +18,26 @@ import { Attributes } from "./Attributes";
  * (see {@link Model}).
  */
 export class ModelLayout {
-    private _layoutId: string;
-    private _type: ILayoutType;
-    private _rect: Rect;
-    private _path: string;
+    /** @internal */
+    private layoutId: string;
+    /** @internal */
+    private type: ILayoutType;
+    /** @internal */
+    private rect: Rect;
+    /** @internal */
+    private path: string;
     /** @internal */
     private attributes: Record<string, any>;
 
-    private _controller: LayoutController | undefined;
-    private _rootRow?: RowNode | undefined;
-    private _maximizedTabSet?: TabSetNode | undefined;
-    private _activeTabSet?: TabSetNode | undefined;
-    private _toExportRectFunction: (rect: Rect, type: ILayoutType) => Rect;
+    private controller: ILayoutController | undefined;
+    /** @internal */
+    private rootRow?: RowNode | undefined;
+    /** @internal */
+    private maximizedTabSet?: TabSetNode | undefined;
+    /** @internal */
+    private activeTabSet?: TabSetNode | undefined;
+    /** @internal */
+    private toExportRectFunction: (rect: Rect, type: ILayoutType) => Rect;
 
     /** @internal */
     private static attributeDefinitions: Attributes = ModelLayout.createAttributeDefinitions();
@@ -36,20 +45,20 @@ export class ModelLayout {
     constructor(layoutId: string, subLayoutId: number, type: ILayoutType, rect: Rect, json?: IJsonSubLayout) {
         this.attributes = {};
         ModelLayout.attributeDefinitions.fromJson(json ?? {}, this.attributes);
-        this._layoutId = layoutId;
-        this._type = type;
-        this._rect = rect;
-        this._toExportRectFunction = (r, _type) => r;
+        this.layoutId = layoutId;
+        this.type = type;
+        this.rect = rect;
+        this.toExportRectFunction = (r, _type) => r;
         if (layoutId === Model.MAIN_LAYOUT_ID) {
-            this._path = "";
+            this.path = "";
         } else {
-            this._path = "/sublayout" + subLayoutId;
+            this.path = "/sublayout" + subLayoutId;
         }
     }
 
     /** the path of this layout within the model, e.g. `/sublayout1` */
     getPath() {
-        return this._path;
+        return this.path;
     }
 
     /** visit every node in this layout's tree */
@@ -59,17 +68,50 @@ export class ModelLayout {
 
     /** whether this is the main layout */
     isMainLayout() {
-        return this._layoutId === Model.MAIN_LAYOUT_ID;
+        return this.layoutId === Model.MAIN_LAYOUT_ID;
+    }
+
+    /** @internal */
+    findParentLayout(): ModelLayout | undefined {
+        let parentLayout: ModelLayout | undefined = undefined;
+        const model = this.getController()!.getModel();
+        model.visitNodes((node) => {
+            if (node instanceof TabNode && node.getSubLayoutId() === this.getLayoutId()) {
+                parentLayout = node.getLayout();
+            }
+        });
+        return parentLayout;
+    }
+
+    /** @internal */
+    canDockTo(node: Node): boolean {
+        const type = this.getType();
+        if (type === "window") {
+            return node.isAllowedInWindow();
+        } else if (type === "float") {
+            return true;
+        } else if (type === "tab") {
+            const parentLayout = this.findParentLayout();
+            if (parentLayout && parentLayout.getType() === "window" && !parentLayout.isMainLayout() && !node.isAllowedInWindow()) {
+                return false;
+            }
+            // a tab sublayout cannot host tabs (or rows of tabs) that carry their own sublayout
+            if (containsTabSublayout(node)) {
+                return false;
+            }
+            return true;
+        }
+        return false;
     }
 
     /** the id of this layout */
     getLayoutId(): string {
-        return this._layoutId;
+        return this.layoutId;
     }
 
     /** the type of this layout: `window`, `float` or `tab` */
     getType(): ILayoutType {
-        return this._type;
+        return this.type;
     }
 
     /** the name of this layout, e.g. as shown in the model explorer; undefined if not set */
@@ -94,78 +136,78 @@ export class ModelLayout {
 
     /** the rectangle of this layout (popout windows/floating panels) */
     getRect(): Rect {
-        return this._rect;
+        return this.rect;
     }
 
     /** the browser window this layout is rendered in (the popout window for a popout layout) */
     getWindow(): Window | undefined {
-        return this._controller?.getCurrentWindow();
+        return this.controller?.getCurrentWindow();
     }
 
     /** @internal */
     setType(value: ILayoutType) {
-        this._type = value;
+        this.type = value;
     }
 
     /** @internal */
-    getController(): LayoutController | undefined {
-        return this._controller;
+    getController(): ILayoutController | undefined {
+        return this.controller;
     }
 
     /** @internal */
     getRootRow(): RowNode | undefined {
-        return this._rootRow;
+        return this.rootRow;
     }
 
     /** @internal */
     getMaximizedTabSet(): TabSetNode | undefined {
-        return this._maximizedTabSet;
+        return this.maximizedTabSet;
     }
 
     /** @internal */
     getActiveTabSet(): TabSetNode | undefined {
-        return this._activeTabSet;
+        return this.activeTabSet;
     }
 
     /** @internal */
     setRect(value: Rect) {
-        this._rect = value;
+        this.rect = value;
     }
 
     /** @internal */
-    setController(value: LayoutController | undefined) {
-        this._controller = value;
+    setController(value: ILayoutController | undefined) {
+        this.controller = value;
     }
 
     /** @internal */
     getWindowId(): string | undefined {
-        return this._controller?.getWindowId();
+        return this.controller?.getWindowId();
     }
 
     /** @internal */
     setRootRow(rowNode: RowNode | undefined) {
         rowNode?.setLayout(this);
-        this._rootRow = rowNode;
+        this.rootRow = rowNode;
     }
 
     /** @internal */
     setMaximizedTabSet(value: TabSetNode | undefined) {
-        this._maximizedTabSet = value;
+        this.maximizedTabSet = value;
     }
 
     /** @internal */
     setActiveTabSet(value: TabSetNode | undefined) {
-        this._activeTabSet = value;
+        this.activeTabSet = value;
     }
 
     /** @internal */
     getToExportRectFunction(): (rect: Rect, type: ILayoutType) => Rect {
-        return this._toExportRectFunction!;
+        return this.toExportRectFunction!;
     }
 
     /** @internal */
     setToExportRectFunction(value: (rect: Rect, type: ILayoutType) => Rect) {
-        this._toExportRectFunction = value;
+        this.toExportRectFunction = value;
     }
 
     /** @internal */
@@ -210,4 +252,11 @@ export class ModelLayout {
 
         return layout;
     }
+}
+
+function containsTabSublayout(node: Node): boolean {
+    if (node instanceof TabNode) {
+        return node.getSubLayoutId() !== undefined;
+    }
+    return node.getChildren().some((child) => containsTabSublayout(child));
 }

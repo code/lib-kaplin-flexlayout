@@ -59,7 +59,8 @@ export class BorderSet {
             let i = 0;
             for (const node of borderNode.getChildren()) {
                 if (node.getType() === TabGroupNode.TYPE) {
-                    node.setPath(path + "/g" + i);
+                    // recurse so the group's tabs get unique paths too (/border/x/g0/t0 ...)
+                    node.setPaths(path + "/g" + i);
                 } else {
                     node.setPath(path + "/t" + i);
                 }

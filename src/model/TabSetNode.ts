@@ -3,9 +3,7 @@ import { Attributes } from "./Attributes";
 import { DockLocation } from "./DockLocation";
 import { DropInfo } from "./DropInfo";
 import { Rect } from "./Rect";
-import { CLASSES } from "../view/CSSClassNames";
-import { canDockToLayout } from "../view/Utils";
-import { BorderNode } from "./BorderNode";
+import { CLASSES } from "../CSSClassNames";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
 import { IJsonTabGroupNode, IJsonTabSetNode, ITabSetAttributes } from "./IJsonModel";
@@ -16,7 +14,7 @@ import { Node } from "./Node";
 import { RowNode } from "./RowNode";
 import { findStripDrop } from "./StripDrop";
 import { TabNode } from "./TabNode";
-import { adjustSelectedIndex, adjustSelectedIndexAfterInsert } from "./Utils";
+import { adjustSelectedIndex, adjustSelectedIndexAfterInsert, detachDragNode, isInSubtree, restoreSelectionAfterInsert } from "./Utils";
 
 export class TabSetNode extends Node implements IDraggable, IDropTarget {
     static readonly TYPE = "tabset";
@@ -30,16 +28,23 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
                 if (jsonChild.type === TabGroupNode.TYPE) {
                     const child = TabGroupNode.fromJson(jsonChild as IJsonTabGroupNode, model);
                     newLayoutNode.addChild(child);
-                } else {
+                } else if (jsonChild.type === TabNode.TYPE || jsonChild.type === undefined) {
+                    // a missing type defaults to tab for backwards compatibility with hand built json
                     const child = TabNode.fromJson(jsonChild, model);
                     newLayoutNode.addChild(child);
+                } else {
+                    // reject rather than silently dropping malformed json content
+                    throw new Error(`Error: invalid tabset child type "${jsonChild.type}" (expected "tab" or "tabgroup")`);
                 }
             }
         }
         if (newLayoutNode.children.length === 0) {
             newLayoutNode.setSelected(-1);
         } else if (newLayoutNode.getSelected() >= newLayoutNode.getTabNodes().length) {
+            // clamp out-of-range selected index from json to prevent children[selected] crash
             newLayoutNode.setSelected(newLayoutNode.getTabNodes().length - 1);
+        } else if (newLayoutNode.getSelected() < -1) {
+            newLayoutNode.setSelected(-1);
         }
 
         if (json.maximized && json.maximized === true) {
@@ -52,13 +57,20 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
 
         return newLayoutNode;
     }
+    /** @internal */
     private static attributeDefinitions: Attributes = TabSetNode.createAttributeDefinitions();
 
+    /** @internal */
     private tabStripRect: Rect = Rect.empty();
+    /** @internal */
     private contentRect: Rect = Rect.empty();
+    /** @internal */
     private calculatedMinHeight: number;
+    /** @internal */
     private calculatedMinWidth: number;
+    /** @internal */
     private calculatedMaxHeight: number;
+    /** @internal */
     private calculatedMaxWidth: number;
 
     /** @internal */
@@ -354,15 +366,12 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
             const dockLocation = DockLocation.CENTER;
             const outlineRect = this.tabStripRect;
             dropInfo = new DropInfo(this, outlineRect!, dockLocation, -1, CLASSES.FLEXLAYOUT__OUTLINE_RECT);
-        } else if (this.getLayoutId() !== Model.MAIN_LAYOUT_ID && !canDockToLayout(dragNode, layout!)) {
+        } else if (this.getLayoutId() !== Model.MAIN_LAYOUT_ID && !layout!.canDockTo(dragNode)) {
             return undefined;
         } else if (this.contentRect!.contains(x, y)) {
             let dockLocation = DockLocation.CENTER;
             if (this.model.getMaximizedTabset(this.getLayoutId()) === undefined) {
-                // resolve the drop from what is actually valid here: center merges are unavailable
-                // when the drag cannot merge (excludeCenter) or the tabset disables drops, and edge
-                // splits are unavailable when the tabset cannot be split - when only one is valid it
-                // covers the whole content
+                // Pick valid drop type (center vs edge)
                 const centerValid = !excludeCenter && this.isEnableDrop();
                 const edgesValid = this.isEnableDivide();
                 if (!centerValid && !edgesValid) {
@@ -437,32 +446,13 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
     drop(dragNode: Node, location: DockLocation, index: number, select?: boolean) {
         const dockLocation = location;
 
-        if (this === dragNode) {
-            // tabset drop into itself
-            return; // dock back to itself
+        if (isInSubtree(this, dragNode)) {
+            // tabset drop into itself or into one of its own descendants: dock back to itself / ignore
+            return;
         }
 
         const selectedTab = this.getSelectedNode();
-        const dragParent = dragNode.getParent() as BorderNode | TabSetNode | RowNode | TabGroupNode | undefined;
-        let fromIndex = 0;
-        if (dragParent !== undefined) {
-            fromIndex = dragParent.removeChild(dragNode);
-            if (dragNode instanceof TabGroupNode) {
-                // a whole group left its container: repair the container's flat selection
-                (dragParent as TabSetNode | BorderNode).repairSelected();
-            } else if (dragParent instanceof BorderNode && dragParent.getSelected() === fromIndex) {
-                // if selected node in border is being docked into tabset then deselect border tabs
-                dragParent.setSelected(-1);
-            } else if (dragParent instanceof TabGroupNode) {
-                // a tab leaving a group: repair the group's selection and delete the empty group
-                dragParent.getTabContainer().repairSelected();
-                if (dragParent.getChildren().length === 0) {
-                    dragParent.getTabContainer().removeChild(dragParent);
-                }
-            } else {
-                adjustSelectedIndex(dragParent, fromIndex);
-            }
-        }
+        const { dragParent, fromIndex } = detachDragNode(dragNode, this);
 
         // if dropping a tab/group back to the same tabset and moving to a forward position then reduce insertion index
         if ((dragNode instanceof TabNode || dragNode instanceof TabGroupNode) && dragParent === this && fromIndex < index && index > 0) {
@@ -486,31 +476,11 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
 
             if (dragNode instanceof TabNode) {
                 this.addChild(dragNode, insertPos);
-                if (select || (select !== false && this.isAutoSelectTab())) {
-                    this.setSelected(this.getTabNodes().indexOf(dragNode));
-                } else if (selectedTab !== undefined) {
-                    const newIndex = this.getTabNodes().indexOf(selectedTab);
-                    if (newIndex === -1) {
-                        this.repairSelected(); // selected tab moved into a closed group
-                    } else {
-                        this.setSelected(newIndex);
-                    }
-                } else {
-                    this.repairSelected();
-                }
+                restoreSelectionAfterInsert(this, selectedTab, select, dragNode);
             } else if (dragNode instanceof TabGroupNode) {
                 // move the whole group (with its tabs) into this tabset as a unit
                 this.addChild(dragNode, insertPos);
-                if (selectedTab !== undefined) {
-                    const newIndex = this.getTabNodes().indexOf(selectedTab);
-                    if (newIndex === -1) {
-                        this.repairSelected();
-                    } else {
-                        this.setSelected(newIndex);
-                    }
-                } else {
-                    this.repairSelected();
-                }
+                restoreSelectionAfterInsert(this, selectedTab);
             } else if (dragNode instanceof RowNode) {
                 const firstInsertPos = insertPos;
                 (dragNode as RowNode).forEachNode((child, _level) => {

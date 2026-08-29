@@ -40,7 +40,6 @@ test("iframe keeps its state when moved within the layout, and reloads when popp
     // --- move the tab to the other tabset: state must be preserved (not reloaded) ---
     const tab = page.locator(".flexlayout__tab_button").filter({ hasText: "Frame" });
     await drag(page, tab, findPath(page, "/r2/ts0/t0"), Location.CENTER);
-    await page.waitForTimeout(300);
 
     const afterMove = await readIframeState(iframeEl(page));
     expect(afterMove.loadId).toBe(before.loadId); // same load -> not reloaded

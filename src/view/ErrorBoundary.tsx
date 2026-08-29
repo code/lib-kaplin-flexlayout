@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ErrorInfo } from "react";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 
 /** @internal */
 export interface IErrorBoundaryProps {
@@ -24,9 +24,8 @@ export class ErrorBoundary extends React.Component<IErrorBoundaryProps, IErrorBo
         return { hasError: true };
     }
 
-    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-        console.debug(error);
-        console.debug(errorInfo);
+    componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
+        // error details available via the error boundary's retry UI; no unconditional console logging
     }
 
     retry = () => {

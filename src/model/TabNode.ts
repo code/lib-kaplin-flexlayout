@@ -8,7 +8,7 @@ import { IJsonTabNode, ITabAttributes } from "./IJsonModel";
 import { Model } from "./Model";
 import { Node } from "./Node";
 import { TabSetNode } from "./TabSetNode";
-import { CLASSES } from "../view/CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 
 export class TabNode extends Node implements IDraggable {
     static readonly TYPE = "tab";
@@ -19,15 +19,24 @@ export class TabNode extends Node implements IDraggable {
         return newLayoutNode;
     }
 
+    /** @internal */
     private tabRect: Rect = Rect.empty();
+    /** @internal */
     private renderedName?: string;
+    /** @internal */
     private extra: Record<string, any>;
+    /** @internal */
     private visible: boolean;
+    /** @internal */
     private rendered: boolean;
 
+    /** @internal */
     private moveableElement: HTMLElement | null;
+    /** @internal */
     private tabStamp: HTMLElement | null;
+    /** @internal */
     private scrollTop?: number;
+    /** @internal */
     private scrollLeft?: number;
 
     /** @internal */
@@ -339,10 +348,7 @@ export class TabNode extends Node implements IDraggable {
         return this.moveableElement;
     }
 
-    /**
-     * @internal
-     * This method is exposed to allow the workaround for issue: #524  
-     */
+    /** @internal Workaround for #524 */
     setMoveableElement(element: HTMLElement) {
         this.moveableElement = element;
     }

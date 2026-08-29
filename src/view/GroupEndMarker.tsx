@@ -2,7 +2,7 @@ import * as React from "react";
 import { Actions } from "../model/Actions";
 import { TabGroupNode } from "../model/TabGroupNode";
 import { LayoutController } from "./layout/LayoutInternal";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 
 /** @internal */
 export interface IGroupEndMarkerProps {

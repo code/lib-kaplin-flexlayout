@@ -1,11 +1,12 @@
 import { test, expect } from "@playwright/test";
+import { waitForBox } from "./helpers";
 
 // Model.fromJson with a previous model: replacing the model with a round tripped copy keeps the
 // tab contents mounted (no flash, no loss of dom/component state)
 test("rerender via fromJson with previous model keeps tab contents mounted", async ({ page }) => {
     await page.goto("/demo?layout=test_two_tabs");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(300);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 
     await page.evaluate(() => {
         const panel = document.querySelector('[role="tabpanel"]') as any;
@@ -16,7 +17,6 @@ test("rerender via fromJson with previous model keeps tab contents mounted", asy
     });
 
     await page.locator('[data-id="rerender"]').click();
-    await page.waitForTimeout(300);
 
     const result = await page.evaluate(() => {
         const panel = document.querySelector('[role="tabpanel"]') as any;

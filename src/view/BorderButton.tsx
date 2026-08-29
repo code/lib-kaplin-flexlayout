@@ -7,7 +7,7 @@ import { TabGroupNode } from "../model/TabGroupNode";
 import { IIcons } from "../view/layout/LayoutTypes";
 import { LayoutController } from "../view/layout/LayoutInternal";
 import { ICloseType } from "../model/ICloseType";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { domId, focusFirstIn, getRenderStateEx, hasModifier, isAuxMouseEvent, matchesKey, toAriaKeyShortcuts } from "./Utils";
 
 /** @internal */
@@ -106,7 +106,7 @@ export const BorderButton = (props: IBorderButtonProps) => {
         }
         if (closeType === ICloseType.Visible) {
             // not selected but x should be visible due to hover
-            if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            if (controller.getCurrentWindow()?.matchMedia("(hover: hover) and (pointer: fine)").matches) {
                 return true;
             }
         }

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { TabNode } from "../model/TabNode";
 import { TabSetNode } from "../model/TabSetNode";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { LayoutController } from "./layout/LayoutInternal";
 import { BorderNode } from "../model/BorderNode";
 import { Actions } from "../model/Actions";
@@ -141,11 +141,7 @@ export const Tab = (props: ITabProps) => {
         className += " " + tabNode.getContentClassName();
     }
 
-    /* 
-        Note: the tab content (from the factory) is rendered into a moveable element 
-        (see LayoutController.renderTabElements method)
-        the moveable element is appended to selfRef in the useEffect above
-    */
+    // Content renders into moveable element
     return (
         <>
             {overlay}

@@ -5,7 +5,7 @@ import { Node } from "./Node";
 import { Rect } from "./Rect";
 import { TabGroupNode } from "./TabGroupNode";
 import { TabNode } from "./TabNode";
-import { CLASSES } from "../view/CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import type { BorderNode } from "./BorderNode";
 import type { TabSetNode } from "./TabSetNode";
 
@@ -23,18 +23,17 @@ function getChildLineRect(child: TabNode | TabGroupNode, x: number, y: number, v
     return vertical ? (r.x <= x && x <= r.getRight() ? r : undefined) : r.y <= y && y <= r.getBottom() ? r : undefined;
 }
 
-/** @internal the "drop before this element" outline: a vertical bar (horizontal flow) or a
- *  horizontal bar (vertical flow) at the element's leading edge. */
+/** @internal */
 function outlineBefore(vertical: boolean, extent: Rect): Rect {
     return vertical ? new Rect(extent.x, extent.y - 2, extent.width, 3) : new Rect(extent.x - 2, extent.y, 3, extent.height);
 }
 
-/** @internal the "append" outline at an element's trailing edge. */
+/** @internal */
 function outlineAfter(vertical: boolean, extent: Rect): Rect {
     return vertical ? new Rect(extent.x, extent.getBottom() - 2, extent.width, 3) : new Rect(extent.getRight() - 2, extent.y, 3, extent.height);
 }
 
-/** @internal the group-reorder outline anchored at the group's true start (pill) or end. */
+/** @internal */
 function outlineReorder(vertical: boolean, boundary: Rect, before: boolean): Rect {
     if (vertical) {
         return new Rect(boundary.x, (before ? boundary.y : boundary.getBottom()) - 2, boundary.width, 3);

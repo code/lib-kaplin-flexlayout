@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { TabNode } from "../model/TabNode";
 import { TabGroupNode } from "../model/TabGroupNode";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { I18nLabel } from "./I18nLabel";
 import { LayoutController } from "./layout/LayoutInternal";
 import { TabButtonStamp } from "./TabButtonStamp";
@@ -316,10 +316,7 @@ export const PopupMenu = (props: IPopupMenuProps) => {
  */
 export function showPopupMenu(props: IPopupMenuProps): () => void {
     const container = resolveContainer(props);
-    // snapshot an element anchor to a DOMRect NOW, while the trigger is live and laid out. the menu
-    // renders in its own (deferred) react root, by which point a re-render of the opener could have
-    // detached the element - measuring it then returned 0,0, which in a popout window (whose layout
-    // root sits at the viewport origin) placed the menu at 0,0 instead of over the trigger.
+    // Snapshot anchor now — element may detach before menu shows
     const anchor = isElementAnchor(props.anchor) ? props.anchor.getBoundingClientRect() : props.anchor;
     const host = container.ownerDocument.createElement("div");
     container.appendChild(host);

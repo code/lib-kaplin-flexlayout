@@ -11,11 +11,18 @@ export class DockLocation {
 
     /** @internal */
     static getByName(name: string): DockLocation {
-        return DockLocation.values.get(name)!;
+        const location = DockLocation.values.get(name);
+        if (location === undefined) {
+            throw new Error(`Error: unknown dock location "${name}"`);
+        }
+        return location;
     }
 
     /** @internal */
     static getLocation(rect: Rect, x: number, y: number, excludeCenter: boolean = false) {
+        if (!(rect.width > 0) || !(rect.height > 0)) {
+            return DockLocation.CENTER;
+        }
         x = (x - rect.x) / rect.width;
         y = (y - rect.y) / rect.height;
 

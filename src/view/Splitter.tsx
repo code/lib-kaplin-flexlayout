@@ -4,7 +4,7 @@ import { BorderNode } from "../model/BorderNode";
 import { DockLocation } from "../model/DockLocation";
 import { RowNode } from "../model/RowNode";
 import { Orientation } from "../model/Orientation";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { I18nLabel } from "./I18nLabel";
 import { LayoutController } from "./layout/LayoutInternal";
 import { enablePointerOnIFrames, hasModifier, isDesktop, startDrag } from "./Utils";
@@ -23,13 +23,13 @@ export const Splitter = (props: ISplitterProps) => {
     const { controller, node, index, horizontal } = props;
 
     const selfRef = React.useRef<HTMLDivElement>(null);
-    const extendedRef = React.useRef<HTMLDivElement>(null);
     const pBounds = React.useRef<number[]>([]);
     const outlineDiv = React.useRef<HTMLDivElement | undefined>(undefined);
     const handleDiv = React.useRef<HTMLDivElement | undefined>(undefined);
     const dragStartX = React.useRef<number>(0);
     const dragStartY = React.useRef<number>(0);
     const initalSizes = React.useRef<{ initialSizes: number[]; sum: number; startPosition: number }>({ initialSizes: [], sum: 0, startPosition: 0 });
+    const draggingTimerRef = React.useRef<number | undefined>(undefined);
 
     const onTouchStart = React.useCallback((event: TouchEvent) => {
         event.preventDefault();
@@ -38,15 +38,23 @@ export const Splitter = (props: ISplitterProps) => {
 
     React.useEffect(() => {
         const self = selfRef.current;
-        const extended = extendedRef.current;
         // Android fix: must have passive touchstart handler to prevent default handling
         self?.addEventListener("touchstart", onTouchStart, { passive: false });
-        extended?.addEventListener("touchstart", onTouchStart, { passive: false });
         return () => {
             self?.removeEventListener("touchstart", onTouchStart);
-            extended?.removeEventListener("touchstart", onTouchStart);
+            // clean up any mid-drag resources if the splitter unmounts
+            if (draggingTimerRef.current !== undefined) {
+                clearTimeout(draggingTimerRef.current);
+                draggingTimerRef.current = undefined;
+            }
+            if (outlineDiv.current) {
+                controller.getRootDiv()?.removeChild(outlineDiv.current);
+                outlineDiv.current = undefined;
+                enablePointerOnIFrames(true, controller.getCurrentDocument()!);
+                controller.setSplitterDragging(false);
+            }
         };
-    }, [onTouchStart]);
+    }, [onTouchStart, controller]);
 
     const onPointerDown = (event: React.PointerEvent<HTMLElement>) => {
         event.stopPropagation();
@@ -123,12 +131,20 @@ export const Splitter = (props: ISplitterProps) => {
     };
 
     const onDragCancel = () => {
-        const rootdiv = controller.getRootDiv();
-        if (rootdiv && outlineDiv.current) {
-            rootdiv.removeChild(outlineDiv.current as Element);
+        if (outlineDiv.current) {
+            // commit an in-progress realtime resize so the undo snapshot taken at drag start is
+            // flushed here rather than leaking into the next action; a non-realtime drag only moved
+            // the preview outline, so a cancelled drag leaves the model untouched
+            if (controller.isRealtimeResize()) {
+                updateLayout(false);
+            }
+            const rootdiv = controller.getRootDiv();
+            if (rootdiv && outlineDiv.current) {
+                rootdiv.removeChild(outlineDiv.current as HTMLElement);
+            }
+            outlineDiv.current = undefined;
         }
-        outlineDiv.current = undefined;
-        setTimeout(() => controller.setSplitterDragging(false), 300);
+        draggingTimerRef.current = window.setTimeout(() => controller.setSplitterDragging(false), 300);
         enablePointerOnIFrames(true, controller.getCurrentDocument()!);
     };
 
@@ -161,7 +177,7 @@ export const Splitter = (props: ISplitterProps) => {
             outlineDiv.current = undefined;
         }
         // keep the flag until the ResizeObserver has fired
-        setTimeout(() => controller.setSplitterDragging(false), 300);
+        draggingTimerRef.current = window.setTimeout(() => controller.setSplitterDragging(false), 300);
         enablePointerOnIFrames(true, controller.getCurrentDocument()!);
     };
 

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { TabNode } from "../model/TabNode";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { TabButtonStamp } from "./TabButtonStamp";
 import { LayoutController } from "./layout/LayoutInternal";
 
@@ -20,6 +20,9 @@ export const DragTabButton = React.memo((props: IDragTabButton) => {
 
     React.useEffect(() => {
         tabNode.setTabStamp(selfRef.current);
+        return () => {
+            tabNode.setTabStamp(null);
+        };
     }, [tabNode]);
 
     const cm = controller.getClassName;

@@ -1,6 +1,6 @@
 import { test, expect, Page } from "@playwright/test";
 import { checkBorderTab, checkTab, checkTabButton, drag, dragSplitter, dragToEdge, dragWithOffset, findAllTabSets, findPath, findTabButton, Location, waitForBox } from "./helpers";
-import { CLASSES } from "../src/view/CSSClassNames";
+import { CLASSES } from "../src/CSSClassNames";
 
 /*
 

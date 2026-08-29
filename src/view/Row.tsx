@@ -1,7 +1,7 @@
 import * as React from "react";
 import { RowNode } from "../model/RowNode";
 import { TabSetNode } from "../model/TabSetNode";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { LayoutController } from "./layout/LayoutInternal";
 import { TabSet } from "./TabSet";
 import { Splitter } from "./Splitter";

@@ -184,6 +184,110 @@ describe("TabGroupNode attributes", () => {
     });
 });
 
+describe("selection adjustment with groups (flat vs direct-child index)", () => {
+    const tsWithGroupThenTabs = (): IJsonModel => ({
+        global: {},
+        layout: {
+            type: "row",
+            children: [
+                {
+                    type: "tabset",
+                    id: "ts0",
+                    children: [group("g1", "G1", [tab("t1", "T1"), tab("t2", "T2")]), tab("t3", "T3"), tab("t4", "T4")],
+                },
+            ],
+        },
+    });
+
+    it("deleting a direct tab after a group keeps a tab before it selected", () => {
+        const model = makeModel(tsWithGroupThenTabs());
+        const ts0 = model.getNodeById("ts0") as TabSetNode;
+        ts0.setSelected(2); // t3
+        model.doAction(Actions.deleteTab("t4"));
+        // tabNodes were [t1,t2,t3,t4]; the removed t4 had child index 2 == flat index 2 but lies
+        // after t3, so t3 must stay selected
+        expect(ts0.getSelectedNode()?.getId()).toBe("t3");
+        expect(ts0.getSelected()).toBe(2);
+    });
+
+    it("deleting the selected last tab after a group selects the new last tab", () => {
+        const model = makeModel(tsWithGroupThenTabs());
+        const ts0 = model.getNodeById("ts0") as TabSetNode;
+        ts0.setSelected(3); // t4
+        model.doAction(Actions.deleteTab("t4"));
+        expect(ts0.getSelectedNode()?.getId()).toBe("t3");
+        expect(ts0.getSelected()).toBe(2);
+    });
+
+    it("removing a tab before the selected one shifts the flat selection down", () => {
+        const model = makeModel({
+            global: {},
+            layout: {
+                type: "row",
+                children: [
+                    {
+                        type: "tabset",
+                        id: "ts0",
+                        children: [tab("t0", "T0"), group("g1", "G1", [tab("t1", "T1"), tab("t2", "T2")]), tab("t3", "T3")],
+                    },
+                ],
+            },
+        });
+        const ts0 = model.getNodeById("ts0") as TabSetNode;
+        ts0.setSelected(3); // t3
+        model.doAction(Actions.deleteTab("t0"));
+        // tabNodes now [t1,t2,t3] so t3 is flat 2
+        expect(ts0.getSelectedNode()?.getId()).toBe("t3");
+        expect(ts0.getSelected()).toBe(2);
+    });
+
+    it("moving a direct tab after a group out of the tabset keeps the flat selection correct", () => {
+        const model = makeModel({
+            global: {},
+            layout: {
+                type: "row",
+                children: [
+                    {
+                        type: "tabset",
+                        id: "ts0",
+                        children: [group("g1", "G1", [tab("t1", "T1"), tab("t2", "T2")]), tab("t3", "T3"), tab("t4", "T4")],
+                    },
+                    { type: "tabset", id: "ts1", children: [tab("t9", "T9")] },
+                ],
+            },
+        });
+        const ts0 = model.getNodeById("ts0") as TabSetNode;
+        ts0.setSelected(2); // t3
+        model.doAction(Actions.moveNode("t4", "ts1", DockLocation.CENTER, -1));
+        expect(ts0.getSelectedNode()?.getId()).toBe("t3");
+        expect(ts0.getSelected()).toBe(2);
+    });
+
+    it("merging a tabset after a group does not shift a selection inside the group", () => {
+        const model = makeModel({
+            global: {},
+            layout: {
+                type: "row",
+                children: [
+                    {
+                        type: "tabset",
+                        id: "ts0",
+                        children: [group("g1", "G1", [tab("t1", "T1"), tab("t2", "T2"), tab("t3", "T3")]), tab("t4", "T4"), tab("t5", "T5")],
+                    },
+                    { type: "tabset", id: "ts1", children: [tab("b1", "B1"), tab("b2", "B2")] },
+                ],
+            },
+        });
+        const ts0 = model.getNodeById("ts0") as TabSetNode;
+        ts0.setSelected(2); // t3 (inside g1)
+        model.doAction(Actions.moveNode("ts1", "ts0", DockLocation.CENTER, 2));
+        // ts1 merges at child index 2: children [g1,t4,b1,b2,t5]; t3 stays flat 2
+        expect(ts0.getSelectedNode()?.getId()).toBe("t3");
+        expect(ts0.getSelected()).toBe(2);
+        expect(ts0.getTabNodes().map((t) => t.getId())).toEqual(["t1", "t2", "t3", "t4", "b1", "b2", "t5"]);
+    });
+});
+
 describe("group actions", () => {
     it("addTabToNewGroup creates a group containing the tab", () => {
         const model = makeModel(groupsJson());

@@ -35,7 +35,7 @@ export class Actions {
     static POPOUT_TAB = "FlexLayout_PopoutTab";
     static POPOUT_TABSET = "FlexLayout_PopoutTabset";
     static CLOSE_POPOUT = "FlexLayout_ClosePopout";
-    static MOVE_POPOUT_TO_FRONT = "FlexLayout_MoveFloatToFront";
+    static MOVE_FLOAT_TO_FRONT = "FlexLayout_MoveFloatToFront";
     static MOVE_FLOAT = "FlexLayout_MoveFloat";
     static DOCK_FLOAT_TO_LAYOUT = "FlexLayout_DockFloatToLayout";
     static POPOUT_FLOAT = "FlexLayout_PopoutFloat";
@@ -265,7 +265,7 @@ export class Actions {
      * @returns {Action} the action
      */
     static movePopoutToFront(layoutId: string): Action {
-        return new Action(Actions.MOVE_POPOUT_TO_FRONT, { layoutId: layoutId });
+        return new Action(Actions.MOVE_FLOAT_TO_FRONT, { layoutId: layoutId });
     }
 
     /**

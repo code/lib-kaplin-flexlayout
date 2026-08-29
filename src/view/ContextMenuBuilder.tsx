@@ -7,7 +7,8 @@ import { Node } from "../model/Node";
 import { TabNode } from "../model/TabNode";
 import { TabSetNode } from "../model/TabSetNode";
 import { I18nLabel } from "./I18nLabel";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
+import { getViewController } from "./layout/LayoutInternal";
 import { IPopupMenuItem, PopupMenuEntry, showPopupMenu } from "./PopupMenu";
 
 /** Standard context menu actions, each mapped to a prebuilt menu item. */
@@ -66,6 +67,8 @@ export interface INodeContextMenuOptions {
     onAction?: (action: Action) => void;
     /** close the open context menu (used by the group picker / pill rename / color controls) */
     closeMenu?: () => void;
+    /** resolve a default CSS class name through the layout's classNameMapper */
+    getClassName?: (defaultClassName: string) => string;
     /** include actions that are not allowed on the node as disabled items (default false).
      *  Set true to show the full set with not-allowed actions greyed out instead of omitted. */
     includeDisabled?: boolean;
@@ -157,13 +160,13 @@ function isActionEnabled(action: NodeContextAction, node: Node): boolean {
             // popout positions from the parent's content rect: always available in tabsets; for
             // border tabs it needs the selected tab's measured rect. A tabset pops out as a whole.
             return node instanceof TabSetNode
-                ? node.isAllowedInWindow() && (node.getLayout().getController()?.isSupportsPopout() ?? true)
+                ? node.isAllowedInWindow() && (getViewController(node.getLayout())?.isSupportsPopout() ?? true)
                 : node instanceof TabNode &&
                       !node.isPoppedOut() &&
                       !node.isPinned() &&
                       (node.isInsideTabSet() || node.isSelected()) &&
                       node.isAllowedInWindow() &&
-                      (node.getLayout().getController()?.isSupportsPopout() ?? true);
+                      (getViewController(node.getLayout())?.isSupportsPopout() ?? true);
         case "float":
             // float positions from the parent's content rect: always available in tabsets; for
             // border tabs it needs the selected tab's measured rect. A tabset floats as a whole.
@@ -217,7 +220,7 @@ function isActionEnabled(action: NodeContextAction, node: Node): boolean {
     }
 }
 
-/** @internal the i18n label for each action, state-dependent for pin/maximize/borderType */
+/** @internal */
 function labelFor(action: NodeContextAction, node: Node): I18nLabel {
     switch (action) {
         case "rename":
@@ -253,24 +256,21 @@ function labelFor(action: NodeContextAction, node: Node): I18nLabel {
     }
 }
 
-/** @internal resolve the item label: getLabel override, else the i18n label through the
- *  layout controller's i18nMapper (the enum value is the English fallback) */
+/** @internal */
 function resolveLabel(node: Node, action: NodeContextAction, getLabel: INodeContextMenuOptions["getLabel"]): string {
     if (getLabel) {
         return getLabel(action, node as TabNode | TabSetNode | BorderNode | TabGroupNode);
     }
     const label = labelFor(action, node);
-    return node.getLayout().getController()?.i18nName(label) ?? label;
+    return getViewController(node.getLayout())?.i18nName(label) ?? label;
 }
 
-/** @internal perform the action for the given node, dispatching through `dispatch` */
+/** @internal */
 function performAction(action: NodeContextAction, node: Node, dispatch: (action: Action) => void) {
     switch (action) {
         case "rename":
             // renaming is driven by the layout controller (inline edit), not an action
-            node.getLayout()
-                .getController()
-                ?.setEditingTab(node as TabNode);
+            getViewController(node.getLayout())?.setEditingTab(node as TabNode);
             break;
         case "pin": {
             const tab = node as TabNode;
@@ -346,7 +346,7 @@ const DEFAULT_GROUP_COLOR_PALETTE = ["#d97a7a", "#dd8a4a", "#cbc688", "#94b870",
 
 /** @internal read a CSS custom property from the layout root, or undefined if unavailable */
 function readLayoutCssVar(node: Node, name: string): string | undefined {
-    const root = node.getLayout().getController()?.getRootDiv();
+    const root = getViewController(node.getLayout())?.getRootDiv();
     if (!root) return undefined;
     const value = root.ownerDocument.defaultView?.getComputedStyle(root).getPropertyValue(name).trim();
     return value && value.length > 0 ? value : undefined;
@@ -373,8 +373,7 @@ function parseCssColorList(raw: string): string[] {
     return result;
 }
 
-/** @internal the color palette offered by the pill's single-line color chooser, read from the
- *  --color-tabgroup-menu-palette CSS variable (falls back to the hardcoded default list). */
+/** @internal */
 function getGroupColorPalette(node: Node): string[] {
     const raw = readLayoutCssVar(node, "--color-tabgroup-menu-palette");
     if (!raw) return DEFAULT_GROUP_COLOR_PALETTE;
@@ -382,13 +381,12 @@ function getGroupColorPalette(node: Node): string[] {
     return parsed.length > 0 ? parsed : DEFAULT_GROUP_COLOR_PALETTE;
 }
 
-/** @internal the default color for a newly created group, read from --color-tabgroup-default. */
+/** @internal */
 function getGroupDefaultColor(node: Node): string | undefined {
     return readLayoutCssVar(node, "--color-tabgroup-default");
 }
 
-/** @internal the "Add to group" picker item: a row of chips, one per other group in the tabset.
- *  Clicking a chip moves the tab into that group and closes the menu. */
+/** @internal */
 function getGroupPickerItem(tab: TabNode, options: INodeContextMenuOptions): IPopupMenuItem {
     const dispatch = options.onAction ?? ((action: Action) => tab.getModel().doAction(action));
     const tabset = tab.getTabContainer();
@@ -419,7 +417,7 @@ function getGroupPickerItem(tab: TabNode, options: INodeContextMenuOptions): IPo
     return { key: "addToGroup", content, disabled: groups.length === 0, onSelect: () => options.closeMenu?.() };
 }
 
-/** @internal the pill menu's inline rename control (commits on Enter or blur) */
+/** @internal */
 function getGroupRenameItem(group: TabGroupNode, options: INodeContextMenuOptions): IPopupMenuItem {
     const dispatch = options.onAction ?? ((action: Action) => group.getModel().doAction(action));
     const commit = (value: string) => {
@@ -429,14 +427,14 @@ function getGroupRenameItem(group: TabGroupNode, options: INodeContextMenuOption
     const content = (
         <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
             <label className={CLASSES.FLEXLAYOUT__GROUP_RENAME}>
-                Name
+                {getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Name_Label) ?? I18nLabel.Group_Name_Label}
                 <input
                     type="text"
                     className={CLASSES.FLEXLAYOUT__GROUP_RENAME_INPUT}
-                    placeholder="Group Name"
+                    placeholder={getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Name_Placeholder) ?? I18nLabel.Group_Name_Placeholder}
                     defaultValue={group.getName()}
                     autoFocus={true}
-                    aria-label={group.getLayout().getController()?.i18nName(I18nLabel.Rename_Group) ?? I18nLabel.Rename_Group}
+                    aria-label={getViewController(group.getLayout())?.i18nName(I18nLabel.Rename_Group) ?? I18nLabel.Rename_Group}
                     onFocus={(e) => e.currentTarget.select()}
                     onKeyDown={(e) => {
                         e.stopPropagation();
@@ -450,7 +448,8 @@ function getGroupRenameItem(group: TabGroupNode, options: INodeContextMenuOption
                         // only commit when focus leaves the menu entirely; clicking another control in
                         // the menu (color swatch, collapse/expand, ungroup) must not trigger a commit
                         const next = e.relatedTarget as HTMLElement | null;
-                        const menu = e.currentTarget.closest(".flexlayout__popup_menu");
+                        const resolvedClass = options.getClassName?.(CLASSES.FLEXLAYOUT__POPUP_MENU) ?? CLASSES.FLEXLAYOUT__POPUP_MENU;
+                        const menu = e.currentTarget.closest("." + resolvedClass);
                         if (next && menu && menu.contains(next)) {
                             return;
                         }
@@ -463,7 +462,7 @@ function getGroupRenameItem(group: TabGroupNode, options: INodeContextMenuOption
     return { key: "rename", content };
 }
 
-/** @internal the pill menu's single-line color chooser: preset swatches plus a custom picker */
+/** @internal */
 function getGroupColorItem(group: TabGroupNode, options: INodeContextMenuOptions): IPopupMenuItem {
     const dispatch = options.onAction ?? ((action: Action) => group.getModel().doAction(action));
     const pick = (color: string) => {
@@ -478,14 +477,14 @@ function getGroupColorItem(group: TabGroupNode, options: INodeContextMenuOptions
                     type="button"
                     className="flexlayout__group_color_picker_swatch"
                     style={{ backgroundColor: c }}
-                    aria-label={`Group color ${i + 1}`}
+                    aria-label={(getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Color_N) ?? I18nLabel.Group_Color_N).replace("?", String(i + 1))}
                     onClick={(e) => {
                         e.stopPropagation();
                         pick(c);
                     }}
                 />
             ))}
-            <label className="flexlayout__group_color_picker_custom" title={group.getLayout().getController()?.i18nName(I18nLabel.Group_Color) ?? I18nLabel.Group_Color}>
+            <label className="flexlayout__group_color_picker_custom" title={getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Color) ?? I18nLabel.Group_Color}>
                 <input type="color" defaultValue={group.getColor()} onChange={(e) => pick(e.currentTarget.value)} />
             </label>
         </div>
@@ -634,7 +633,7 @@ export function getTabGroupMenuItems(group: TabGroupNode, options: INodeContextM
  * intercept/undo the dispatched actions, and `closeMenu` is wired automatically.
  */
 export function showGroupMenu(group: TabGroupNode, anchor: { x: number; y: number } | DOMRect | HTMLElement, options: INodeContextMenuOptions = {}): () => void {
-    const controller = group.getLayout().getController()!;
+    const controller = getViewController(group.getLayout())!;
     let hide = () => {};
     hide = showPopupMenu({
         anchor,
@@ -643,7 +642,7 @@ export function showGroupMenu(group: TabGroupNode, anchor: { x: number; y: numbe
         container: controller.getLayoutRef() ?? undefined,
         classNameMapper: controller.getClassName,
         title: group.getName(),
-        items: getTabGroupMenuItems(group, { ...options, closeMenu: () => hide() }),
+        items: getTabGroupMenuItems(group, { ...options, closeMenu: () => hide(), getClassName: options.getClassName ?? controller.getClassName }),
         onClose: () => {
             // nothing to clean up; the caller may supply its own onClose via options
         },

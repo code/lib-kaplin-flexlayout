@@ -4,7 +4,7 @@ import { Attributes } from "./Attributes";
 import { DockLocation } from "./DockLocation";
 import { DropInfo } from "./DropInfo";
 import { Orientation } from "./Orientation";
-import { CLASSES } from "../view/CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { BorderNode } from "./BorderNode";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
@@ -12,7 +12,7 @@ import { IJsonRowNode, IJsonTabSetNode, IRowAttributes, ITabAttributes } from ".
 import { DefaultMax, DefaultMin, Model } from "./Model";
 import { Node } from "./Node";
 import { TabSetNode } from "./TabSetNode";
-import { canDockToLayout } from "../view/Utils";
+import { isInSubtree } from "./Utils";
 import { ModelLayout } from "./ModelLayout";
 
 export class RowNode extends Node implements IDropTarget {
@@ -30,6 +30,9 @@ export class RowNode extends Node implements IDropTarget {
                 } else if (jsonChild.type === RowNode.TYPE) {
                     const child = RowNode.fromJson(jsonChild as IJsonRowNode, model, layout);
                     newLayoutNode.addChild(child);
+                } else {
+                    // reject rather than silently dropping malformed json content
+                    throw new Error(`Error: invalid row child type "${jsonChild.type}" (expected "row" or "tabset")`);
                 }
             }
         }
@@ -109,8 +112,7 @@ export class RowNode extends Node implements IDropTarget {
 
         for (let i = 0; i < index; i++) {
             const n = c[i] as TabSetNode | RowNode;
-            // clamp each child's effective max to its min: a contradictory min > max config would
-            // otherwise invert the combined bounds and freeze the splitter on a degenerate position
+            // Keep bounds ordered when min/max conflict
             p[0] += h ? n.getMinWidth() : n.getMinHeight();
             q[0] += h ? Math.max(n.getMinWidth(), n.getMaxWidth()) : Math.max(n.getMinHeight(), n.getMaxHeight());
             if (i > 0) {
@@ -127,9 +129,7 @@ export class RowNode extends Node implements IDropTarget {
 
         p = [Math.max(q[1], p[0]), Math.min(q[0], p[1])];
 
-        // the row cannot satisfy the combined child min/max constraints (e.g. the min sizes exceed
-        // the available space): return an ordered degenerate bound rather than lo > hi, which would
-        // make getBoundPosition collapse every position and poison the weight math
+        // Keep bounds ordered when constraints conflict
         if (p[0] > p[1]) {
             p = [p[0], p[0]];
         }
@@ -284,9 +284,7 @@ export class RowNode extends Node implements IDropTarget {
         for (const child of this.children) {
             const c = child as RowNode | TabSetNode;
             c.calcMinMaxSize();
-            // clamp each child's max to at least its min so a contradictory min > max child cannot
-            // invert the accumulated row max below the accumulated min (consistent with the splitter
-            // bound math that reads these sizes)
+            // Keep bounds ordered when min/max conflict
             const cMaxH = Math.max(c.getMinHeight(), c.getMaxHeight());
             const cMaxW = Math.max(c.getMinWidth(), c.getMaxWidth());
             if (this.getOrientation() === Orientation.VERT) {
@@ -311,9 +309,7 @@ export class RowNode extends Node implements IDropTarget {
             first = false;
         }
 
-        // contradictory child min/max (e.g. a child whose max is below this row's accumulated min)
-        // can invert the cross-axis bounds; keep max >= min so the splitter/weight math stays
-        // well-ordered
+        // Keep bounds ordered when constraints conflict
         this.maxWidth = Math.max(this.maxWidth, this.minWidth);
         this.maxHeight = Math.max(this.maxHeight, this.minHeight);
     }
@@ -397,7 +393,7 @@ export class RowNode extends Node implements IDropTarget {
 
         const layout = this.getLayout();
 
-        if (this.getLayoutId() !== Model.MAIN_LAYOUT_ID && !canDockToLayout(dragNode, layout!)) {
+        if (this.getLayoutId() !== Model.MAIN_LAYOUT_ID && !layout!.canDockTo(dragNode)) {
             return undefined;
         }
 
@@ -437,8 +433,13 @@ export class RowNode extends Node implements IDropTarget {
     }
 
     /** @internal */
-    drop(dragNode: Node, location: DockLocation, index: number): void {
+    drop(dragNode: Node, location: DockLocation, index: number, _select?: boolean): void {
         const dockLocation = location;
+
+        if (isInSubtree(this, dragNode)) {
+            // dropping a row/tabset into itself or one of its own descendants would corrupt the tree
+            return;
+        }
 
         const parent = dragNode.getParent();
 
@@ -479,7 +480,7 @@ export class RowNode extends Node implements IDropTarget {
 
         node.setWeight(size / 3);
 
-        const horz = !this.model.isRootOrientationVertical();
+        const horz = this.getOrientation() === Orientation.HORZ;
         if (dockLocation === DockLocation.CENTER) {
             if (index === -1) {
                 this.addChild(node, this.children.length);

@@ -4,7 +4,7 @@ import { DockLocation } from "./DockLocation";
 import { DropInfo } from "./DropInfo";
 import { Orientation } from "./Orientation";
 import { Rect } from "./Rect";
-import { CLASSES } from "../view/CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { TabGroupNode } from "./TabGroupNode";
 import { IDraggable } from "./IDraggable";
 import { IDropTarget } from "./IDropTarget";
@@ -13,8 +13,7 @@ import { Model } from "./Model";
 import { Node } from "./Node";
 import { findStripDrop } from "./StripDrop";
 import { TabNode } from "./TabNode";
-import { TabSetNode } from "./TabSetNode";
-import { adjustSelectedIndex } from "./Utils";
+import { detachDragNode, restoreSelectionAfterInsert } from "./Utils";
 
 export class BorderNode extends Node implements IDropTarget {
     static readonly TYPE = "border";
@@ -28,8 +27,12 @@ export class BorderNode extends Node implements IDropTarget {
                 let child: TabNode | TabGroupNode;
                 if (jsonChild.type === TabGroupNode.TYPE) {
                     child = TabGroupNode.fromJson(jsonChild as IJsonTabGroupNode, model);
-                } else {
+                } else if (jsonChild.type === TabNode.TYPE || jsonChild.type === undefined) {
+                    // a missing type defaults to tab for backwards compatibility with hand built json
                     child = TabNode.fromJson(jsonChild, model);
+                } else {
+                    // reject rather than silently dropping malformed json content
+                    throw new Error(`Error: invalid border child type "${jsonChild.type}" (expected "tab" or "tabgroup")`);
                 }
                 child.setParent(border);
                 return child;
@@ -39,6 +42,8 @@ export class BorderNode extends Node implements IDropTarget {
         if (border.getSelected() >= border.getTabNodes().length) {
             // clamp out-of-range selected index from json to prevent children[selected] crash
             border.setSelected(border.getTabNodes().length - 1);
+        } else if (border.getSelected() < -1) {
+            border.setSelected(-1);
         }
 
         return border;
@@ -322,27 +327,8 @@ export class BorderNode extends Node implements IDropTarget {
             return; // borders can only contain tabs and groups (as in canDrop)
         }
 
-        let fromIndex = 0;
         const selectedTab = this.getSelectedNode();
-        const dragParent = dragNode.getParent() as BorderNode | TabSetNode | TabGroupNode | undefined;
-        if (dragParent !== undefined) {
-            fromIndex = dragParent.removeChild(dragNode);
-            if (dragNode instanceof TabGroupNode) {
-                // a whole group left its container: repair the container's flat selection
-                (dragParent as TabSetNode | BorderNode).repairSelected();
-            } else if (dragParent !== this && dragParent instanceof BorderNode && dragParent.getSelected() === fromIndex) {
-                // if selected node in border is being docked into a different border then deselect border tabs
-                dragParent.setSelected(-1);
-            } else if (dragParent instanceof TabGroupNode) {
-                // a tab leaving a group: repair the group's selection and delete the empty group
-                dragParent.getTabContainer().repairSelected();
-                if (dragParent.getChildren().length === 0) {
-                    dragParent.getTabContainer().removeChild(dragParent);
-                }
-            } else {
-                adjustSelectedIndex(dragParent, fromIndex);
-            }
-        }
+        const { dragParent, fromIndex } = detachDragNode(dragNode, this);
 
         // if dropping a tab back to the same border and moving to a forward position then reduce insertion index
         if (dragParent === this && fromIndex < index && index > 0) {
@@ -358,27 +344,10 @@ export class BorderNode extends Node implements IDropTarget {
         this.addChild(dragNode, insertPos);
 
         if (dragNode instanceof TabGroupNode) {
-            if (selectedTab !== undefined) {
-                const newIndex = this.getTabNodes().indexOf(selectedTab);
-                if (newIndex === -1) {
-                    this.repairSelected();
-                } else {
-                    this.setSelected(newIndex);
-                }
-            } else {
-                this.repairSelected();
-            }
-        } else if (select || (select !== false && this.isAutoSelectTab())) {
-            this.setSelected(this.getTabNodes().indexOf(dragNode));
-        } else if (selectedTab !== undefined) {
-            const newIndex = this.getTabNodes().indexOf(selectedTab);
-            if (newIndex === -1) {
-                this.repairSelected(); // selected tab moved into a closed group
-            } else {
-                this.setSelected(newIndex);
-            }
+            // move the whole group (with its tabs): keep the previously selected tab selected
+            restoreSelectionAfterInsert(this, selectedTab);
         } else {
-            this.repairSelected();
+            restoreSelectionAfterInsert(this, selectedTab, select, dragNode);
         }
 
         this.model.tidy();

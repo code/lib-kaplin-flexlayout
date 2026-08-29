@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForBox } from "./helpers";
 
 // regression: the demo lets you change the layout font size via the --font-size CSS variable. The
 // imperatively-positioned tab panels must re-measure when the tabstrip height changes (smaller font
@@ -6,7 +7,7 @@ import { test, expect } from "@playwright/test";
 test("tab panels and border bars re-measure when the font size changes", async ({ page }) => {
     await page.goto("/demo?layout=default");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(600);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 
     const measure = () =>
         page.evaluate(() => {
@@ -22,9 +23,13 @@ test("tab panels and border bars re-measure when the font size changes", async (
     await page.evaluate(() => {
         (document.querySelector(".flexlayout__layout") as HTMLElement).style.setProperty("--font-size", "xx-small");
     });
-    await page.waitForTimeout(800);
-    const after = await measure();
-
-    expect(after.panelH).toBeGreaterThan(before.panelH + 5); // smaller strip leaves more room for panels
-    expect(after.borderBarH).toBeLessThan(before.borderBarH - 5); // the bottom border bar shrinks
+    await expect
+        .poll(
+            async () => {
+                const after = await measure();
+                return after.panelH > before.panelH + 5 && after.borderBarH < before.borderBarH - 5;
+            },
+            { timeout: 5000 },
+        )
+        .toBe(true);
 });

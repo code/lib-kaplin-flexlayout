@@ -28,7 +28,6 @@ const popoutAndClose = async (page: import("@playwright/test").Page, context: im
     const popoutPage = await waitForPopout(context, page);
     await popoutPage.waitForSelector('[role="tab"]');
     await popoutPage.close({ runBeforeUnload: true }); // triggers beforeunload -> closePopout
-    await page.waitForTimeout(2000);
 };
 
 for (const [name, tabId] of [
@@ -38,7 +37,6 @@ for (const [name, tabId] of [
     test(`${name} resizes after its popout window is closed into a float`, async ({ page, context }) => {
         await page.goto("/demo?layout=default");
         await page.waitForSelector(".flexlayout__tabset");
-        await page.waitForTimeout(600);
 
         await popoutAndClose(page, context, tabId);
         await assertFloatFits(page);

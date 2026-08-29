@@ -14,11 +14,11 @@ import { BorderNode } from "../../model/BorderNode";
 import { DockLocation } from "../../model/DockLocation";
 import { Orientation } from "../../model/Orientation";
 import { Rect } from "../../model/Rect";
-import { CLASSES } from "../CSSClassNames";
+import { CLASSES } from "../../CSSClassNames";
 import { I18nLabel } from "../I18nLabel";
 import { TabButtonStamp } from "../TabButtonStamp";
-import { LayoutController } from "./LayoutInternal";
-import { findParentLayout, isSafari } from "../Utils";
+import { getViewController, LayoutController } from "./LayoutController";
+import { isSafari } from "../Utils";
 import { ModelLayout } from "../../model/ModelLayout";
 
 export class DragDropManager {
@@ -209,7 +209,7 @@ export class DragDropManager {
             if (dockToMain && layout.getLayoutId() === DragDropManager.dragState?.floatLayoutId) {
                 continue;
             }
-            const dragDropManager = layout.getController()?.getDragDropManager();
+            const dragDropManager = getViewController(layout)?.getDragDropManager();
             if (dragDropManager) {
                 if (dragDropManager.getDragEnterCount() > 0) {
                     if (layout.getType() === "tab") {
@@ -222,18 +222,18 @@ export class DragDropManager {
         }
 
         if (foundTab) {
-            const parentLayout = findParentLayout(foundTab);
+            const parentLayout = foundTab.findParentLayout();
             if (found === parentLayout || !found) {
                 found = foundTab;
             }
         }
 
         if (found) {
-            found.getController()!.getDragDropManager().setActive(true, event);
+            getViewController(found)!.getDragDropManager().setActive(true, event);
         }
         for (const layout of layouts) {
             if (layout !== found) {
-                layout.getController()?.getDragDropManager().setActive(false, event);
+                getViewController(layout)?.getDragDropManager().setActive(false, event);
             }
         }
     }
@@ -262,8 +262,9 @@ export class DragDropManager {
     clearDragMain() {
         this._controller.showOverlayOnAllWindows(false);
         for (const [, layout] of this._controller.getModel().getLayouts()) {
-            if (layout.getController()) {
-                layout.getController()!.getDragDropManager().clearDragLocal();
+            const controller = getViewController(layout);
+            if (controller) {
+                controller.getDragDropManager().clearDragLocal();
             }
         }
     }
@@ -384,11 +385,10 @@ export class DragDropManager {
         if (this._controller.isMainLayout()) {
             let anyDragging = false;
             for (const [, layout] of this._controller.getModel().getLayouts()) {
-                if (layout.getController()) {
-                    if (layout.getController()!.getDragDropManager().isDragging()) {
-                        anyDragging = true;
-                        break;
-                    }
+                const controller = getViewController(layout);
+                if (controller && controller.getDragDropManager().isDragging()) {
+                    anyDragging = true;
+                    break;
                 }
             }
             if (anyDragging === false) {

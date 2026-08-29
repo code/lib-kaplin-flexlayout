@@ -55,7 +55,7 @@ const gotoLayout = async (page: Page, name: string, json: unknown) => {
     );
     await page.goto("/demo?layout=" + name);
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(300); // settle
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 };
 
 test("realtime row drag keeps weights finite and removes the drag outline", async ({ page }) => {

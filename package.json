@@ -1,6 +1,6 @@
 {
   "name": "flexlayout-react",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "description": "A multi-tab docking layout manager",
   "author": "Caplin Systems Ltd",
   "repository": {
@@ -31,7 +31,8 @@
   "files": [
     "dist/",
     "types/",
-    "style/"
+    "style/**",
+    "!**/*.css.map"
   ],
   "keywords": [
     "react",
@@ -73,8 +74,10 @@
     "check:interfaces": "tsx scripts/generate-json-interfaces.ts --check",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "playwright": "playwright test --project=chromium --reporter=line",
+    "playwright": "playwright test --project=chromium",
     "playwright:ui": "playwright test --ui",
+    "fuzz": "cross-env FUZZ=1 playwright test --project=chromium fuzz",
+    "fuzz:200": "cross-env FUZZ=1 FUZZ_ITERATIONS=200 playwright test --project=chromium fuzz",
     "lint": "npm run check:interfaces && eslint src demo tests tests-playwright",
     "format": "prettier --write src demo tests tests-playwright",
     "format:check": "prettier --check src demo tests tests-playwright",
@@ -121,6 +124,7 @@
     "react-chartjs-2": "^5.3.1",
     "react-dom": "^19.2.8",
     "rimraf": "^6.1.3",
+    "cross-env": "^7.0.3",
     "sass": "^1.103.1",
     "styled-components": "^6.5.3",
     "tsx": "^4.23.12",

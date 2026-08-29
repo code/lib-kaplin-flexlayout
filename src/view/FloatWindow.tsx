@@ -1,6 +1,5 @@
 import * as React from "react";
-// import { createPortal } from 'react-dom';
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 import { LayoutController } from "./layout/LayoutInternal";
 import { ModelLayout } from "../model/ModelLayout";
 import { Rect } from "../model/Rect";
@@ -31,7 +30,6 @@ const RESIZE_ZINDEX = 10;
 const RESIZE_MARGIN = -4;
 const RESIZE_EDGE_SIZE = 8;
 const RESIZE_CORNER_SIZE = 12;
-const RESIZE_SE_CORNER_SIZE = 12;
 const MIN_WIDTH = 150;
 const MIN_HEIGHT = 25;
 
@@ -59,9 +57,10 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
     }, [rect]);
 
     React.useEffect(() => {
-        requestAnimationFrame(() => {
+        const id = requestAnimationFrame(() => {
             setRect(layout.getRect());
         });
+        return () => cancelAnimationFrame(id);
     }, [layout]);
 
     const clampToDoc = React.useCallback(
@@ -275,7 +274,6 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
                 width: rect.width,
                 height: rect.height,
                 position: "absolute",
-                // zIndex: zIndex // needed if using portal
             }}
         >
             <div ref={headerRef} className={cm(CLASSES.FLEXLAYOUT__FLOAT_WINDOW_HEADER)} onPointerDown={onPointerDownHeader}>
@@ -315,13 +313,6 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
                         {icons.popoutFloatWindow}
                     </button>
                 )}
-                {/* <div
-                    className={cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_BUTTON) + " " + cm(CLASSES.FLEXLAYOUT__TAB_TOOLBAR_BUTTON_CLOSE)}
-                    style={{ cursor: "pointer" }}
-                    onClick={() => onCloseLayout(layout)}
-                >
-                    {(typeof icons.closeFloatPopout === "function") ? icons.closeFloatPopout() : icons.closeFloatPopout}
-                </div> */}
             </div>
             <div className={cm(CLASSES.FLEXLAYOUT__FLOAT_WINDOW_CONTENT)}>{children}</div>
             <div
@@ -361,7 +352,7 @@ export const FloatWindow = (props: React.PropsWithChildren<IFloatWindowProps>) =
             />
             <div
                 ref={seRef}
-                style={{ position: "absolute", zIndex: RESIZE_ZINDEX, bottom: 0, right: 0, width: RESIZE_SE_CORNER_SIZE, height: RESIZE_SE_CORNER_SIZE, cursor: "nwse-resize" }}
+                style={{ position: "absolute", zIndex: RESIZE_ZINDEX, bottom: 0, right: 0, width: RESIZE_CORNER_SIZE, height: RESIZE_CORNER_SIZE, cursor: "nwse-resize" }}
                 onPointerDown={(e) => onPointerDownResize(e, FloatWindowResizeDirection.SouthEast)}
             />
         </div>

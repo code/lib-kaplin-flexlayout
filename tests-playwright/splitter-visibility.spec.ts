@@ -53,15 +53,12 @@ test.describe("splitter keeps selected tab visible", () => {
         await expect(page).toHaveTitle(/FlexLayout Demo/);
         await expect(findPath(page, "/ts0")).toBeVisible();
         await expect(findPath(page, "/ts1")).toBeVisible();
-        // wait for layout to settle and selected tab to be scrolled into view
-        await page.waitForTimeout(500);
     });
 
     test("dragging splitter keeps selected tab in view after user scrolled away", async ({ page }) => {
         // select the last tab (Tab9) – it should initially be visible due to scrollIntoView
         await findPath(page, "/ts0/tb9").click();
-        await page.waitForTimeout(300);
-        expect(await isSelectedTabVisible(page, "/ts0")).toBe(true);
+        await expect.poll(async () => isSelectedTabVisible(page, "/ts0")).toBe(true);
 
         // user scrolls away from the selected tab (hide it on the right)
         await page.evaluate(() => {
@@ -70,24 +67,21 @@ test.describe("splitter keeps selected tab visible", () => {
             inner.scrollLeft = 0;
             inner.dispatchEvent(new Event("scroll", { bubbles: true }));
         });
-        await page.waitForTimeout(300);
         // selected tab is now hidden (userControlledPosition = true)
-        expect(await isSelectedTabVisible(page, "/ts0")).toBe(false);
+        await expect.poll(async () => isSelectedTabVisible(page, "/ts0")).toBe(false);
 
         // drag the splitter to shrink the left panel – this resizes the strip
         // previously this did NOT bring the selected tab back into view (regression since v0.10.5)
         const splitter = findPath(page, "/s0");
         await dragSplitter(page, splitter, false, -80);
-        await page.waitForTimeout(400);
 
         // selected tab must be visible again
-        expect(await isSelectedTabVisible(page, "/ts0")).toBe(true);
+        await expect.poll(async () => isSelectedTabVisible(page, "/ts0")).toBe(true);
     });
 
     test("keyboard splitter move keeps selected tab in view", async ({ page }) => {
         await findPath(page, "/ts0/tb9").click();
-        await page.waitForTimeout(300);
-        expect(await isSelectedTabVisible(page, "/ts0")).toBe(true);
+        await expect.poll(async () => isSelectedTabVisible(page, "/ts0")).toBe(true);
 
         await page.evaluate(() => {
             const outer = document.querySelector('[data-layout-path="/ts0/tabstrip"]') as HTMLElement;
@@ -95,14 +89,12 @@ test.describe("splitter keeps selected tab visible", () => {
             inner.scrollLeft = 0;
             inner.dispatchEvent(new Event("scroll", { bubbles: true }));
         });
-        await page.waitForTimeout(300);
-        expect(await isSelectedTabVisible(page, "/ts0")).toBe(false);
+        await expect.poll(async () => isSelectedTabVisible(page, "/ts0")).toBe(false);
 
         // move splitter via keyboard (ArrowLeft shrinks left panel)
         const splitter = findPath(page, "/s0");
         await splitter.focus();
         await page.keyboard.press("ArrowLeft");
-        await page.waitForTimeout(400);
 
         expect(await isSelectedTabVisible(page, "/ts0")).toBe(true);
     });

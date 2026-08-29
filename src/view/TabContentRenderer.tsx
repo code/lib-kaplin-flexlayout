@@ -3,7 +3,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 import { I18nLabel } from "./I18nLabel";
 import { LayoutController, LayoutInternal } from "./layout/LayoutInternal";
 import { TabNode } from "../model/TabNode";
-import { CLASSES } from "./CSSClassNames";
+import { CLASSES } from "../CSSClassNames";
 
 export interface ITabContentRenderProps {
     controller: LayoutController;
@@ -15,8 +15,6 @@ export interface ITabContentRenderProps {
 }
 
 export const TabContentRenderer = React.memo(({ controller, tabNode }: ITabContentRenderProps) => {
-    TabContentRenderer.displayName = "TabContentRenderer"; // name in react dev tools
-
     let content;
     if (tabNode.getComponent()) {
         content = controller.getFactory()(tabNode);
@@ -25,7 +23,7 @@ export const TabContentRenderer = React.memo(({ controller, tabNode }: ITabConte
         const subLayout = model.getLayouts().get(tabNode.getSubLayoutId()!)!;
         content = (
             <div className={controller.getClassName(CLASSES.FLEXLAYOUT__TAB_LAYOUT_CONTAINER)}>
-                <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} path={tabNode.getPath() + subLayout.getPath()} mainLayoutController={controller.getMainController()} />;
+                <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} path={tabNode.getPath() + subLayout.getPath()} mainLayoutController={controller.getMainController()} />
             </div>
         );
     }
@@ -35,6 +33,7 @@ export const TabContentRenderer = React.memo(({ controller, tabNode }: ITabConte
         </ErrorBoundary>
     );
 }, arePropsEqual);
+TabContentRenderer.displayName = "TabContentRenderer"; // name in react dev tools
 
 // only re-render if visible && (fullRedrawRevision or parentRedrawRevision changed)
 function arePropsEqual(prevProps: ITabContentRenderProps, nextProps: ITabContentRenderProps) {

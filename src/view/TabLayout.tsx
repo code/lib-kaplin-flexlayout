@@ -1,6 +1,6 @@
 import { TabNode } from "../model/TabNode";
-import { CLASSES } from "./CSSClassNames";
-import { LayoutInternal } from "./layout/LayoutInternal";
+import { CLASSES } from "../CSSClassNames";
+import { getViewController, LayoutInternal } from "./layout/LayoutInternal";
 
 export interface ITabLayoutProps {
     tabNode: TabNode;
@@ -15,8 +15,7 @@ export interface ITabLayoutProps {
 export const TabLayout = (props: ITabLayoutProps) => {
     const { tabNode } = props;
 
-    const layout = tabNode.getLayout();
-    const controller = layout!.getController()!;
+    const controller = getViewController(tabNode.getLayout());
 
     if (!controller) return;
 
@@ -24,7 +23,7 @@ export const TabLayout = (props: ITabLayoutProps) => {
     const subLayout = model.getLayouts().get(tabNode.getSubLayoutId()!)!;
     return (
         <div className={controller.getClassName(CLASSES.FLEXLAYOUT__TAB_LAYOUT_CONTAINER_USER)}>
-            <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} path={tabNode.getPath() + subLayout.getPath()} mainLayoutController={controller.getMainController()} />;
+            <LayoutInternal {...controller.getProps()} layoutId={tabNode.getSubLayoutId()} path={tabNode.getPath() + subLayout.getPath()} mainLayoutController={controller.getMainController()} />
         </div>
     );
 };

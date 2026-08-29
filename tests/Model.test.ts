@@ -65,6 +65,83 @@ describe("Tree", function () {
             expect(t.isCloseable()).equal(true);
             expect(() => t.isAllowedInWindow()).not.toThrow();
         });
+
+        it("throws a descriptive error for an invalid row child type", function () {
+            expect(() =>
+                Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [{ type: "tab", name: "One" } as any],
+                    },
+                }),
+            ).toThrowError(/invalid row child type "tab"/);
+        });
+
+        it("throws a descriptive error for an invalid tabset child type", function () {
+            expect(() =>
+                Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [{ type: "tabset", children: [{ type: "row", children: [] } as any] }],
+                    },
+                }),
+            ).toThrowError(/invalid tabset child type "row"/);
+        });
+
+        it("accepts tabset and border children without an explicit type (legacy json)", function () {
+            model = Model.fromJson({
+                global: {},
+                borders: [{ type: "border", location: "left", children: [{ name: "borderless" } as any] }],
+                layout: { type: "row", children: [{ type: "tabset", children: [{ name: "One" } as any] }] },
+            });
+            textRender(model);
+            expect(tabs).equal("/b/left/t0[borderless],/ts0/t0[One]*");
+        });
+
+        it("throws a descriptive error for an unknown border location", function () {
+            expect(() =>
+                Model.fromJson({
+                    global: {},
+                    borders: [{ type: "border", location: "ttop", children: [] } as any],
+                    layout: { type: "row", children: [{ type: "tabset", children: [{ type: "tab", name: "One" }] }] },
+                }),
+            ).toThrowError(/unknown dock location "ttop"/);
+        });
+
+        it("clamps a negative selected index from the json to no selection", function () {
+            model = Model.fromJson({
+                global: {},
+                layout: {
+                    type: "row",
+                    children: [
+                        {
+                            type: "tabset",
+                            selected: -5,
+                            children: [{ type: "tab", name: "One" }],
+                        },
+                    ],
+                },
+            });
+            expect(model.getFirstTabSet()!.getSelected()).equal(-1);
+        });
+
+        it("ignores a subLayouts entry keyed as the main layout id", function () {
+            model = Model.fromJson({
+                global: {},
+                layout: {
+                    type: "row",
+                    children: [{ type: "tabset", children: [{ type: "tab", name: "One" }] }],
+                },
+                subLayouts: {
+                    [Model.MAIN_LAYOUT_ID]: { type: "window", rect: { x: 0, y: 0, width: 100, height: 100 }, layout: { type: "row", children: [] } },
+                } as any,
+            });
+
+            textRender(model);
+            expect(tabs).equal("/ts0/t0[One]*");
+        });
     });
 
     describe("Robustness", () => {
@@ -469,6 +546,92 @@ describe("Tree", function () {
                 const toId = tab("/ts1").getId();
                 doAction(Actions.moveNode(fromId, toId, DockLocation.RIGHT, -1));
                 expect(tabs).equal("/ts0/t0[Two]*,/ts1/t0[One]*,/ts2/t0[Three]*");
+            });
+
+            it("dock onto a nested row uses the row's own orientation", () => {
+                model = Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [
+                            {
+                                type: "row",
+                                children: [
+                                    { type: "tabset", children: [{ type: "tab", name: "One", component: "text" }] },
+                                    { type: "tabset", children: [{ type: "tab", name: "Two", component: "text" }] },
+                                ],
+                            },
+                            { type: "tabset", children: [{ type: "tab", name: "Three", component: "text" }] },
+                        ],
+                    },
+                });
+                textRender(model);
+                // the nested row /r0 is vertical (root is horizontal) and holds One/Two; Three sits at root level
+                expect(tabs).equal("/r0/ts0/t0[One]*,/r0/ts1/t0[Two]*,/ts1/t0[Three]*");
+                // docking Three LEFT onto that vertical row must split horizontally: Three becomes a
+                // left column with the vertical row to its right, not a tab stacked inside /r0
+                const nestedRow = model.getRootRow()!.getChildren()[0];
+                doAction(Actions.moveNode(tabset("/ts1").getId(), nestedRow.getId(), DockLocation.LEFT, -1));
+                expect(tabs).equal("/ts0/t0[Three]*,/r1/ts0/t0[One]*,/r1/ts1/t0[Two]*");
+            });
+
+            it("dock onto a nested row respects a vertical root layout", () => {
+                model = Model.fromJson({
+                    global: { rootOrientationVertical: true },
+                    layout: {
+                        type: "row",
+                        children: [
+                            {
+                                type: "row",
+                                children: [
+                                    { type: "tabset", children: [{ type: "tab", name: "One", component: "text" }] },
+                                    { type: "tabset", children: [{ type: "tab", name: "Two", component: "text" }] },
+                                ],
+                            },
+                            { type: "tabset", children: [{ type: "tab", name: "Three", component: "text" }] },
+                        ],
+                    },
+                });
+                textRender(model);
+                // the nested row /r0 is horizontal (root is vertical) and holds One/Two; Three sits at root level
+                expect(tabs).equal("/r0/ts0/t0[One]*,/r0/ts1/t0[Two]*,/ts1/t0[Three]*");
+                // docking Three TOP onto that horizontal row must split vertically: Three becomes a
+                // top row with the horizontal row below, not a tab stacked inside /r0
+                const nestedRow = model.getRootRow()!.getChildren()[0];
+                doAction(Actions.moveNode(tabset("/ts1").getId(), nestedRow.getId(), DockLocation.TOP, -1));
+                expect(tabs).equal("/ts0/t0[Three]*,/r1/ts0/t0[One]*,/r1/ts1/t0[Two]*");
+            });
+
+            it("ignores moves into the dragged node's own subtree", () => {
+                model = Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [
+                            {
+                                type: "row",
+                                id: "r1",
+                                weight: 50,
+                                children: [
+                                    { type: "tabset", id: "ts_inner", weight: 50, children: [{ type: "tab", name: "One" }] },
+                                    { type: "tabset", id: "ts_inner2", weight: 50, children: [{ type: "tab", name: "Three" }] },
+                                ],
+                            },
+                            { type: "tabset", id: "ts_outer", weight: 50, children: [{ type: "tab", name: "Two" }] },
+                        ],
+                    },
+                });
+                textRender(model);
+                const before = tabs;
+                expect(before).equal("/r0/ts0/t0[One]*,/r0/ts1/t0[Three]*,/ts1/t0[Two]*");
+
+                // dropping a row into its own descendant would corrupt the tree
+                doAction(Actions.moveNode("r1", "ts_inner", DockLocation.CENTER, -1));
+                doAction(Actions.moveNode("r1", "ts_inner", DockLocation.TOP, -1));
+                // a node moved into itself is a no-op rather than a self-nesting cycle
+                doAction(Actions.moveNode("r1", "r1", DockLocation.CENTER, 0));
+
+                expect(tabs).equal(before);
             });
         });
 
@@ -886,6 +1049,68 @@ describe("Tree", function () {
 
                 doAction(Actions.popoutTabset(tsA.getId()));
                 expect(model.getMaximizedTabset(windowLayoutId)).equal(undefined);
+            });
+
+            it("moving an ancestor row of the maximized tabset clears maximized state", () => {
+                model = Model.fromJson({
+                    global: {},
+                    layout: {
+                        type: "row",
+                        children: [
+                            {
+                                type: "row",
+                                id: "r1",
+                                weight: 50,
+                                children: [
+                                    { type: "tabset", id: "ts_inner", weight: 50, children: [{ type: "tab", name: "One" }] },
+                                    { type: "tabset", id: "ts_inner2", weight: 50, children: [{ type: "tab", name: "Three" }] },
+                                ],
+                            },
+                            { type: "tabset", id: "ts_outer", weight: 50, children: [{ type: "tab", name: "Two" }] },
+                        ],
+                    },
+                });
+                textRender(model);
+
+                doAction(Actions.maximizeToggle("ts_inner"));
+                expect(model.getMaximizedTabset()).equal(tabset("/r0/ts0"));
+
+                // moving the row containing the maximized tabset must not leave a stale reference
+                // behind (it would reroute all drop targeting to the displaced tabset)
+                doAction(Actions.moveNode("r1", "ts_outer", DockLocation.RIGHT, -1));
+                expect(model.getMaximizedTabset()).equal(undefined);
+
+                // moving a node unrelated to the maximized tabset keeps it maximized
+                doAction(Actions.maximizeToggle("ts_outer"));
+                expect(model.getMaximizedTabset()).equal(tabset("/ts0"));
+            });
+        });
+
+        describe("Active tabset cleanup", () => {
+            it("popout of the active tabset clears the source layout's active reference", () => {
+                model = Model.fromJson(twoTabs);
+                textRender(model);
+                const tsA = tabset("/ts0");
+
+                doAction(Actions.setActiveTabset(tsA.getId()));
+                expect(model.getActiveTabset()).equal(tsA);
+
+                doAction(Actions.popoutTabset(tsA.getId()));
+                // tsA now belongs to the popout layout: the main layout must not report it as active
+                expect(model.getActiveTabset()).equal(undefined);
+                // the popout layout owns the tabset and inherits its active state
+                expect(model.getActiveTabset(tsA.getLayoutId())).equal(tsA);
+            });
+
+            it("popout of a non-active tabset keeps the active tabset", () => {
+                model = Model.fromJson(twoTabs);
+                textRender(model);
+                const tsA = tabset("/ts0");
+
+                doAction(Actions.setActiveTabset(tsA.getId()));
+                doAction(Actions.popoutTabset(tabset("/ts1").getId()));
+
+                expect(model.getActiveTabset()).equal(tsA);
             });
         });
 
@@ -1338,6 +1563,54 @@ describe("attribute definitions", () => {
 
         const config = tabNodeDefs.find((a) => a.name === "config")!;
         expect(config.getEffectiveType()).toBeUndefined();
+    });
+});
+
+describe("attribute alias", () => {
+    const model = () =>
+        Model.fromJson({
+            global: {},
+            layout: {
+                type: "row",
+                children: [
+                    {
+                        type: "tabset",
+                        id: "ts0",
+                        children: [{ type: "tab", id: "t0", name: "One", component: "text" }],
+                    },
+                ],
+            },
+        });
+
+    it("updateNodeAttributes honors the enableFloat alias of enablePopout", () => {
+        const m = model();
+        const tab = m.getNodeById("t0") as TabNode;
+        expect(tab.isEnablePopout()).toBe(false);
+        m.doAction(Actions.updateNodeAttributes("t0", { enableFloat: true } as any));
+        expect(tab.isEnablePopout()).toBe(true);
+    });
+
+    it("the canonical name wins when both the name and its alias are provided", () => {
+        const m = model();
+        const tab = m.getNodeById("t0") as TabNode;
+        m.doAction(Actions.updateNodeAttributes("t0", { enablePopout: true, enableFloat: false } as any));
+        expect(tab.isEnablePopout()).toBe(true);
+    });
+
+    it("setting the alias to undefined removes the override", () => {
+        const m = model();
+        const tab = m.getNodeById("t0") as TabNode;
+        m.doAction(Actions.updateNodeAttributes("t0", { enableFloat: true } as any));
+        m.doAction(Actions.updateNodeAttributes("t0", { enableFloat: undefined } as any));
+        expect(tab.getAttributeOwn("enablePopout")).toBeUndefined();
+        expect(tab.isEnablePopout()).toBe(false);
+    });
+
+    it("updateModelAttributes honors the tabEnableFloat alias of tabEnablePopout", () => {
+        const m = model();
+        const tab = m.getNodeById("t0") as TabNode;
+        m.doAction(Actions.updateModelAttributes({ tabEnableFloat: true } as any));
+        expect(tab.isEnablePopout()).toBe(true);
     });
 });
 

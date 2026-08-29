@@ -10,7 +10,6 @@ export interface IFloatingWindowContainerProps {
 export const FloatingWindowContainer = ({ controller }: IFloatingWindowContainerProps) => {
     const floatingLayouts: React.ReactNode[] = [];
     const layouts = controller.getModel().getLayouts();
-    let windowPopoutId = 0;
     let floatPopoutZIndex = 2000;
     for (const [layoutId, layout] of layouts) {
         if (!layout.isMainLayout()) {
@@ -20,7 +19,7 @@ export const FloatingWindowContainer = ({ controller }: IFloatingWindowContainer
                         key={layoutId}
                         controller={controller}
                         layout={layout}
-                        title={controller.getPopoutWindowName() + " " + windowPopoutId}
+                        title={controller.getPopoutWindowName() + " " + layoutId}
                         url={controller.getPopoutURL() + "?id=" + encodeURIComponent(layoutId)}
                         onCloseLayout={controller.onCloseLayout}
                     >
@@ -29,7 +28,6 @@ export const FloatingWindowContainer = ({ controller }: IFloatingWindowContainer
                         </div>
                     </PopoutWindow>,
                 );
-                windowPopoutId++;
             } else if (layout.getType() === "float") {
                 floatingLayouts.push(
                     <FloatWindow key={layoutId + "float"} controller={controller} layout={layout} zIndex={floatPopoutZIndex} onCloseLayout={controller.onCloseLayout}>

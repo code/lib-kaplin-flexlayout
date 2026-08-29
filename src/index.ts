@@ -6,7 +6,7 @@ export * from "./view/ContextMenuBuilder";
 export * from "./view/layout/LayoutTypes";
 export * from "./view/Icons";
 export * from "./view/I18nLabel";
-export * from "./view/CSSClassNames";
+export * from "./CSSClassNames";
 export * from "./view/useUndo";
 
 export * from "./model/Model";

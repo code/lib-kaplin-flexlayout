@@ -206,7 +206,7 @@ export const useTabOverflow = (
     );
 
     const scrollIntoView = React.useCallback(() => {
-        const selectedTabNode = node.getSelectedNode() as TabNode;
+        const selectedTabNode = node.getSelectedNode() as TabNode | undefined;
         if (selectedTabNode && tabStripRef.current) {
             const stripRect = controller.getBoundingClientRect(tabStripRef.current);
             // measure the button from the dom (the model tabRect is only updated in the layout central
@@ -358,9 +358,10 @@ export const useTabOverflow = (
         // eslint-disable-next-line react-hooks/set-state-in-effect
         updateHiddenTabs(true);
 
-        requestAnimationFrame(() => {
+        const id = requestAnimationFrame(() => {
             updateHiddenTabs();
         });
+        return () => cancelAnimationFrame(id);
     }, [checkForOverflow, scrollIntoView, updateScrollMetrics, updateHiddenTabs, orientation, selectedNode]);
 
     // strip geometry changes no longer cause a react render (they are applied imperatively by the

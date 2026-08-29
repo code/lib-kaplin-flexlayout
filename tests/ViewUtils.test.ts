@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { Actions, IJsonModel, Model, TabNode } from "../src";
 import { ModelLayout } from "../src/model/ModelLayout";
-import { canDockToLayout, domId, findParentLayout, hasModifier, IKeyEventLike } from "../src/view/Utils";
+import { domId, hasModifier, IKeyEventLike } from "../src/view/Utils";
 
 describe("domId", () => {
     it("replaces whitespace so the id is usable as an aria reference", () => {
@@ -26,7 +26,7 @@ describe("hasModifier", () => {
     });
 });
 
-describe("canDockToLayout / findParentLayout", () => {
+describe("ModelLayout.canDockTo / findParentLayout", () => {
     // a "tab" sublayout L1 hosted by a tab, a window popout, a float popout and a plain tab that
     // is not allowed in a window
     const makeModel = (): Model => {
@@ -59,7 +59,7 @@ describe("canDockToLayout / findParentLayout", () => {
 
     beforeEach(() => {
         model = makeModel();
-        // findParentLayout and canDockToLayout read the model through the layout's controller,
+        // findParentLayout and canDockTo read the model through the layout's controller,
         // which is normally only attached by the view layer
         for (const layout of model.getLayouts().values()) {
             layout.setController({ getModel: () => model } as any);
@@ -71,44 +71,44 @@ describe("canDockToLayout / findParentLayout", () => {
 
     it("findParentLayout locates the hosting layout of a tab sublayout", () => {
         const subLayout = model.getLayouts().get("L1")!;
-        const parent = findParentLayout(subLayout);
+        const parent = subLayout.findParentLayout();
         expect(parent?.isMainLayout()).equal(true);
         // no tab hosts the main or window/float layouts
-        expect(findParentLayout(model.getLayouts().get(Model.MAIN_LAYOUT_ID)!)).equal(undefined);
-        expect(findParentLayout(layoutOfType("window"))).equal(undefined);
-        expect(findParentLayout(layoutOfType("float"))).equal(undefined);
+        expect(model.getLayouts().get(Model.MAIN_LAYOUT_ID)!.findParentLayout()).equal(undefined);
+        expect(layoutOfType("window").findParentLayout()).equal(undefined);
+        expect(layoutOfType("float").findParentLayout()).equal(undefined);
     });
 
     it("a window layout only accepts nodes allowed in a window", () => {
         const windowLayout = layoutOfType("window");
-        expect(canDockToLayout(tab("t1"), windowLayout)).equal(true);
-        expect(canDockToLayout(tab("t0"), windowLayout)).equal(false); // enablePopout: false
+        expect(windowLayout.canDockTo(tab("t1"))).equal(true);
+        expect(windowLayout.canDockTo(tab("t0"))).equal(false); // enablePopout: false
     });
 
     it("a float layout accepts anything", () => {
-        expect(canDockToLayout(tab("t0"), layoutOfType("float"))).equal(true);
-        expect(canDockToLayout(tab("t1"), layoutOfType("float"))).equal(true);
+        expect(layoutOfType("float").canDockTo(tab("t0"))).equal(true);
+        expect(layoutOfType("float").canDockTo(tab("t1"))).equal(true);
     });
 
     it("a tab sublayout rejects hosting tabs that carry their own sublayout", () => {
         const subLayout = model.getLayouts().get("L1")!;
         // a tab with its own subLayoutId cannot be docked into another sublayout
-        expect(canDockToLayout(tab("tHost"), subLayout)).equal(false);
+        expect(subLayout.canDockTo(tab("tHost"))).equal(false);
         // but a plain tab can
-        expect(canDockToLayout(tab("t1"), subLayout)).equal(true);
+        expect(subLayout.canDockTo(tab("t1"))).equal(true);
     });
 
     it("a tab sublayout rejects a row of tabs that contains a sublayout tab", () => {
         const subLayout = model.getLayouts().get("L1")!;
         // the main root row hosts the sublayout tab tHost, so it cannot be docked into a sublayout
-        expect(canDockToLayout(model.getRootRow()!, subLayout)).equal(false);
+        expect(subLayout.canDockTo(model.getRootRow()!)).equal(false);
         // a float's plain row (no sublayout tabs) can be docked into a sublayout
-        expect(canDockToLayout(layoutOfType("float").getRootRow()!, subLayout)).equal(true);
+        expect(subLayout.canDockTo(layoutOfType("float").getRootRow()!)).equal(true);
     });
 
     it("rejects unknown layout types", () => {
         const bogus = layoutOfType("float");
         bogus.setType("bogus" as any);
-        expect(canDockToLayout(tab("t1"), bogus)).equal(false);
+        expect(bogus.canDockTo(tab("t1"))).equal(false);
     });
 });

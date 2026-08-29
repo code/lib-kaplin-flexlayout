@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { findPath } from "./helpers";
+import { findPath, waitForBox } from "./helpers";
 
 // Regression: --color-tabgroup-pill-text, --color-tabgroup-default and
 // --color-tabgroup-menu-palette CSS variables should control group appearance.
@@ -12,7 +12,7 @@ test.describe("tab group CSS variables", () => {
     test.beforeEach(async ({ page }) => {
         await page.goto("/demo" + layout);
         await page.waitForSelector(".flexlayout__tabset");
-        await page.waitForTimeout(600);
+        await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
     });
 
     test("palette override changes swatch count and color", async ({ page }) => {

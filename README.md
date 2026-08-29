@@ -724,7 +724,7 @@ Every element the library renders carries a `data-layout-path` attribute describ
 | --- | --- |
 | `/r<n>` / `/ts<n>` | Row / tabset (`n` is the index within the parent), nested as in the model, e.g. `/r1/ts0` |
 | `/border/<location>` | Border strip (`top`, `bottom`, `left`, `right`) |
-| `.../tb<n>` | Tab button `n` (flat index over visible tabs; grouped/collapsed tabs are omitted) |
+| `.../tb<n>` | Tab button `n`, in the same tree location as its panel (e.g. panel `/ts0/t0` ↔ button `/ts0/tb0`, and inside a group `/ts0/g0/t0` ↔ `/ts0/g0/tb0`); `n` is the tab's index within its parent |
 | `.../g<n>` | Group pill `n` (e.g. `/ts0/g0`, `/border/right/g0`) |
 | `.../g<n>/end` | Group end marker (right cap of a split pill, e.g. `/ts0/g0/end`) |
 | `.../t<n>` | Tab panel `n` within a tabset or border path |

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { waitForPopout } from "./helpers";
+import { waitForPopout, waitForBox } from "./helpers";
 
 // the floating panel header's right button pops the whole floating layout out into a native
 // browser window. It is only available when every tab in the float layout can live in a window.
@@ -20,7 +20,7 @@ const createFloat = (page: import("@playwright/test").Page, name: string, enable
 test.beforeEach(async ({ page }) => {
     await page.goto("/demo?layout=test_three_tabs");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(500);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 });
 
 test("pops the floating panel out into a native window", async ({ page, context }) => {
@@ -32,7 +32,6 @@ test("pops the floating panel out into a native window", async ({ page, context 
     // strict mode double-mounts the popout component (open, close, reopen), so wait for the live window
     const popout = await waitForPopout(context, page);
     await popout.waitForSelector('[role="tab"]');
-    await popout.waitForTimeout(500);
 
     // the float window is gone and the tab now lives in the native popout window
     await expect(page.locator(".flexlayout__float_window")).toHaveCount(0);

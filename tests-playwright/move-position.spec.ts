@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { findPath, findTabButton, drag, Location } from "./helpers";
+import { findPath, findTabButton, drag, Location, waitForBox } from "./helpers";
 
 // regression: moving the selected tab to another tabset mounts a fresh panel for the newly
 // selected tab in the source tabset; panels must stay out of flow so the measure pass sees
@@ -7,12 +7,11 @@ import { findPath, findTabButton, drag, Location } from "./helpers";
 test("panels positioned correctly after moving a tab to another tabset center", async ({ page }) => {
     await page.goto("/demo?layout=default");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(500);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 
     // note: uses /r2/ts0 (Wikipedia/MUI) because tab 0 of /r1/ts0 (ChartJS) is now pinned and
     // pinned tabs cannot be dragged out of their tabset
     await drag(page, findTabButton(page, "/r2/ts0", 0), findPath(page, "/r1/ts1/t0"), Location.CENTER);
-    await page.waitForTimeout(300);
 
     // every visible panel must line up with its own tabset's content area
     const mismatches = await page.evaluate(() => {

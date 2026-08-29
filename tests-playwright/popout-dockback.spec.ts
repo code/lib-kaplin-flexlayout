@@ -7,13 +7,13 @@ import { waitForBox, waitForPopout } from "./helpers";
 test("sublayout tracks container resizes after popout and dock back", async ({ page, context }) => {
     await page.goto("/demo?layout=sub");
     await page.waitForSelector(".flexlayout__tabset");
-    await page.waitForTimeout(500);
+    await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 
     // popout the Tabbed Pane
     await page.locator('[data-layout-path="/ts0/button/popout"]').click();
     const popout = await waitForPopout(context, page);
     await popout.waitForSelector('[role="tab"]');
-    await popout.waitForTimeout(300);
+    await waitForBox(popout.locator('[role="tab"]').first(), "popout tab");
 
     // drag it back to the top of the main layout
     await popout.evaluate(() => {
@@ -31,7 +31,6 @@ test("sublayout tracks container resizes after popout and dock back", async ({ p
         root.dispatchEvent(new DragEvent("dragover", opts(cx, box.y + 8)));
         root.dispatchEvent(new DragEvent("drop", opts(cx, box.y + 8)));
     }, mainBox);
-    await page.waitForTimeout(500);
 
     // now resize the window: the sublayout's container panel resizes imperatively and the
     // sublayout must follow

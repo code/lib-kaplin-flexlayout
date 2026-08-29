@@ -1,4 +1,4 @@
-import { defineConfig, PluginOption, UserConfig } from 'vite';
+import { defineConfig, UserConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import pkg from './package.json' with { type: 'json' };
 
@@ -8,23 +8,8 @@ const banner = `/**
  * @version ${pkg.version}
  */\n`;
 
-// Banner injection plugin  
-function bannerPlugin(): PluginOption {
-  return {
-    name: 'inject-banner',
-    apply: 'build',
-    generateBundle(_, bundle) {
-      for (const [, file] of Object.entries(bundle)) {
-        if (file.type === 'chunk' && file.fileName.endsWith('.js')) {
-          file.code = banner + file.code;
-        }
-      }
-    }
-  };
-}
-
 export default defineConfig({
-  plugins: [react(), bannerPlugin()],
+  plugins: [react()],
   build: {
     lib: {
       entry: `${import.meta.dirname}/src/index.ts`,
@@ -41,7 +26,10 @@ export default defineConfig({
         'react-dom',
         'react-dom/client',
         'react/jsx-runtime'
-      ]
+      ],
+      output: {
+        banner,
+      },
     }
   },
   define: {
