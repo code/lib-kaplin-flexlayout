@@ -359,6 +359,11 @@ import { showPopupMenu, ContextMenuBuilder } from "flexlayout-react";
 
 const onContextMenu = (node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent) => {
     event.preventDefault();
+    event.stopPropagation();
+    
+    const container = node.getLayoutRef()!;
+    if (!container) return;
+
     const items = new ContextMenuBuilder(node)
         .add("rename")
         .addCustom({ key: "my-command", label: "My Command", onSelect: () => doThing() })
@@ -370,6 +375,7 @@ const onContextMenu = (node: TabNode | TabSetNode | BorderNode, event: React.Mou
         anchor: { x: event.clientX, y: event.clientY },
         items,
         onClose: () => {},
+        container
     });
 };
 
