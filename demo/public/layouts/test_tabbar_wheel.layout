@@ -1,0 +1,236 @@
+{
+  "global": {},
+  "borders": [
+    {
+      "type": "border",
+      "location": "left",
+      "size": 150,
+      "children": [
+        {
+          "type": "tab",
+          "name": "BorderTab_00",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_01",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_02",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_03",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_04",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_05",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_06",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_07",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_08",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_09",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_10",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_11",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_12",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_13",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_14",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_15",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_16",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_17",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_18",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_19",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_20",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_21",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_22",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_23",
+          "component": "testing"
+        },
+        {
+          "type": "tab",
+          "name": "BorderTab_24",
+          "component": "testing"
+        }
+      ]
+    }
+  ],
+  "layout": {
+    "type": "row",
+    "weight": 100,
+    "children": [
+      {
+        "type": "tabset",
+        "id": "h_overflow",
+        "weight": 25,
+        "children": [
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_00_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_01_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_02_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_03_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_04_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_05_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_06_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_07_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_08_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_09_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_10_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_11_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_12_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_13_XXXXXXXXXXXX",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "VeryLongTabName_14_XXXXXXXXXXXX",
+            "component": "testing"
+          }
+        ]
+      },
+      {
+        "type": "tabset",
+        "weight": 75,
+        "children": [
+          {
+            "type": "tab",
+            "name": "Other",
+            "component": "testing"
+          }
+        ]
+      }
+    ]
+  }
+}

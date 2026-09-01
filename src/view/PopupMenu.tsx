@@ -86,7 +86,8 @@ export interface IPopupMenuProps {
     /** called when the menu closes (selection, Escape/Tab, outside click, or programmatic hide) */
     onClose: () => void;
     /** element the menu is positioned within and portalled into; defaults to the anchor's document body.
-     *  Should be a positioned element (e.g. the FlexLayout root) for precise placement. */
+     *  Should be a positioned element (e.g. the FlexLayout root) for precise placement. For context menus
+     * on nodes (tab, tabset...) use node.getLayoutRef()! */
     container?: HTMLElement;
     /** maps default class names to custom ones (e.g. for css modules); defaults to identity */
     classNameMapper?: (defaultClassName: string) => string;

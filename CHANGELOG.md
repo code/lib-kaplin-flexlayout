@@ -1,3 +1,7 @@
+## 0.10.8 - 2026-09-01
+* **Fixed:** horizontal trackpad scroll on tabbar (trackpad `deltaX` is now handled; dominant axis is picked per orientation to avoid tiny diagonal `deltaY` jitter).
+* **Fixed:** measure stickyButtons width for overflow hysteresis to prevent infinite loop ([#517](https://github.com/caplin/FlexLayout/issues/517)).
+
 ## 0.10.7 - 2026-08-29
 * **Fixed:** single-tab group self-drop orphaning the group.
 * **Fixed:** tab button `data-layout-path` now includes its group (`/ts0/g0/tb0` matches panel `/ts0/g0/t0`).

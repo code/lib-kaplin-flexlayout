@@ -52,6 +52,7 @@ export const TabSet = (props: ITabSetProps) => {
         miniScrollRef,
         tabStripRef,
         controller.getClassName(CLASSES.FLEXLAYOUT__TAB_BUTTON),
+        stickyButtonsRef,
     );
 
     // callback refs: fire on attach/detach including remounts, unlike effects

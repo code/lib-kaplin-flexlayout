@@ -110,6 +110,28 @@ export const testOnRenderTabSet = (node: TabSetNode | BorderNode, renderValues: 
         renderValues.stickyButtons.push(
             <img src="images/add.svg" alt="Add" key="Add button" title="Add Tab (using onRenderTabSet callback, see Demo)" style={{ marginLeft: 5, width: 24, height: 24 }} />,
         );
+    } else if (node.getId() === "sticky_test") {
+        // wide sticky button >10px to reproduce #517: must be measured, not hardcoded 10px hysteresis
+        renderValues.stickyButtons.push(
+            <div
+                key="wide-sticky"
+                data-testid="wide-sticky"
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 120,
+                    height: 24,
+                    background: "var(--color-toolbar-button-hover, #ddd)",
+                    border: "1px solid #999",
+                    fontSize: 12,
+                    whiteSpace: "nowrap",
+                    marginLeft: 4,
+                }}
+            >
+                HELLO
+            </div>,
+        );
     } else if (node instanceof BorderNode) {
         renderValues.buttons.push(<img src="images/folder.svg" key="1" alt="" style={{ width: "1em", height: "1em" }} />);
         renderValues.buttons.push(<img src="images/settings.svg" key="2" alt="" style={{ width: "1em", height: "1em" }} />);

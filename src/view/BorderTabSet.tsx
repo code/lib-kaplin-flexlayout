@@ -50,6 +50,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
         miniScrollRef,
         selfRef,
         controller.getClassName(CLASSES.FLEXLAYOUT__BORDER_BUTTON),
+        stickyButtonsRef,
     );
 
     // callback ref: fires on attach/detach including remounts, unlike an effect

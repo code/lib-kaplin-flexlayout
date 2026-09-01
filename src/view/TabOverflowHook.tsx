@@ -16,6 +16,7 @@ export const useTabOverflow = (
     miniScrollRef: React.RefObject<HTMLElement | null>,
     wheelRef: React.RefObject<HTMLElement | null>, // element whose wheel events scroll the tabs (needed to preventDefault, since React wheel listeners are passive)
     tabClassName: string,
+    stickyButtonsRef?: React.RefObject<HTMLElement | null>,
 ) => {
     const [hiddenTabs, setHiddenTabs] = React.useState<number[]>([]);
     const [isShowHiddenTabs, setShowHiddenTabs] = React.useState<boolean>(false);
@@ -26,6 +27,7 @@ export const useTabOverflow = (
     const hiddenTabsRef = React.useRef<number[]>([]);
     const thumbInternalPos = React.useRef<number>(0);
     const repositioningRef = React.useRef<boolean>(false);
+    const stickySizeRef = React.useRef<number>(0);
 
     React.useEffect(() => {
         return () => {
@@ -241,13 +243,22 @@ export const useTabOverflow = (
                 contentSize += getElementSize(child);
             }
 
-            const offset = isDockStickyButtons ? 10 : 0; // prevents flashing, after sticky buttons docked set, must be 10 pixels smaller before unsetting
+            // measure sticky buttons width/height to provide hysteresis equal to its size;
+            // when docked the sticky bar is not in the strip, so use the cached size
+            if (stickyButtonsRef?.current) {
+                const measured = getElementSize(stickyButtonsRef.current);
+                if (measured > 0) {
+                    stickySizeRef.current = measured;
+                }
+            }
+            const stickySize = stickySizeRef.current;
+            const offset = isDockStickyButtons ? stickySize : 0; // must be sticky size to prevent oscillation (see #517)
             const dock = contentSize + offset > getElementSize(tabStripRef.current);
             if (dock !== isDockStickyButtons) {
                 setDockStickyButtons(dock);
             }
         }
-    }, [tabStripRef, isDockStickyButtons, getElementSize]);
+    }, [tabStripRef, stickyButtonsRef, isDockStickyButtons, getElementSize]);
 
     const onScroll = React.useCallback(() => {
         if (!repositioningRef.current) {
@@ -305,30 +316,51 @@ export const useTabOverflow = (
 
     const onMouseWheel = React.useCallback(
         (event: React.WheelEvent<HTMLElement>) => {
-            if (tabStripRef.current) {
-                if (node.getChildren().length === 0) return;
+            if (!tabStripRef.current) return;
+            if (node.getChildren().length === 0) return;
 
-                let delta: number;
-                if (Math.abs(event.deltaY) > 0) {
-                    delta = -event.deltaY;
-                    if (event.deltaMode === 1) {
-                        // DOM_DELTA_LINE	0x01	The delta values are specified in lines.
-                        delta *= 40;
-                    }
-                    const newPos = getScrollPosition(tabStripRef.current) - delta;
-                    const maxScroll = getScrollSize(tabStripRef.current) - getElementSize(tabStripRef.current);
-                    const p = Math.max(0, Math.min(maxScroll, newPos));
-                    setScrollPosition(p);
-                    event.stopPropagation();
-                }
+            const absX = Math.abs(event.deltaX);
+            const absY = Math.abs(event.deltaY);
+            if (absX === 0 && absY === 0) return;
+
+            // For horizontal strips trackpad deltaX is the natural axis, but a mouse wheel
+            // only provides deltaY. Picking the dominant axis avoids the "jerky" horizontal
+            // trackpad scroll where a tiny diagonal deltaY (~0.2px) was used instead of the
+            // intended deltaX (~10px).
+            let delta: number;
+            if (orientation === Orientation.HORZ) {
+                delta = absX > absY ? event.deltaX : event.deltaY;
+            } else {
+                delta = absY > absX ? event.deltaY : event.deltaX;
             }
+
+            if (event.deltaMode === 1) {
+                // DOM_DELTA_LINE 0x01 — delta values are specified in lines
+                delta *= 40;
+            }
+
+            const maxScroll = getScrollSize(tabStripRef.current) - getElementSize(tabStripRef.current);
+            if (maxScroll <= 0) return;
+
+            const currentPos = getScrollPosition(tabStripRef.current);
+            const newPos = currentPos + delta;
+            const p = Math.max(0, Math.min(maxScroll, newPos));
+            setScrollPosition(p);
+            event.stopPropagation();
         },
-        [node, tabStripRef, getScrollPosition, getScrollSize, getElementSize, setScrollPosition],
+        [node, tabStripRef, orientation, getScrollPosition, getScrollSize, getElementSize, setScrollPosition],
     );
 
-    const onWheel = React.useCallback((event: Event) => {
-        event.preventDefault();
-    }, []);
+    const onWheel = React.useCallback(
+        (event: Event) => {
+            const strip = tabStripRef.current;
+            if (!strip) return;
+            const maxScroll = getScrollSize(strip) - getElementSize(strip);
+            if (maxScroll <= 0) return;
+            event.preventDefault();
+        },
+        [tabStripRef, getScrollSize, getElementSize],
+    );
 
     const nodeId = node.getId();
     const selectedNode = node.getSelectedNode();
@@ -406,6 +438,20 @@ export const useTabOverflow = (
             mutationObserver.disconnect();
         };
     }, [checkForOverflow, scrollIntoView, updateScrollMetrics, updateHiddenTabs, tabStripRef, controller]);
+
+    // observe sticky buttons size changes (e.g. dynamic content or wide custom buttons >10px, see #517)
+    React.useLayoutEffect(() => {
+        const sticky = stickyButtonsRef?.current;
+        if (!sticky) {
+            return;
+        }
+        const win = sticky.ownerDocument.defaultView!;
+        const observer = new win.ResizeObserver(() => {
+            checkForOverflow();
+        });
+        observer.observe(sticky);
+        return () => observer.disconnect();
+    }, [checkForOverflow, stickyButtonsRef, isDockStickyButtons]);
 
     // no deps: the strip element can change between renders (e.g. tab wrap toggled)
     React.useEffect(() => {

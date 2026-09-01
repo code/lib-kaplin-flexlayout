@@ -1,0 +1,43 @@
+{
+  "global": {},
+  "borders": [],
+  "layout": {
+    "type": "row",
+    "weight": 100,
+    "children": [
+      {
+        "type": "tabset",
+        "id": "sticky_test",
+        "weight": 50,
+        "children": [
+          {
+            "type": "tab",
+            "name": "Tab One",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "Tab Two",
+            "component": "testing"
+          },
+          {
+            "type": "tab",
+            "name": "Tab Three",
+            "component": "testing"
+          }
+        ]
+      },
+      {
+        "type": "tabset",
+        "weight": 50,
+        "children": [
+          {
+            "type": "tab",
+            "name": "Other",
+            "component": "testing"
+          }
+        ]
+      }
+    ]
+  }
+}
