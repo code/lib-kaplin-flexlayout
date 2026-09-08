@@ -10,29 +10,33 @@ FlexLayout is a layout manager for React that arranges components in multiple ta
 
 [Run the Demo](https://caplin.github.io/FlexLayout/demos/v0.10/demo/index.html)
 
-Try it now using [CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf)
+[Examples](https://caplin.github.io/FlexLayout/demos/v0.10/examples/index.html)
+
+[Example in CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf)
 
 [API Doc](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/index.html)
 
 FlexLayout's only dependency is React.
 
 Features:
-* Tabs (scrolling or wrapped)
-* Pinnable tabs
-* Tab groups (Chrome-style colored group pills) — see [Tab Groups](#tab-groups)
-* Border tabsets: splitting the layout or overlaying it, with autohide when empty option.
+* Tabs (scrolling or wrapped) — see [Tab Wrapping](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-wrapping/) / [Many Tabs](https://caplin.github.io/FlexLayout/demos/v0.10/examples/many-tabs/)
+* Pinnable tabs — see [Pinned Tabs](https://caplin.github.io/FlexLayout/demos/v0.10/examples/pinned-tabs/)
+* Tab groups (Chrome-style colored group pills) — see [Tab Groups](#tab-groups) / [example](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-groups/)
+* Border tabsets: splitting the layout or overlaying it, with autohide when empty option — see [Borders](https://caplin.github.io/FlexLayout/demos/v0.10/examples/borders/)
 * Tabset dragging (move all tabs in a tabset in one operation)
 * Docking to tabsets or edges of the frame
 * Maximizing tabsets (double-click tabset header or use icon)
-* Tab overflow (menu for hidden tabs, mouse wheel scrolling)
-* Popout tabs into floating panels or new browser windows
-* Submodels (layouts inside layouts)
-* Theming (light, dark, underline, etc., and combined)
+* Tab overflow (menu for hidden tabs, mouse wheel scrolling) — see [Many Tabs](https://caplin.github.io/FlexLayout/demos/v0.10/examples/many-tabs/)
+* Popout tabs into floating panels or new browser windows — see [Popout](https://caplin.github.io/FlexLayout/demos/v0.10/examples/popout/)
+* Submodels (layouts inside layouts) — see [Sublayout](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sublayout/)
+* Theming (light, dark, underline, etc., and combined) — see [Theme](https://caplin.github.io/FlexLayout/demos/v0.10/examples/theme/)
 * Accessibility (ARIA roles, keyboard operation with a configurable keymap, visible focus) — see [Accessibility](#accessibility)
 * Mobile support (iPad, Android)
-* Multiple ways to add tabs (drag, active tabset, by ID)
-* Comprehensive tab and tabset attributes (`enableTabStrip`, `enableDock`, `enableDrop`, etc.)
-* Customizable tab and tabset rendering
+* Multiple ways to add tabs (drag, active tabset, by ID) — see [External Drag](https://caplin.github.io/FlexLayout/demos/v0.10/examples/external-drag/) / [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sticky-button/)
+* Comprehensive tab and tabset attributes (`enableTabStrip`, `enableDock`, `enableDrop`, etc.) — see [Min Sizes](https://caplin.github.io/FlexLayout/demos/v0.10/examples/min-sizes/)
+* Customizable tab and tabset rendering — see [Tab Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-rendering/) / [Tabset Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tabset-rendering/)
+* Tabset placeholder for empty tabsets — see [Placeholder](https://caplin.github.io/FlexLayout/demos/v0.10/examples/placeholder/)
+* Support for internationalization — see [i18n](https://caplin.github.io/FlexLayout/demos/v0.10/examples/i18n/)
 * Preservation of component state when tabs are moved
 * TypeScript type declarations
 
@@ -55,8 +59,8 @@ import { Layout, Model, Actions, DockLocation } from 'flexlayout-react';
 
 Include a theme. Choose from `alpha_light`, `alpha_dark`, `alpha_rounded`, `light`, `dark`, `underline`, `gray`, `rounded`, or `combined` (see the demo for examples):
 
-```css
-import 'flexlayout-react/style/alpha_light.css';  
+```javascript
+import 'flexlayout-react/style/alpha_light.css';
 ```
 
 [Learn how to change the theme dynamically in code](#dynamically-changing-the-theme)
@@ -145,9 +149,11 @@ The above code renders two tabsets horizontally, each containing a single tab th
 
 <img src="screenshots/Screenshot_two_tabs.png?raw=true" alt="Simple layout" title="Generated Layout"/>
 
+[Try it now using CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf) — see [Basic](https://caplin.github.io/FlexLayout/demos/v0.10/examples/basic/) — `examples/basic/Basic.tsx`.
+
 Note: The `<Layout>` component must be hosted in a container element (with CSS `position: absolute` or `relative`). The layout will fill the containing element.
 
-A simple TypeScript example can be found here:
+A simple TypeScript starter project can be found here:
 
 https://github.com/nealus/flexlayout-vite-example
 
@@ -235,9 +241,11 @@ For example:
     containerRef.current!.className = "flexlayout__theme_alpha_dark"
 ```
 
+See [Theme](https://caplin.github.io/FlexLayout/demos/v0.10/examples/theme/) — `examples/theme/Theme.tsx`.
+
 ## Overriding Theme Variables
 
-All themeable values (`--color-*`, `--font-*`, `--splitter-size`, `--tab-button-radius`, etc.) are CSS custom properties defined in `style/_themes.scss`. Each one is defined as `var(--flexlayout-<name>, <theme default>)` — so the theme default applies unless the matching global `--flexlayout-<name>` variable is defined, in which case that value is used everywhere (float windows, sublayouts, and popout windows included).
+All themeable values (`--fl-color-*`, `--fl-font-*`, `--fl-splitter-size`, `--fl-tab-button-radius`, etc.) are CSS custom properties defined in `style/_themes.scss`. Each one is defined as `var(--flexlayout-<name>, <theme default>)` — so the theme default applies unless the matching global `--flexlayout-<name>` variable is defined, in which case that value is used everywhere (float windows, sublayouts, and popout windows included).
 
 To restyle the whole layout without rebuilding the scss, set the global variable on a common ancestor (e.g. `:root` or the div wrapping the `<Layout>`):
 
@@ -275,6 +283,8 @@ onRenderTab = (node: TabNode, renderValues: ITabRenderValues) => {
 }
 ```
 
+See [Tab Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-rendering/) — `examples/tab-rendering/TabRendering.tsx`.
+
 ## Customizing Tabsets
 
 You can use the `<Layout>` prop `onRenderTabSet` to customize tabset rendering:
@@ -311,6 +321,8 @@ onRenderTabSet = (node: (TabSetNode | BorderNode), renderValues: ITabSetRenderVa
 }
 ```
 
+See [Tabset Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tabset-rendering/) — `examples/tabset-rendering/TabSetRendering.tsx` and [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sticky-button/) — `examples/sticky-button/StickyButton.tsx`.
+
 ## Customizing Icons
 
 The built-in icons (close, pin, maximize/restore, popout, float, overflow, etc.) can be replaced via the `icons` layout prop. Each entry of the `IIcons` object is either a React node or a function receiving the relevant node and returning one:
@@ -332,23 +344,40 @@ The default icons are also exported (`CloseIcon`, `PinIcon`, `MaximizeIcon`, ...
 
 ## Localization
 
-All built-in text (button tooltips and the labels announced to assistive technology) is routed through the `i18nMapper` layout prop. It receives an `I18nLabel` enum value and returns the translated string, or `undefined` to use the default English text (the enum values are the defaults):
+All text — both model data (tab names, group names, tabset names) and built-in UI labels (button tooltips, context menu items) — is routed through the `i18nTranslator` layout prop. The function receives a string key and must return the translated string. Built-in UI labels use keys from the `I18nLabel` enum (e.g. `"flexlayout.ui.close.tab"`, `"flexlayout.ui.menu.rename"`). If no translator is registered, the default English text is used automatically:
 
 ```tsx
-import { I18nLabel } from "flexlayout-react";
+const translations: Record<string, Record<string, string>> = {
+    en: {
+        // model text (any keys you like)
+        "tab.welcome": "Welcome",
+        "tab.settings": "Settings",
+        // built-in UI labels (I18nLabel enum values)
+        "flexlayout.ui.close.tab": "Close",
+        "flexlayout.ui.menu.pin": "Pin",
+        "flexlayout.ui.menu.rename": "Rename",
+        "flexlayout.ui.menu.close.all": "Close All",
+    },
+    de: {
+        "tab.welcome": "Willkommen",
+        "tab.settings": "Einstellungen",
+        "flexlayout.ui.close.tab": "Schließen",
+        "flexlayout.ui.menu.pin": "Anheften",
+        "flexlayout.ui.menu.rename": "Umbenennen",
+        "flexlayout.ui.menu.close.all": "Alle schließen",
+    },
+};
+
+const getTranslator = (lang: string) => (key: string) => translations[lang][key] ?? key;
 
 <Layout
     model={model}
     factory={factory}
-    i18nMapper={(id, param) => {
-        switch (id) {
-            case I18nLabel.Close_Tab: return "Schließen";
-            case I18nLabel.Move_Tabs: return "? Tabs verschieben"; // "?" is replaced with the tab count
-            default: return undefined; // use the default text
-        }
-    }}
+    i18nTranslator={getTranslator("de")}
 />
 ```
+
+Model strings are passed through the translator as-is (use whatever key scheme you like in your JSON). Built-in UI keys follow the pattern `flexlayout.ui.<category>.<name>` — return the key unchanged to keep the default English text. See `examples/i18n/` for a complete working example with language switching and translated context menus.
 
 ## Context Menu
 
@@ -382,7 +411,9 @@ const onContextMenu = (node: TabNode | TabSetNode | BorderNode, event: React.Mou
 <Layout model={model} factory={factory} onContextMenu={onContextMenu} />
 ```
 
-The items returned by `build()` (and the `getNodeContextMenuItems` helper) are plain data, so they don't have to be shown via `showPopupMenu` — you can render them in your own styled menu component. Each item's `label` is the menu text already resolved through the layout's `i18nMapper`, and its `onSelect` fires the corresponding action against the node's model.
+The items returned by `build()` (and the `getNodeContextMenuItems` helper) are plain data, so they don't have to be shown via `showPopupMenu` — you can render them in your own styled menu component. Each item's `label` is the menu text already resolved through the layout's `i18nTranslator`, and its `onSelect` fires the corresponding action against the node's model.
+
+See [Context Menu](https://caplin.github.io/FlexLayout/demos/v0.10/examples/context-menu/) — `examples/context-menu/ContextMenu.tsx`.
 
 ## Model Actions
 
@@ -431,6 +462,8 @@ Notes:
 - `setModel(model)` replaces the model and clears the history; pass `false` as a second argument to keep the history (e.g. for an in-place round-trip of the same model). Use `reset()` to clear the history without replacing the model.
 - Options: `maxBufferSize` (default 100) and `ignoreActionTypes` (default `[Actions.SET_ACTIVE_TABSET]`) - actions whose types are listed do not create undo steps.
 
+See [Undo / Redo](https://caplin.github.io/FlexLayout/demos/v0.10/examples/undo-redo/) — `examples/undo-redo/UndoRedo.tsx`.
+
 ## Optional Layout Props
 
 Many optional properties can be applied to the layout:
@@ -455,6 +488,8 @@ Note: Tabsets are dynamically created as tabs are moved and deleted when their l
 [Tab Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/ITabAttributes.html)
 
 [Border Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/IJsonBorderNode.html)
+
+See [Load / Save](https://caplin.github.io/FlexLayout/demos/v0.10/examples/localstorage/) — `examples/localstorage/LocalStorage.tsx` for saving/restoring models.
 
 ## Tab Groups
 
@@ -502,7 +537,7 @@ model.doAction(Actions.ungroup("g1"));                                 // return
 model.doAction(Actions.removeTabFromGroup("tab2"));                    // move a tab out of its group
 ```
 
-For an example see the `Tab Groups` layout in the demo app.
+For an example see [Tab Groups](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-groups/) — `examples/tab-groups/TabGroups.tsx` (also the `Tab Groups` layout in the demo app).
 
 ### Tab group colors
 
@@ -518,10 +553,37 @@ The group pill text color, default group color (used when creating a new group),
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `--flexlayout-color-tabgroup-pill-text` | `var(--color-text)` | Text color inside the group pill |
+| `--flexlayout-color-tabgroup-pill-text` | `var(--fl-color-text)` | Text color inside the group pill |
 | `--flexlayout-color-tabgroup-default` | `#9e9e9e` | Default group color when creating a group via the context menu or action without a color |
 | `--flexlayout-color-tabgroup-menu-palette` | *(10 muted hex colors)* | Comma-separated list of preset swatch colors shown in the pill's right-click color picker |
 
+
+## Tabset Placeholder
+
+When a tabset has no tabs and it's the last tabset or has `tabSetEnableDeleteWhenEmpty: false` then you can show custom content by providing a `onTabSetPlaceHolder` callback on the `<Layout>`:
+
+```tsx
+const json: IJsonModel = {
+  global: { tabSetEnableDeleteWhenEmpty: false },
+  layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [] }] }
+};
+
+function Placeholder() {
+  const layoutRef = useRef<ILayoutApi>(null);
+  let nextId = 0;
+  const onTabSetPlaceHolder = (node: TabSetNode) => (
+    <div style={{ display: "flex", flexGrow: 1, alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8 }}>
+      <div>Drop a tab here</div>
+      <button onClick={() => layoutRef.current?.addTabToTabSet(node.getId(), { name: "Tab " + nextId++, component: "panel" })}>
+        Add a tab
+      </button>
+    </div>
+  );
+  return <Layout ref={layoutRef} model={model} factory={factory} onTabSetPlaceHolder={onTabSetPlaceHolder} />;
+}
+```
+
+The callback receives the empty `TabSetNode` and should return a flex-filled element (`flexGrow: 1`). See [Placeholder](https://caplin.github.io/FlexLayout/demos/v0.10/examples/placeholder/) — `examples/placeholder/Placeholder.tsx`.
 
 ## Layout API Methods to Create New Tabs
 
@@ -534,7 +596,9 @@ Example:
 ```javascript
 layoutRef.current.addTabToTabSet("NAVIGATION", { type: "tab", component: "grid", name: "a grid" });
 ```
-This adds a new grid component to the tabset with ID "NAVIGATION". (where `layoutRef` is a React ref to the `Layout` element; see [React Refs](https://reactjs.org/docs/refs-and-the-dom.html)).
+This adds a new grid component to the tabset with ID "NAVIGATION". (where `layoutRef` is a React ref to the `Layout` element; see [React Refs](https://react.dev/learn/referencing-values-with-refs)).
+
+See [External Drag](https://caplin.github.io/FlexLayout/demos/v0.10/examples/external-drag/) — `examples/external-drag/ExternalDrag.tsx` and [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sticky-button/) — `examples/sticky-button/StickyButton.tsx`.
 
 
 ## Tab Node Events
@@ -562,7 +626,9 @@ function MyComponent({ node }) {
 
 ## Popout Windows
 
-Tabs can be rendered into external browser windows (useful for multi-monitor setups) by using the `enablePopout` and `enablePopoutIcon` attributes. When enabled, a popout icon appears in the tab header.
+Tabs can be rendered into external browser windows (useful for multi-monitor setups) by using the `enablePopout` and `enablePopoutIcon` attributes. When enabled, a popout icon appears in the tab header. See [Popout](https://caplin.github.io/FlexLayout/demos/v0.10/examples/popout/) — `examples/popout/Popout.tsx`.
+
+
 
 Popout windows require an additional HTML page, `popout.html`, hosted at the same location as the main page (you can copy this from the demo app). The `popout.html` acts as the host for the popped-out tab, and the main page's styles are copied into it at runtime.
 
@@ -716,7 +782,7 @@ The command shortcuts above are configured through the `keyMap` layout prop. Bin
 
 ### Focus styling
 
-The bundled themes draw a visible focus outline driven by the `--color-focus` CSS variable. Override it (alongside the other theme CSS variables) to match your design system.
+The bundled themes draw a visible focus outline driven by the `--fl-color-focus` CSS variable (overridable globally via `--flexlayout-color-focus`). Override it (alongside the other theme CSS variables) to match your design system.
 
 ### Reusable menu for application context menus
 

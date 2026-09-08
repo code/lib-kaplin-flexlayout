@@ -23,7 +23,7 @@ test("global theme override reaches a floating panel", async ({ page }) => {
 
     const backgrounds = () =>
         page.evaluate(() => {
-            // --color-tabset-background derives from --color-1 in the alpha themes
+            // --fl-color-tabset-background derives from --fl-color-1 in the alpha themes
             const mainTabset = document.querySelector(".flexlayout__layout_border_container .flexlayout__tabset");
             const floatTabset = document.querySelector(".flexlayout__float_window .flexlayout__tabset");
             return {

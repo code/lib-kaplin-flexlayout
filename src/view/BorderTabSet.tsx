@@ -291,7 +291,7 @@ export const BorderTabSet = (props: IBorderTabSetProps) => {
             const selectedTabNode = borderNode.getSelectedNode();
 
             if (selectedTabNode !== undefined && controller.isMainLayout()) {
-                if (selectedTabNode.isEnablePopoutFloatIcon()) {
+                if (selectedTabNode.isEnableFloat() && selectedTabNode.isEnableFloatIcon()) {
                     const popoutFloatTitle = controller.i18nName(I18nLabel.Popout_Tab_Float);
                     buttons.push(
                         <button

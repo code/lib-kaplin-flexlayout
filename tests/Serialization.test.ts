@@ -96,6 +96,97 @@ describe("toJson default omission", () => {
     });
 });
 
+describe("preserveIfExplicit", () => {
+    it("keeps explicit false for tabEnableRename (now the default) across round-trip", () => {
+        const model = Model.fromJson({
+            global: { tabEnableRename: false },
+            layout: { type: "row", children: [{ type: "tabset", children: [{ type: "tab", id: "t0" }] }] },
+        });
+        expect(model.toJson().global!.tabEnableRename).equal(false);
+        const round = Model.fromJson(model.toJson());
+        expect(round.getAttribute("tabEnableRename")).equal(false);
+    });
+
+    it("keeps explicit false for tabEnablePin across round-trip", () => {
+        const model = Model.fromJson({
+            global: { tabEnablePin: false },
+            layout: { type: "row", children: [{ type: "tabset", children: [{ type: "tab", id: "t0" }] }] },
+        });
+        expect(model.toJson().global!.tabEnablePin).equal(false);
+        const round = Model.fromJson(model.toJson());
+        expect(round.getAttribute("tabEnablePin")).equal(false);
+    });
+
+    it("keeps explicit false for tabEnablePopoutIcon across round-trip", () => {
+        const model = Model.fromJson({
+            global: { tabEnablePopoutIcon: false },
+            layout: { type: "row", children: [{ type: "tabset", children: [{ type: "tab", id: "t0" }] }] },
+        });
+        expect(model.toJson().global!.tabEnablePopoutIcon).equal(false);
+        const round = Model.fromJson(model.toJson());
+        expect(round.getAttribute("tabEnablePopoutIcon")).equal(false);
+    });
+
+    it("does not write attrs without preserveIfExplicit when at default", () => {
+        const model = Model.fromJson({
+            global: {},
+            layout: { type: "row", children: [{ type: "tabset", children: [{ type: "tab", id: "t0" }] }] },
+        });
+        // enableRenderOnDemand defaults to true, no preserveIfExplicit
+        expect(model.toJson().global!.tabEnableRenderOnDemand).equal(undefined);
+    });
+
+    it("updateModelAttributes with undefined clears preserveIfExplicit stickiness", () => {
+        const model = Model.fromJson({
+            global: { tabEnableRename: false },
+            layout: { type: "row", children: [{ type: "tabset", children: [{ type: "tab", id: "t0" }] }] },
+        });
+        expect(model.toJson().global!.tabEnableRename).equal(false);
+        model.doAction(Actions.updateModelAttributes({ tabEnableRename: undefined }));
+        // after clearing, value reverts to default (false) and is no longer explicit
+        expect(model.toJson().global!.tabEnableRename).equal(undefined);
+    });
+
+    it("internal mutations (weight, selected, rename, pinned) round-trip", () => {
+        const model = Model.fromJson({
+            global: { tabEnablePin: true },
+            layout: {
+                type: "row",
+                children: [
+                    {
+                        type: "tabset",
+                        id: "ts0",
+                        children: [
+                            { type: "tab", id: "t0", name: "A" },
+                            { type: "tab", id: "t1", name: "B" },
+                        ],
+                    },
+                ],
+            },
+        });
+
+        // mutate weight via splitter-like path (direct attribute set, not updateAttrs)
+        const ts = model.getNodeById("ts0") as TabSetNode;
+        (ts as any).setWeight(75);
+
+        // rename
+        model.doAction(Actions.renameTab("t0", "Renamed"));
+
+        // pin
+        model.doAction(Actions.setTabPinned("t0", true));
+
+        // select second tab
+        model.doAction(Actions.selectTab("t1"));
+
+        const round = Model.fromJson(model.toJson());
+        const tsRound = round.getNodeById("ts0") as TabSetNode;
+        expect(tsRound.getWeight()).equal(75);
+        expect(tsRound.getSelected()).equal(1);
+        expect((round.getNodeById("t0") as TabNode).getName()).equal("Renamed");
+        expect((round.getNodeById("t0") as TabNode).isPinned()).equal(true);
+    });
+});
+
 describe("subLayouts serialization", () => {
     it("round-trips a tab sublayout and its host tab", () => {
         const model = Model.fromJson({

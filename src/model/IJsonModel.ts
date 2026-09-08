@@ -243,11 +243,29 @@ export interface IGlobalAttributes {
     tabEnableDrag?: boolean;
 
     /**
+	  Value for TabNode attribute enableFloat if not overridden
+
+	  whether the user can move the tab to a floating window via the context menu
+
+	  Default: false
+	 */
+    tabEnableFloat?: boolean;
+
+    /**
+	  Value for TabNode attribute enableFloatIcon if not overridden
+
+	  whether to show the float icon in the tabset header if this tab enables floating
+
+	  Default: false
+	 */
+    tabEnableFloatIcon?: boolean;
+
+    /**
 	  Value for TabNode attribute enablePin if not overridden
 
 	  whether the user can pin/unpin the tab via the context menu
 
-	  Default: true
+	  Default: false
 	 */
     tabEnablePin?: boolean;
 
@@ -261,20 +279,11 @@ export interface IGlobalAttributes {
     tabEnablePopout?: boolean;
 
     /**
-	  Value for TabNode attribute enablePopoutFloatIcon if not overridden
-
-	  whether to show the popout float icon in the tabset header if this tab enables floating popouts
-
-	  Default: false
-	 */
-    tabEnablePopoutFloatIcon?: boolean;
-
-    /**
 	  Value for TabNode attribute enablePopoutIcon if not overridden
 
 	  whether to show the popout icon in the tabset header if this tab enables popouts
 
-	  Default: true
+	  Default: false
 	 */
     tabEnablePopoutIcon?: boolean;
 
@@ -293,7 +302,7 @@ export interface IGlobalAttributes {
 
 	  whether the user can rename the tab by double clicking
 
-	  Default: true
+	  Default: false
 	 */
     tabEnableRename?: boolean;
 
@@ -465,6 +474,13 @@ export interface IGlobalAttributes {
 	  Default: false
 	 */
     tabSetEnableSingleTabStretch?: boolean;
+
+    /**
+	  whether the tab group options are enabled in the context menu (default menus)
+
+	  Default: false
+	 */
+    tabSetEnableTabGroups?: boolean;
 
     /**
 	  Value for TabSetNode attribute enableTabScrollbar if not overridden
@@ -646,6 +662,13 @@ export interface ITabSetAttributes {
     enableSingleTabStretch?: boolean;
 
     /**
+	  whether the tab group options are enabled in the context menu (default menus)
+
+	  Default: inherited from Global attribute tabSetEnableTabGroups (default false)
+	 */
+    enableTabGroups?: boolean;
+
+    /**
 	  whether to show a mini scrollbar for the tabs
 
 	  Default: inherited from Global attribute tabSetEnableTabScrollbar (default false)
@@ -808,9 +831,23 @@ export interface ITabAttributes {
     enableDrag?: boolean;
 
     /**
+	  whether the user can move the tab to a floating window via the context menu
+
+	  Default: inherited from Global attribute tabEnableFloat (default false)
+	 */
+    enableFloat?: boolean;
+
+    /**
+	  whether to show the float icon in the tabset header if this tab enables floating
+
+	  Default: inherited from Global attribute tabEnableFloatIcon (default false)
+	 */
+    enableFloatIcon?: boolean;
+
+    /**
 	  whether the user can pin/unpin the tab via the context menu
 
-	  Default: inherited from Global attribute tabEnablePin (default true)
+	  Default: inherited from Global attribute tabEnablePin (default false)
 	 */
     enablePin?: boolean;
 
@@ -822,16 +859,9 @@ export interface ITabAttributes {
     enablePopout?: boolean;
 
     /**
-	  whether to show the popout float icon in the tabset header if this tab enables floating popouts
-
-	  Default: inherited from Global attribute tabEnablePopoutFloatIcon (default false)
-	 */
-    enablePopoutFloatIcon?: boolean;
-
-    /**
 	  whether to show the popout icon in the tabset header if this tab enables popouts
 
-	  Default: inherited from Global attribute tabEnablePopoutIcon (default true)
+	  Default: inherited from Global attribute tabEnablePopoutIcon (default false)
 	 */
     enablePopoutIcon?: boolean;
 
@@ -846,7 +876,7 @@ export interface ITabAttributes {
     /**
 	  whether the user can rename the tab by double clicking
 
-	  Default: inherited from Global attribute tabEnableRename (default true)
+	  Default: inherited from Global attribute tabEnableRename (default false)
 	 */
     enableRename?: boolean;
 
@@ -1095,7 +1125,7 @@ export interface ITabGroupAttributes {
     /**
 	  the name of the group shown in its pill
 
-	  Default: "Group"
+	  Default: "flexlayout.ui.group.default.name"
 	 */
     name?: string;
 

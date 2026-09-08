@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useRef, useImperativeHandle } from "react";
+import { useRef, useEffect, useImperativeHandle } from "react";
 import { TabNode } from "../model/TabNode";
 import { TabSetNode } from "../model/TabSetNode";
 import { IJsonTabNode } from "../model/IJsonModel";
@@ -7,7 +7,7 @@ import { Node } from "../model/Node";
 import { Action } from "../model/Actions";
 import { BorderNode } from "../model/BorderNode";
 import { Model } from "../model/Model";
-import { I18nLabel } from "./I18nLabel";
+import { I18nLabelDefaults } from "./I18nLabel";
 import { DragRectRenderCallback, NodeMouseEvent, ShowOverflowMenuCallback, TabSetPlaceHolderCallback, ITabSetRenderValues, ITabRenderValues, IIcons, IKeyMap } from "./layout/LayoutTypes";
 import { getViewController, LayoutInternal, LayoutController } from "./layout/LayoutInternal";
 import { ModelLayout } from "../model/ModelLayout";
@@ -49,8 +49,13 @@ export interface ILayoutProps {
           };
     /** function called with default css class name, return value is class name that will be used. Mainly for use with css modules. */
     classNameMapper?: (defaultClassName: string) => string;
-    /** function called for each I18nLabel to allow user translation, currently used for tab and tabset move messages, return undefined to use default values */
-    i18nMapper?: (id: I18nLabel, param?: string) => string | undefined;
+    /** Function called for each model string (tab names, group names, tabset names) and
+     *  each built-in UI label (button tooltips, context menu items) to allow i18n translation.
+     *  The function receives the raw string key and must return the translated string.
+     *  Built-in UI labels use keys like "flexlayout.ui.close.tab", "flexlayout.ui.menu.pin", etc.
+     *  (see I18nLabel enum). If no translator is registered, built-in UI labels fall back to
+     *  their default English text. */
+    i18nTranslator?: (key: string) => string;
     /** if left undefined will do simple check based on userAgent */
     supportsPopout?: boolean | undefined;
     /** URL of popout window relative to origin, defaults to popout.html */
@@ -177,6 +182,16 @@ const Layout = React.forwardRef<ILayoutApi, ILayoutProps>((props, ref) => {
         }
         lastModel.current = props.model;
     }
+
+    // sync the i18n translator and defaults to the model
+    useEffect(() => {
+        props.model.setI18nDefaults(I18nLabelDefaults);
+        props.model.setI18nTranslator(props.i18nTranslator);
+        return () => {
+            props.model.setI18nDefaults(undefined);
+            props.model.setI18nTranslator(undefined);
+        };
+    }, [props.model, props.i18nTranslator]);
 
     Layout.displayName = "Layout"; // name in react dev tools
 

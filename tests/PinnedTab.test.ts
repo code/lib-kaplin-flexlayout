@@ -2,7 +2,7 @@
 import { Actions, DockLocation, IJsonModel, Model, TabNode, TabSetNode } from "../src";
 
 const pinnedJson: IJsonModel = {
-    global: {},
+    global: { tabEnablePin: true },
     borders: [{ type: "border", location: "top", children: [{ type: "tab", id: "bt0", name: "BorderTab" }] }],
     layout: {
         type: "row",

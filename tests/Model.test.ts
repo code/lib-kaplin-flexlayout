@@ -1566,7 +1566,7 @@ describe("attribute definitions", () => {
     });
 });
 
-describe("attribute alias", () => {
+describe("enableFloat attribute", () => {
     const model = () =>
         Model.fromJson({
             global: {},
@@ -1582,35 +1582,46 @@ describe("attribute alias", () => {
             },
         });
 
-    it("updateNodeAttributes honors the enableFloat alias of enablePopout", () => {
+    it("enableFloat is independent of enablePopout", () => {
         const m = model();
         const tab = m.getNodeById("t0") as TabNode;
+        expect(tab.isEnableFloat()).toBe(false);
         expect(tab.isEnablePopout()).toBe(false);
         m.doAction(Actions.updateNodeAttributes("t0", { enableFloat: true } as any));
-        expect(tab.isEnablePopout()).toBe(true);
+        expect(tab.isEnableFloat()).toBe(true);
+        expect(tab.isEnablePopout()).toBe(false);
     });
 
-    it("the canonical name wins when both the name and its alias are provided", () => {
+    it("enableFloat inherits the tabEnableFloat global", () => {
         const m = model();
         const tab = m.getNodeById("t0") as TabNode;
-        m.doAction(Actions.updateNodeAttributes("t0", { enablePopout: true, enableFloat: false } as any));
-        expect(tab.isEnablePopout()).toBe(true);
+        m.doAction(Actions.updateModelAttributes({ tabEnableFloat: true } as any));
+        expect(tab.isEnableFloat()).toBe(true);
+        expect(tab.isEnablePopout()).toBe(false);
     });
 
-    it("setting the alias to undefined removes the override", () => {
+    it("setting enableFloat to undefined removes the override", () => {
         const m = model();
         const tab = m.getNodeById("t0") as TabNode;
         m.doAction(Actions.updateNodeAttributes("t0", { enableFloat: true } as any));
         m.doAction(Actions.updateNodeAttributes("t0", { enableFloat: undefined } as any));
-        expect(tab.getAttributeOwn("enablePopout")).toBeUndefined();
-        expect(tab.isEnablePopout()).toBe(false);
+        expect(tab.getAttributeOwn("enableFloat")).toBeUndefined();
+        expect(tab.isEnableFloat()).toBe(false);
     });
 
-    it("updateModelAttributes honors the tabEnableFloat alias of tabEnablePopout", () => {
+    it("updateModelAttributes honors tabEnableFloat", () => {
         const m = model();
         const tab = m.getNodeById("t0") as TabNode;
         m.doAction(Actions.updateModelAttributes({ tabEnableFloat: true } as any));
-        expect(tab.isEnablePopout()).toBe(true);
+        expect(tab.isEnableFloat()).toBe(true);
+    });
+
+    it("enableFloatIcon honors the tabEnablePopoutFloatIcon alias", () => {
+        const m = model();
+        const tab = m.getNodeById("t0") as TabNode;
+        expect(tab.isEnableFloatIcon()).toBe(false);
+        m.doAction(Actions.updateModelAttributes({ tabEnablePopoutFloatIcon: true } as any));
+        expect(tab.isEnableFloatIcon()).toBe(true);
     });
 });
 

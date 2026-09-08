@@ -86,7 +86,7 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
     }
 
     getName() {
-        return this.getAttr("name") as string | undefined;
+        return this.model.translate(this.getAttr("name") as string | undefined);
     }
 
     isEnableActiveIcon() {
@@ -266,6 +266,10 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
 
     isEnableTabScrollbar() {
         return this.getAttr("enableTabScrollbar") as boolean;
+    }
+
+    isEnableTabGroups() {
+        return this.getAttr("enableTabGroups") as boolean;
     }
 
     getClassNameTabStrip() {
@@ -618,6 +622,8 @@ export class TabSetNode extends Node implements IDraggable, IDropTarget {
         attributeDefinitions.addInherited("enableActiveIcon", "tabSetEnableActiveIcon").setDescription(`whether the active icon (*) should be displayed when the tabset is active`);
 
         attributeDefinitions.addInherited("enableTabScrollbar", "tabSetEnableTabScrollbar").setDescription(`whether to show a mini scrollbar for the tabs`);
+
+        attributeDefinitions.addInherited("enableTabGroups", "tabSetEnableTabGroups").setDescription(`whether the tab group options are enabled in the context menu (default menus)`);
 
         return attributeDefinitions;
     }

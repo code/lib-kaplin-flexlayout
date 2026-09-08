@@ -6,7 +6,7 @@ import { TabGroupNode } from "../model/TabGroupNode";
 import { Node } from "../model/Node";
 import { TabNode } from "../model/TabNode";
 import { TabSetNode } from "../model/TabSetNode";
-import { I18nLabel } from "./I18nLabel";
+import { I18nLabel, I18nLabelDefaults } from "./I18nLabel";
 import { CLASSES } from "../CSSClassNames";
 import { getViewController } from "./layout/LayoutInternal";
 import { IPopupMenuItem, PopupMenuEntry, showPopupMenu } from "./PopupMenu";
@@ -81,10 +81,35 @@ export interface INodeContextMenuOptions {
     getIcon?: (action: NodeContextAction, node: TabNode | TabSetNode | BorderNode | TabGroupNode) => React.ReactNode;
 }
 
+/** @internal whether tab groups are enabled for the given node */
+function isTabGroupsEnabled(node: Node): boolean {
+    if (node instanceof TabNode) {
+        const container = node.getTabContainer();
+        if (container instanceof TabSetNode) {
+            return container.isEnableTabGroups();
+        }
+        // borders have no enableTabGroups attribute - no default group actions
+        return false;
+    }
+    if (node instanceof TabGroupNode) {
+        const container = node.getTabContainer();
+        if (container instanceof TabSetNode) {
+            return container.isEnableTabGroups();
+        }
+        return false;
+    }
+    return false;
+}
+
 /** @internal the actions offered for each node type, in menu order */
 function orderedActions(node: Node): NodeContextAction[] {
     if (node instanceof TabNode) {
-        return ["pin", "float", "popout", "rename", "close"];
+        const base: NodeContextAction[] = ["pin", "float", "popout", "rename", "close"];
+        if (isTabGroupsEnabled(node)) {
+            // insert group actions before the final close
+            base.splice(base.length - 1, 0, "addToNewGroup", "addToGroup", "removeFromGroup");
+        }
+        return base;
     }
     if (node instanceof TabSetNode) {
         return ["maximize", "float", "popout", "close"];
@@ -169,10 +194,12 @@ function isActionEnabled(action: NodeContextAction, node: Node): boolean {
                       (getViewController(node.getLayout())?.isSupportsPopout() ?? true);
         case "float":
             // float positions from the parent's content rect: always available in tabsets; for
-            // border tabs it needs the selected tab's measured rect. A tabset floats as a whole.
+            // border tabs it needs the selected tab's measured rect. Floating is opt-in per tab
+            // via enableFloat (independent of popout); a tabset floats as a whole so every tab in
+            // it must be floatable.
             return node instanceof TabSetNode
-                ? node.isAllowedInWindow()
-                : node instanceof TabNode && !node.isPoppedOut() && !node.isPinned() && (node.isInsideTabSet() || node.isSelected()) && node.isAllowedInWindow();
+                ? node.getTabNodes().every((t) => t.isEnableFloat())
+                : node instanceof TabNode && !node.isPoppedOut() && !node.isPinned() && (node.isInsideTabSet() || node.isSelected()) && node.isEnableFloat();
         case "maximize":
             return node instanceof TabSetNode && node.canMaximize();
         case "close":
@@ -200,11 +227,11 @@ function isActionEnabled(action: NodeContextAction, node: Node): boolean {
         case "borderType":
             return node instanceof BorderNode;
         case "addToNewGroup":
-            // any unpinned tab can start a new group
-            return node instanceof TabNode && !node.isPinned() && node.getTabContainer() !== undefined;
+            // any unpinned tab can start a new group, only when tab groups are enabled
+            return node instanceof TabNode && !node.isPinned() && node.getTabContainer() !== undefined && isTabGroupsEnabled(node);
         case "addToGroup": {
             // enabled when the tab's tabset/border has a group it is not already in
-            if (!(node instanceof TabNode) || node.isPinned()) {
+            if (!(node instanceof TabNode) || node.isPinned() || !isTabGroupsEnabled(node)) {
                 return false;
             }
             const tabset = node.getTabContainer();
@@ -212,11 +239,11 @@ function isActionEnabled(action: NodeContextAction, node: Node): boolean {
             return tabset.getChildren().some((c) => c instanceof TabGroupNode && c !== ownGroup);
         }
         case "removeFromGroup":
-            return node instanceof TabNode && node.getParent() instanceof TabGroupNode;
+            return node instanceof TabNode && node.getParent() instanceof TabGroupNode && isTabGroupsEnabled(node);
         case "ungroup":
-            return node instanceof TabGroupNode;
+            return node instanceof TabGroupNode && isTabGroupsEnabled(node);
         case "toggleOpen":
-            return node instanceof TabGroupNode;
+            return node instanceof TabGroupNode && isTabGroupsEnabled(node);
     }
 }
 
@@ -256,13 +283,18 @@ function labelFor(action: NodeContextAction, node: Node): I18nLabel {
     }
 }
 
+/** @internal resolve an I18nLabel to a display string, using defaults when no controller is available */
+function defaultLabel(id: I18nLabel): string {
+    return I18nLabelDefaults[id] ?? id;
+}
+
 /** @internal */
 function resolveLabel(node: Node, action: NodeContextAction, getLabel: INodeContextMenuOptions["getLabel"]): string {
     if (getLabel) {
         return getLabel(action, node as TabNode | TabSetNode | BorderNode | TabGroupNode);
     }
     const label = labelFor(action, node);
-    return getViewController(node.getLayout())?.i18nName(label) ?? label;
+    return getViewController(node.getLayout())?.i18nName(label) ?? defaultLabel(label);
 }
 
 /** @internal */
@@ -375,7 +407,7 @@ function parseCssColorList(raw: string): string[] {
 
 /** @internal */
 function getGroupColorPalette(node: Node): string[] {
-    const raw = readLayoutCssVar(node, "--color-tabgroup-menu-palette");
+    const raw = readLayoutCssVar(node, "--fl-color-tabgroup-menu-palette");
     if (!raw) return DEFAULT_GROUP_COLOR_PALETTE;
     const parsed = parseCssColorList(raw).filter((s) => s.length > 0);
     return parsed.length > 0 ? parsed : DEFAULT_GROUP_COLOR_PALETTE;
@@ -383,7 +415,7 @@ function getGroupColorPalette(node: Node): string[] {
 
 /** @internal */
 function getGroupDefaultColor(node: Node): string | undefined {
-    return readLayoutCssVar(node, "--color-tabgroup-default");
+    return readLayoutCssVar(node, "--fl-color-tabgroup-default");
 }
 
 /** @internal */
@@ -427,14 +459,14 @@ function getGroupRenameItem(group: TabGroupNode, options: INodeContextMenuOption
     const content = (
         <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
             <label className={CLASSES.FLEXLAYOUT__GROUP_RENAME}>
-                {getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Name_Label) ?? I18nLabel.Group_Name_Label}
+                {getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Name_Label) ?? defaultLabel(I18nLabel.Group_Name_Label)}
                 <input
                     type="text"
                     className={CLASSES.FLEXLAYOUT__GROUP_RENAME_INPUT}
-                    placeholder={getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Name_Placeholder) ?? I18nLabel.Group_Name_Placeholder}
+                    placeholder={getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Name_Placeholder) ?? defaultLabel(I18nLabel.Group_Name_Placeholder)}
                     defaultValue={group.getName()}
                     autoFocus={true}
-                    aria-label={getViewController(group.getLayout())?.i18nName(I18nLabel.Rename_Group) ?? I18nLabel.Rename_Group}
+                    aria-label={getViewController(group.getLayout())?.i18nName(I18nLabel.Rename_Group) ?? defaultLabel(I18nLabel.Rename_Group)}
                     onFocus={(e) => e.currentTarget.select()}
                     onKeyDown={(e) => {
                         e.stopPropagation();
@@ -477,14 +509,14 @@ function getGroupColorItem(group: TabGroupNode, options: INodeContextMenuOptions
                     type="button"
                     className="flexlayout__group_color_picker_swatch"
                     style={{ backgroundColor: c }}
-                    aria-label={(getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Color_N) ?? I18nLabel.Group_Color_N).replace("?", String(i + 1))}
+                    aria-label={(getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Color_N) ?? defaultLabel(I18nLabel.Group_Color_N)).replace("?", String(i + 1))}
                     onClick={(e) => {
                         e.stopPropagation();
                         pick(c);
                     }}
                 />
             ))}
-            <label className="flexlayout__group_color_picker_custom" title={getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Color) ?? I18nLabel.Group_Color}>
+            <label className="flexlayout__group_color_picker_custom" title={getViewController(group.getLayout())?.i18nName(I18nLabel.Group_Color) ?? defaultLabel(I18nLabel.Group_Color)}>
                 <input type="color" defaultValue={group.getColor()} onChange={(e) => pick(e.currentTarget.value)} />
             </label>
         </div>
@@ -554,8 +586,18 @@ export class ContextMenuBuilder {
         return this;
     }
 
-    /** add all the standard actions for this node type, in their default order and without dividers */
+    /** add all the standard actions for this node type, in their default order and without dividers.
+     *  For {@link TabGroupNode} this includes the custom rename/color controls (with a divider)
+     *  before the `toggleOpen`/`ungroup` actions, matching {@link getTabGroupMenuItems}.
+     *  `actions`/`includeDisabled`/`getLabel`/`getIcon` in the options apply only to the
+     *  `toggleOpen`/`ungroup` actions; the custom controls have no disabled/label/icon state.
+     */
     addStandard(): this {
+        if (this.node instanceof TabGroupNode) {
+            this.addCustom(getGroupRenameItem(this.node as TabGroupNode, this.options));
+            this.addCustom(getGroupColorItem(this.node as TabGroupNode, this.options));
+            this.addDivider();
+        }
         for (const action of orderedActions(this.node)) {
             this.add(action);
         }
@@ -602,8 +644,16 @@ export class ContextMenuBuilder {
     }
 }
 
-/** Builds menu entries for the standard node actions. Use includeDisabled to show not-allowed actions as greyed-out items. */
+/** Builds menu entries for the standard node actions. Use includeDisabled to show not-allowed actions as greyed-out items.
+ *  For {@link TabGroupNode} this delegates to {@link getTabGroupMenuItems} so the menu includes
+ *  the custom rename/color controls. `actions` filters only `toggleOpen`/`ungroup`; the customs
+ *  are always present via the default path. `getLabel`/`getIcon`/`includeDisabled` apply only to
+ *  the `toggleOpen`/`ungroup` actions.
+ */
 export function getNodeContextMenuItems(node: TabNode | TabSetNode | BorderNode | TabGroupNode, options: INodeContextMenuOptions = {}): PopupMenuEntry[] {
+    if (node instanceof TabGroupNode) {
+        return getTabGroupMenuItems(node, options);
+    }
     const actions = options.actions ?? orderedActions(node);
     const builder = new ContextMenuBuilder(node, options);
     for (const action of actions) {
@@ -616,21 +666,20 @@ export function getNodeContextMenuItems(node: TabNode | TabSetNode | BorderNode 
  * Builds the context menu entries for a group pill: an inline rename control, a single-line color
  * chooser, then the standard group actions (collapse/expand and ungroup). Pass a `closeMenu`
  * callback in the options so the rename/color controls can dismiss the menu after committing.
+ * This is the default menu for {@link TabGroupNode} — {@link ContextMenuBuilder.addStandard} and
+ * {@link getNodeContextMenuItems} delegate here. `actions`/`getLabel`/`getIcon`/`includeDisabled`
+ * apply only to `toggleOpen`/`ungroup`; the custom controls are always included via the default path.
  */
 export function getTabGroupMenuItems(group: TabGroupNode, options: INodeContextMenuOptions = {}): PopupMenuEntry[] {
-    const builder = new ContextMenuBuilder(group, options);
-    builder.addCustom(getGroupRenameItem(group, options));
-    builder.addCustom(getGroupColorItem(group, options));
-    builder.addDivider();
-    builder.add("toggleOpen");
-    builder.add("ungroup");
-    return builder.build();
+    return new ContextMenuBuilder(group, options).addStandard().build();
 }
 
 /**
  * Shows the group pill context menu (rename, color, collapse/expand, ungroup) using the reusable
  * {@link showPopupMenu}. Returns an idempotent hide handle. Pass `onAction` in the options to
  * intercept/undo the dispatched actions, and `closeMenu` is wired automatically.
+ * This is a thin wrapper around {@link getTabGroupMenuItems}; the same menu is available via
+ * `new ContextMenuBuilder(group).addStandard().build()` / {@link getNodeContextMenuItems}.
  */
 export function showGroupMenu(group: TabGroupNode, anchor: { x: number; y: number } | DOMRect | HTMLElement, options: INodeContextMenuOptions = {}): () => void {
     const controller = getViewController(group.getLayout())!;

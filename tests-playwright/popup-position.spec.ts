@@ -4,7 +4,7 @@ import { test, expect, Page } from "@playwright/test";
 // the window origin (0,0). The bug was cross-realm type checks + measuring the trigger during a
 // deferred render; the menu now snapshots the trigger rect when it opens.
 test("overflow menu in a popout window is positioned over its trigger", async ({ page, context }) => {
-    await page.goto("/demo?layout=default");
+    await page.goto("/demo?layout=test_popout");
     await expect(page.locator(".flexlayout__tabset").first()).toBeVisible();
 
     // pop the first tab out into its own window

@@ -188,8 +188,8 @@ button.reset-btn {
     padding: 10px 12px;
     overflow: auto;
     font-size: 13px;
-    color: var(--color-text);
-    background-color: var(--color-base);
+    color: var(--fl-color-text);
+    background-color: var(--fl-color-base);
 }
 
 .theme-panel-header {
@@ -198,7 +198,7 @@ button.reset-btn {
     justify-content: space-between;
     gap: 8px;
     padding-bottom: 8px;
-    border-bottom: 1px solid var(--color-2);
+    border-bottom: 1px solid var(--fl-color-2);
 }
 
 .theme-panel-title {
@@ -217,14 +217,14 @@ button.reset-btn {
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--color-5);
-    background-color: var(--color-1);
+    color: var(--fl-color-5);
+    background-color: var(--fl-color-1);
 }
 
 .theme-panel-note {
     margin-bottom: 6px;
     font-size: 11px;
-    color: var(--color-5);
+    color: var(--fl-color-5);
 }
 
 .theme-panel-group {
@@ -243,14 +243,14 @@ button.reset-btn {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--color-text);
+    color: var(--fl-color-text);
 }
 
 .theme-panel-row input[type="color"] {
     width: 44px;
     height: 26px;
     padding: 0;
-    border: 1px solid var(--color-3);
+    border: 1px solid var(--fl-color-3);
     border-radius: 4px;
     background: transparent;
     cursor: pointer;
@@ -260,21 +260,21 @@ button.reset-btn {
     flex: 1;
     max-width: 200px;
     min-width: 50px;
-    accent-color: var(--color-tab-selected);
+    accent-color: var(--fl-color-tab-selected);
 }
 
 .theme-panel-value {
     min-width: 38px;
     text-align: right;
     font-variant-numeric: tabular-nums;
-    color: var(--color-5);
+    color: var(--fl-color-5);
 }
 
 .theme-panel-row button,
 .theme-panel-reset-all {
-    border: 1px solid var(--color-3);
-    background-color: var(--color-2);
-    color: var(--color-text);
+    border: 1px solid var(--fl-color-3);
+    background-color: var(--fl-color-2);
+    color: var(--fl-color-text);
     border-radius: 4px;
     padding: 2px 8px;
     font-size: 11px;
@@ -283,7 +283,7 @@ button.reset-btn {
 
 .theme-panel-row button:hover:not(:disabled),
 .theme-panel-reset-all:hover:not(:disabled) {
-    background-color: var(--color-3);
+    background-color: var(--fl-color-3);
 }
 
 .theme-panel-row button:disabled,
@@ -299,8 +299,8 @@ button.reset-btn {
     padding: 4px 0;
     overflow: auto;
     font-size: 15px;
-    color: var(--color-text);
-    background-color: var(--color-base);
+    color: var(--fl-color-text);
+    background-color: var(--fl-color-base);
 }
 
 .attrs-tree-row {
@@ -315,12 +315,12 @@ button.reset-btn {
 }
 
 .attrs-tree-row.selectable:hover {
-    background-color: var(--color-2);
+    background-color: var(--fl-color-2);
 }
 
 .attrs-tree-row.selected {
-    background-color: var(--color-tab-selected-background);
-    color: var(--color-tab-selected);
+    background-color: var(--fl-color-tab-selected-background);
+    color: var(--fl-color-tab-selected);
 }
 
 .attrs-tree-caret {
@@ -344,8 +344,8 @@ button.reset-btn {
     flex-direction: column;
     box-sizing: border-box;
     font-size: 13px;
-    color: var(--color-text);
-    background-color: var(--color-base);
+    color: var(--fl-color-text);
+    background-color: var(--fl-color-base);
 }
 
 .attrs-editor-header {
@@ -353,7 +353,7 @@ button.reset-btn {
     align-items: center;
     gap: 6px;
     padding: 6px 8px;
-    border-bottom: 1px solid var(--color-2);
+    border-bottom: 1px solid var(--fl-color-2);
 }
 
 .attrs-editor-title {
@@ -367,9 +367,9 @@ button.reset-btn {
 
 .attrs-editor-btn,
 .attrs-editor-row button {
-    border: 1px solid var(--color-3);
-    background-color: var(--color-2);
-    color: var(--color-text);
+    border: 1px solid var(--fl-color-3);
+    background-color: var(--fl-color-2);
+    color: var(--fl-color-text);
     border-radius: 4px;
     padding: 2px 6px;
     font-size: 11px;
@@ -378,7 +378,7 @@ button.reset-btn {
 
 .attrs-editor-btn:hover:not(:disabled),
 .attrs-editor-row button:hover:not(:disabled) {
-    background-color: var(--color-3);
+    background-color: var(--fl-color-3);
 }
 
 .attrs-editor-btn:disabled,
@@ -400,7 +400,7 @@ button.reset-btn {
     justify-content: center;
     padding: 12px;
     text-align: center;
-    color: var(--color-5);
+    color: var(--fl-color-5);
 }
 
 .attrs-editor-row {
@@ -415,7 +415,7 @@ button.reset-btn {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--color-text);
+    color: var(--fl-color-text);
 }
 
 .attrs-editor-control {
@@ -430,28 +430,28 @@ button.reset-btn {
 .attrs-editor-control select {
     width: 100%;
     box-sizing: border-box;
-    border: 1px solid var(--color-3);
+    border: 1px solid var(--fl-color-3);
     border-radius: 4px;
-    background-color: var(--color-2);
-    color: var(--color-text);
+    background-color: var(--fl-color-2);
+    color: var(--fl-color-text);
     padding: 2px 4px;
     font-size: 12px;
 }
 
 .attrs-editor-control input[type="checkbox"] {
-    accent-color: var(--color-tab-selected);
+    accent-color: var(--fl-color-tab-selected);
 }
 
 .attrs-editor-inherited {
     flex: 0 0 auto;
     font-size: 10px;
-    color: var(--color-5);
+    color: var(--fl-color-5);
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
 .attrs-editor-inherited.active {
-    color: var(--color-text);
+    color: var(--fl-color-text);
 }
 
 .attrs-json-control {
@@ -463,10 +463,10 @@ button.reset-btn {
     width: 100%;
     box-sizing: border-box;
     resize: vertical;
-    border: 1px solid var(--color-3);
+    border: 1px solid var(--fl-color-3);
     border-radius: 4px;
-    background-color: var(--color-2);
-    color: var(--color-text);
+    background-color: var(--fl-color-2);
+    color: var(--fl-color-text);
     font-family: monospace;
     font-size: 11px;
     padding: 3px 4px;

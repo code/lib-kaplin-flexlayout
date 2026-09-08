@@ -122,7 +122,7 @@ export const testOnRenderTabSet = (node: TabSetNode | BorderNode, renderValues: 
                     justifyContent: "center",
                     width: 120,
                     height: 24,
-                    background: "var(--color-toolbar-button-hover, #ddd)",
+                    background: "var(--fl-color-toolbar-button-hover, #ddd)",
                     border: "1px solid #999",
                     fontSize: 12,
                     whiteSpace: "nowrap",

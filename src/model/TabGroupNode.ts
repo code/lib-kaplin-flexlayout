@@ -12,7 +12,7 @@ import { TabNode } from "./TabNode";
 import { TabSetNode } from "./TabSetNode";
 import { BorderNode } from "./BorderNode";
 
-/** @internal the default group color, matching --color-tabgroup-default in the themes */
+/** @internal the default group color, matching --fl-color-tabgroup-default in the themes */
 const DEFAULT_TAB_GROUP_COLOR = "#9e9e9e";
 
 /**
@@ -57,7 +57,7 @@ export class TabGroupNode extends Node implements IDraggable, IDropTarget {
     }
 
     getName() {
-        return this.getAttr("name") as string;
+        return this.model.translate(this.getAttr("name") as string) as string;
     }
 
     getColor() {
@@ -499,7 +499,7 @@ export class TabGroupNode extends Node implements IDraggable, IDropTarget {
         const attributeDefinitions = new Attributes();
         attributeDefinitions.add("type", TabGroupNode.TYPE, true).setType(Attribute.STRING).setFixed();
         attributeDefinitions.add("id", undefined).setType(Attribute.STRING).setDescription(`the unique id of the group, if left undefined a uuid will be assigned`);
-        attributeDefinitions.add("name", "Group").setType(Attribute.STRING).setDescription(`the name of the group shown in its pill`);
+        attributeDefinitions.add("name", "flexlayout.ui.group.default.name").setType(Attribute.STRING).setDescription(`the name of the group shown in its pill`);
         attributeDefinitions.add("color", DEFAULT_TAB_GROUP_COLOR).setType(Attribute.STRING).setDescription(`the color of the group pill and the underline of its tabs (a css color)`);
         attributeDefinitions.add("opened", true).setType(Attribute.BOOLEAN).setDescription(`whether the group is expanded to show its tabs; when false only the pill is shown`);
         attributeDefinitions.add("enableDrag", true).setType(Attribute.BOOLEAN).setDescription(`whether the user can drag the group pill to a new location`);

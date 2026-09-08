@@ -1,5 +1,9 @@
 {
-  "global": {},
+  "global": {
+    "tabEnablePin": true,
+    "tabEnableRename": true,
+    "tabEnablePopout": true
+  },
   "borders": [],
   "layout": {
     "type": "row",

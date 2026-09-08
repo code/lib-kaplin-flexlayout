@@ -56,7 +56,7 @@ export class TabNode extends Node implements IDraggable {
     }
 
     getName() {
-        return this.getAttr("name") as string;
+        return this.model.translate(this.getAttr("name") as string) as string;
     }
 
     getIcon() {
@@ -68,7 +68,7 @@ export class TabNode extends Node implements IDraggable {
     }
 
     getHelpText() {
-        return this.getAttr("helpText") as string | undefined;
+        return this.model.translate(this.getAttr("helpText") as string | undefined);
     }
 
     getComponent() {
@@ -76,7 +76,7 @@ export class TabNode extends Node implements IDraggable {
     }
 
     getAltName() {
-        return this.getAttr("altName") as string | undefined;
+        return this.model.translate(this.getAttr("altName") as string | undefined);
     }
 
     getWindowId(): string | undefined {
@@ -182,12 +182,16 @@ export class TabNode extends Node implements IDraggable {
         return this.getAttr("enablePopout") as boolean;
     }
 
+    isEnableFloat() {
+        return this.getAttr("enableFloat") as boolean;
+    }
+
     isEnablePopoutIcon() {
         return this.getAttr("enablePopoutIcon") as boolean;
     }
 
-    isEnablePopoutFloatIcon() {
-        return this.getAttr("enablePopoutFloatIcon") as boolean;
+    isEnableFloatIcon() {
+        return this.getAttr("enableFloatIcon") as boolean;
     }
 
     isEnablePopoutOverlay() {
@@ -362,9 +366,9 @@ export class TabNode extends Node implements IDraggable {
     getNameForOverflowMenu() {
         const altName = this.getAttr("altName") as string;
         if (altName !== undefined) {
-            return altName;
+            return this.model.translate(altName);
         }
-        return this.renderedName;
+        return this.model.translate(this.renderedName);
     }
 
     /** @internal */
@@ -492,12 +496,13 @@ export class TabNode extends Node implements IDraggable {
         attributeDefinitions.addInherited("enableRenderOnDemand", "tabEnableRenderOnDemand").setDescription(`whether to avoid rendering component until tab is visible`);
         attributeDefinitions
             .addInherited("enablePopout", "tabEnablePopout")
-            .setAlias("enableFloat")
             .setDescription(`enable window popout (in popout capable browser), to show an icon in the tabset header also set the enablePopoutIcon attribute`);
+        attributeDefinitions.addInherited("enableFloat", "tabEnableFloat").setDescription(`whether the user can move the tab to a floating window via the context menu`);
         attributeDefinitions.addInherited("enablePopoutIcon", "tabEnablePopoutIcon").setDescription(`whether to show the popout icon in the tabset header if this tab enables popouts`);
         attributeDefinitions
-            .addInherited("enablePopoutFloatIcon", "tabEnablePopoutFloatIcon")
-            .setDescription(`whether to show the popout float icon in the tabset header if this tab enables floating popouts`);
+            .addInherited("enableFloatIcon", "tabEnableFloatIcon")
+            .setAlias("enablePopoutFloatIcon")
+            .setDescription(`whether to show the float icon in the tabset header if this tab enables floating`);
         attributeDefinitions.addInherited("enablePopoutOverlay", "tabEnablePopoutOverlay").setDescription(
             `if this tab will not work correctly in a popout window when the main window is backgrounded (inactive)
             then enabling this option will gray out this tab`,

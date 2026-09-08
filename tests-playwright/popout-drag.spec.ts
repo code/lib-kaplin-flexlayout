@@ -14,7 +14,7 @@ import { findPath, findTabButton, dragAcrossWindows, Location } from "./helpers"
 // AGGrid out into a window, leaving Editor in the main layout.
 
 async function setupPopout(page: Page, context: BrowserContext): Promise<Page> {
-    await page.goto("/demo?layout=default");
+    await page.goto("/demo?layout=test_popout");
     await expect(page.locator(".flexlayout__tabset").first()).toBeVisible();
 
     await findPath(page, "/r1/ts1/button/popout").click();

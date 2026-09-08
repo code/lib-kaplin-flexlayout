@@ -23,7 +23,7 @@
             @include absoluteFill;
             display: flex;
             // overflow: hidden;
-            background-color: var(--color-background);
+            background-color: var(--fl-color-background);
 
             &_metrics {
                 position: absolute;
@@ -74,19 +74,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--color-splitter);
+            background-color: var(--fl-color-splitter);
             touch-action: none;
             z-index: 10;
             position: relative;
 
             &:focus-visible {
-                outline: 2px solid var(--color-focus);
+                outline: 2px solid var(--fl-color-focus);
                 outline-offset: -2px;
             }
 
             &_horz {
-                width: var(--splitter-size);
-                min-width: var(--splitter-size);
+                width: var(--fl-splitter-size);
+                min-width: var(--fl-splitter-size);
 
                 &::before {
                     content: "";
@@ -95,15 +95,15 @@
                     bottom: 0;
                     /* Center the hit area over the thin line */
                     left: 50%;
-                    width: var(--splitter-active-size);
+                    width: var(--fl-splitter-active-size);
                     transform: translateX(-50%);
                     z-index: 1;
                 }
             }
 
             &_vert {
-                height: var(--splitter-size);
-                min-height: var(--splitter-size);
+                height: var(--fl-splitter-size);
+                min-height: var(--fl-splitter-size);
 
                 &::before {
                     content: "";
@@ -112,7 +112,7 @@
                     right: 0;
                     /* Center the hit area over the thin line */
                     top: 50%;
-                    height: var(--splitter-active-size);
+                    height: var(--fl-splitter-active-size);
                     transform: translateY(-50%);
                     z-index: 1;
                 }
@@ -120,7 +120,7 @@
 
             @media (hover: hover) {
                 &:hover {
-                    background-color: var(--color-splitter-hover);
+                    background-color: var(--fl-color-splitter-hover);
                     transition: background-color ease-in .1s;
                     transition-delay: 0.05s;
                     border-radius: 5px;
@@ -136,13 +136,13 @@
                 justify-content: center;
                 z-index: 1000;
                 border-radius: 5px;
-                background-color: var(--color-splitter-drag);
+                background-color: var(--fl-color-splitter-drag);
             }
 
             &_handle {
-                background-color: var(--color-splitter-handle);
+                background-color: var(--fl-color-splitter-handle);
                 border-radius: 3px;
-                visibility: var(--splitter-handle-visibility);
+                visibility: var(--fl-splitter-handle-visibility);
 
                 &_horz {
                     width: 3px;
@@ -161,15 +161,15 @@
             position: absolute;
             pointer-events: none;
             box-sizing: border-box;
-            border: 2px solid var(--color-drag1);
-            background: var(--color-drag1-background);
+            border: 2px solid var(--fl-color-drag1);
+            background: var(--fl-color-drag1-background);
             border-radius: 5px;
             z-index: 1000;
 
             &_edge {
                 pointer-events: none;
-                border: 2px solid var(--color-drag2);
-                background: var(--color-drag2-background);
+                border: 2px solid var(--fl-color-drag2);
+                background: var(--fl-color-drag2-background);
                 border-radius: 5px;
                 z-index: 1000;
                 box-sizing: border-box;
@@ -179,7 +179,7 @@
         &__edge_rect {
             position: absolute;
             z-index: 1000;
-            background-color: var(--color-edge-marker);
+            background-color: var(--fl-color-edge-marker);
             pointer-events: none;
             display: flex;
             align-items: center;
@@ -187,9 +187,9 @@
         }
 
         &__drag_rect {
-            color: var(--color-drag-rect);
-            background-color: var(--color-drag-rect-background);
-            border: 2px solid var(--color-drag-rect-border);
+            color: var(--fl-color-drag-rect);
+            background-color: var(--fl-color-drag-rect-background);
+            border: 2px solid var(--fl-color-drag-rect-border);
             border-radius: 5px;
             box-sizing: border-box;
             // text-align: center;
@@ -200,8 +200,8 @@
             overflow: hidden;
             padding: 0.3em .8em;
             word-wrap: break-word;
-            font-size: var(--font-size);
-            font-family: var(--font-family);
+            font-size: var(--fl-font-size);
+            font-family: var(--fl-font-family);
         }
 
         &__row {
@@ -215,9 +215,9 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            background-color: var(--color-tabset-background);
+            background-color: var(--fl-color-tabset-background);
             box-sizing: border-box;
-            font-family: var(--font-family);
+            font-family: var(--fl-font-family);
             overflow: hidden;
             flex-grow: 1;
 
@@ -247,23 +247,23 @@
                 &_outer {
                     // tabset tabbar outer
                     box-sizing: border-box;
-                    background-color: var(--color-tabset-background);
+                    background-color: var(--fl-color-tabset-background);
                     overflow: hidden;
                     display: flex;
                     align-items: center;
                     min-height: 1.5em;
-                    font-size: var(--font-size);
-                    font-weight: var(--font-weight);
+                    font-size: var(--fl-font-size);
+                    font-weight: var(--fl-font-weight);
                 }
 
                 &_outer_top {
                     padding: 0px 2px 0px 2px;
-                    border-bottom: 1px solid var(--color-tabset-divider-line);
+                    border-bottom: 1px solid var(--fl-color-tabset-divider-line);
                 }
 
                 &_outer_bottom {
                     padding: 0px 2px 0px 2px;
-                    border-top: 1px solid var(--color-tabset-divider-line);
+                    border-top: 1px solid var(--fl-color-tabset-divider-line);
                 }
 
                 &_inner {
@@ -299,11 +299,11 @@
             }
 
             &-selected {
-                background-color: var(--color-tabset-background-selected);
+                background-color: var(--fl-color-tabset-background-selected);
             }
 
             &-maximized {
-                background-color: var(--color-tabset-background-maximized);
+                background-color: var(--fl-color-tabset-background-maximized);
             }
         }
 
@@ -321,31 +321,31 @@
             gap: 0.35em;
             padding: 2px 8px 2px 8px;
             margin: 2px 2px;
-            border-radius: var(--tabgroup-pill-radius) 0 0 var(--tabgroup-pill-radius); // flat right when expanded (left cap of split pill)
-            border: 1px solid var(--color-tabset-divider-line);
+            border-radius: var(--fl-tabgroup-pill-radius) 0 0 var(--fl-tabgroup-pill-radius); // flat right when expanded (left cap of split pill)
+            border: 1px solid var(--fl-color-tabset-divider-line);
             border-right: none;
-            background-color: var(--color-base);
-            color: var(--color-tabgroup-pill-text);
+            background-color: var(--fl-color-base);
+            color: var(--fl-color-tabgroup-pill-text);
             cursor: pointer;
             user-select: none;
             white-space: nowrap;
             box-sizing: border-box;
 
             &:focus-visible {
-                outline: 2px solid var(--color-focus);
+                outline: 2px solid var(--fl-color-focus);
             }
 
             // collapsed: fully rounded pill (no end marker)
             &_collapsed {
-                border-radius: var(--tabgroup-pill-radius);
-                border-right: 1px solid var(--color-tabset-divider-line);
+                border-radius: var(--fl-tabgroup-pill-radius);
+                border-right: 1px solid var(--fl-color-tabset-divider-line);
             }
 
             // underline group type: the pill is always fully rounded (the grouped tabs
             // carry the color as an underline instead of being enclosed by pill caps)
             &_underline {
-                border-radius: var(--tabgroup-pill-radius);
-                border-right: 1px solid var(--color-tabset-divider-line);
+                border-radius: var(--fl-tabgroup-pill-radius);
+                border-right: 1px solid var(--fl-color-tabset-divider-line);
             }
 
             &_name {
@@ -367,10 +367,10 @@
 
         &__group_end_marker {
             display: inline-block;
-            border-radius: 0 var(--tabgroup-pill-radius) var(--tabgroup-pill-radius) 0; // flat left (right cap of split pill)
-            border: 1px solid var(--color-tabset-divider-line);
+            border-radius: 0 var(--fl-tabgroup-pill-radius) var(--fl-tabgroup-pill-radius) 0; // flat left (right cap of split pill)
+            border: 1px solid var(--fl-color-tabset-divider-line);
             border-left: none;
-            background-color: var(--color-base);
+            background-color: var(--fl-color-base);
             padding: 2px 7px 2px 7px;
             margin: 2px 2px;
             cursor: pointer;
@@ -398,8 +398,8 @@
                 left: 10px;
                 right: 10px;
                 bottom: 0;
-                height: var(--underline_height, 2px);
-                border-radius: calc(var(--underline_height, 2px) / 2);
+                height: var(--fl-underline_height, 2px);
+                border-radius: calc(var(--fl-underline_height, 2px) / 2);
                 background-color: var(--flexlayout-group-color, transparent);
                 pointer-events: none;
             }
@@ -413,9 +413,9 @@
             &_input {
                 padding: 3px;
                 border-radius: 5px;
-                border: 1px solid var(--color-popup-border);
-                background-color: var(--color-tab-textbox-background, var(--color-3));
-                color: var(--color-tab-textbox, var(--color-text));
+                border: 1px solid var(--fl-color-popup-border);
+                background-color: var(--fl-color-tab-textbox-background, var(--fl-color-3));
+                color: var(--fl-color-tab-textbox, var(--fl-color-text));
             }
         }
 
@@ -427,14 +427,14 @@
             max-width: 18em;
 
             &_item {
-                border: 1px solid var(--color-popup-border);
+                border: 1px solid var(--fl-color-popup-border);
                 border-radius: 10px;
                 padding: 0 8px;
                 line-height: 1.6em;
                 font-size: 0.9em;
                 cursor: pointer;
-                background-color: var(--color-base);
-                color: var(--color-popup-unselected);
+                background-color: var(--fl-color-base);
+                color: var(--fl-color-popup-unselected);
 
                 &:hover {
                     filter: brightness(0.95);
@@ -454,7 +454,7 @@
                 width: 18px;
                 height: 18px;
                 border-radius: 50%;
-                border: 1px solid var(--color-popup-border);
+                border: 1px solid var(--fl-color-popup-border);
                 cursor: pointer;
                 padding: 0;
 
@@ -481,8 +481,8 @@
         &__tab {
             overflow: hidden;
             box-sizing: border-box;
-            background-color: var(--color-tab-content);
-            color: var(--color-text);
+            background-color: var(--fl-color-tab-content);
+            color: var(--fl-color-text);
             // absolute from first mount: the panel must never join the layout's flex flow, else it
             // would squeeze the layout tree during the commit before the positioning pass runs
             position: absolute;
@@ -539,10 +539,10 @@
                 align-items: center;
                 box-sizing: border-box;
                 padding: 3px 0.5em;
-                font-weight: var(--font-weight);
+                font-weight: var(--fl-font-weight);
 
                 &:focus-visible {
-                    outline: 2px solid var(--color-focus);
+                    outline: 2px solid var(--fl-color-focus);
                     outline-offset: -2px;
                 }
 
@@ -550,7 +550,7 @@
 
                 &_stretch {
                     background-color: transparent;
-                    color: var(--color-tab-selected);
+                    color: var(--fl-color-tab-selected);
                     width: 100%;
                     padding: 3px 0em;
                     text-wrap: nowrap;
@@ -562,25 +562,25 @@
 
                     @media (hover: hover) {
                         &:hover {
-                            color: var(--color-tab-selected);
+                            color: var(--fl-color-tab-selected);
                         }
                     }
                 }
 
                 &--selected {
-                    background-color: var(--color-tab-selected-background);
-                    color: var(--color-tab-selected);
+                    background-color: var(--fl-color-tab-selected-background);
+                    color: var(--fl-color-tab-selected);
                 }
 
                 @media (hover: hover) {
                     &:hover {
-                        color: var(--color-tab-selected);
+                        color: var(--fl-color-tab-selected);
                     }
                 }
 
                 &--unselected {
-                    background-color: var(--color-tab-unselected-background);
-                    color: var(--color-tab-unselected);
+                    background-color: var(--fl-color-tab-unselected-background);
+                    color: var(--fl-color-tab-unselected);
                 }
 
                 &_top {}
@@ -603,18 +603,18 @@
 
                 &_textbox {
                     border: none;
-                    font-family: var(--font-family);
-                    font-size: var(--font-size);
-                    font-weight: var(--font-weight);
-                    color: var(--color-tab-textbox);
-                    background-color: var(--color-tab-textbox-background);
-                    border: 1px inset var(--color-1);
+                    font-family: var(--fl-font-family);
+                    font-size: var(--fl-font-size);
+                    font-weight: var(--fl-font-weight);
+                    color: var(--fl-color-tab-textbox);
+                    background-color: var(--fl-color-tab-textbox-background);
+                    border: 1px inset var(--fl-color-1);
                     border-radius: 3px;
                     width: 10em;
                 }
 
                 &_textbox:focus {
-                    outline: 2px solid var(--color-focus);
+                    outline: 2px solid var(--fl-color-focus);
                     outline-offset: -1px;
                 }
 
@@ -624,7 +624,7 @@
                     border-radius: 4px;
 
                     &:hover {
-                        background-color: var(--color-toolbar-button-hover);
+                        background-color: var(--fl-color-toolbar-button-hover);
                     }
                 }
 
@@ -646,7 +646,7 @@
                     display: flex;
                     align-items: center;
                     border: none;
-                    color: var(--color-overflow);
+                    color: var(--fl-color-overflow);
                     font-size: inherit;
                     background-color: transparent;
                     width: 2em;
@@ -670,7 +670,7 @@
                     padding: 1px;
 
                     &:focus-visible {
-                        outline: 2px solid var(--color-focus);
+                        outline: 2px solid var(--fl-color-focus);
                         outline-offset: -2px;
                     }
                 }
@@ -685,13 +685,13 @@
                     padding: 1px;
 
                     &:focus-visible {
-                        outline: 2px solid var(--color-focus);
+                        outline: 2px solid var(--fl-color-focus);
                         outline-offset: -2px;
                     }
 
                     @media (hover: hover) {
                         &:hover {
-                            background-color: var(--color-toolbar-button-hover);
+                            background-color: var(--fl-color-toolbar-button-hover);
                         }
                     }
 
@@ -717,16 +717,16 @@
             box-sizing: border-box;
             overflow: hidden;
             display: flex;
-            font-family: var(--font-family);
-            font-size: var(--font-size);
-            font-weight: var(--font-weight);
-            color: var(--color-border);
-            background-color: var(--color-border-background);
+            font-family: var(--fl-font-family);
+            font-size: var(--fl-font-size);
+            font-weight: var(--fl-font-weight);
+            color: var(--fl-color-border);
+            background-color: var(--fl-color-border-background);
 
             &_tab_contents {
                 box-sizing: border-box;
                 overflow: hidden;
-                background-color: var(--color-border-tab-content);
+                background-color: var(--fl-color-border-tab-content);
             }
 
             // overlay mode: the border panel (host + splitter) overlays the main layout area,
@@ -769,23 +769,23 @@
             }
 
             &_top {
-                border-bottom: 1px solid var(--color-border-divider-line);
+                border-bottom: 1px solid var(--fl-color-border-divider-line);
                 align-items: center;
             }
 
             &_bottom {
-                border-top: 1px solid var(--color-border-divider-line);
+                border-top: 1px solid var(--fl-color-border-divider-line);
                 align-items: center;
             }
 
             &_left {
-                border-right: 1px solid var(--color-border-divider-line);
+                border-right: 1px solid var(--fl-color-border-divider-line);
                 align-content: center;
                 flex-direction: column;
             }
 
             &_right {
-                border-left: 1px solid var(--color-border-divider-line);
+                border-left: 1px solid var(--fl-color-border-divider-line);
                 align-content: center;
                 flex-direction: column;
             }
@@ -843,28 +843,28 @@
                 margin: 2px 0px;
                 box-sizing: border-box;
                 white-space: nowrap;
-                font-weight: var(--font-weight);
+                font-weight: var(--fl-font-weight);
 
                 &:focus-visible {
-                    outline: 2px solid var(--color-focus);
+                    outline: 2px solid var(--fl-color-focus);
                     outline-offset: -2px;
                 }
 
                 &--selected {
-                    background-color: var(--color-border-tab-selected-background);
-                    color: var(--color-border-tab-selected);
+                    background-color: var(--fl-color-border-tab-selected-background);
+                    color: var(--fl-color-border-tab-selected);
                 }
 
                 @media (hover: hover) {
                     &:hover {
-                        // background-color: var(--color-border-tab-selected-background);
-                        color: var(--color-border-tab-selected);
+                        // background-color: var(--fl-color-border-tab-selected-background);
+                        color: var(--fl-color-border-tab-selected);
                     }
                 }
 
                 &--unselected {
-                    background-color: var(--color-border-tab-unselected-background);
-                    color: var(--color-border-tab-unselected);
+                    background-color: var(--fl-color-border-tab-unselected-background);
+                    color: var(--fl-color-border-tab-unselected);
                 }
 
                 &_leading {
@@ -925,13 +925,13 @@
                     padding: 1px;
 
                     &:focus-visible {
-                        outline: 2px solid var(--color-focus);
+                        outline: 2px solid var(--fl-color-focus);
                         outline-offset: -2px;
                     }
 
                     @media (hover: hover) {
                         &:hover {
-                            background-color: var(--color-toolbar-button-hover);
+                            background-color: var(--fl-color-toolbar-button-hover);
                         }
                     }
 
@@ -941,7 +941,7 @@
                         display: flex;
                         align-items: center;
                         border: none;
-                        color: var(--color-overflow);
+                        color: var(--fl-color-overflow);
                         font-size: inherit;
                         background-color: transparent;
                         width: 1.5em;
@@ -957,9 +957,9 @@
         }
 
         &__popup_menu {
-            font-size: var(--font-size);
-            font-family: var(--font-family);
-            font-weight: var(--font-weight);
+            font-size: var(--fl-font-size);
+            font-family: var(--fl-font-family);
+            font-weight: var(--fl-font-weight);
             &_item {
 
                 padding: 2px 0.5em;
@@ -968,20 +968,20 @@
                 border-radius: 2px;
 
                 &.flexlayout__popup_menu_item_grouped {
-                    border-left: 5px solid var(--flexlayout-group-color, var(--color-tabgroup-default));
+                    border-left: 5px solid var(--flexlayout-group-color, var(--fl-color-tabgroup-default));
                     padding-left: calc(0.5em - 5px);
                     border-radius: 0 !important;
                 }
 
                 &:focus-visible {
-                    outline: 2px solid var(--color-focus);
+                    outline: 2px solid var(--fl-color-focus);
                     outline-offset: -2px;
                 }
 
                 &--selected {
                     font-weight: 500;
-                    background-color: var(--color-tab-selected-background);
-                    color: var(--color-tab-selected);
+                    background-color: var(--fl-color-tab-selected-background);
+                    color: var(--fl-color-tab-selected);
                 }
 
                 &--disabled {
@@ -993,21 +993,21 @@
 
             @media (hover: hover) {
                 &_item:hover {
-                    background-color: var(--color-6);
+                    background-color: var(--fl-color-6);
                 }
             }
 
             &_divider {
                 height: 1px;
                 margin: 4px 2px;
-                background-color: var(--color-popup-border);
+                background-color: var(--fl-color-popup-border);
             }
 
             &_container {
                 box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.15);
-                border: 1px solid var(--color-popup-border);
-                color: var(--color-popup-unselected);
-                background: var(--color-popup-unselected-background);
+                border: 1px solid var(--fl-color-popup-border);
+                color: var(--fl-color-popup-unselected);
+                background: var(--fl-color-popup-unselected-background);
                 border-radius: 3px;
                 position: absolute;
                 z-index: 3000;
@@ -1020,7 +1020,7 @@
 
         &__float_window {
             box-sizing: border-box;
-            background-color: var(--color-tabset-background);
+            background-color: var(--fl-color-tabset-background);
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             display: flex;
@@ -1032,11 +1032,11 @@
                 display: flex;
                 align-items: center;
                 padding: 5px 5px;
-                background-color: var(--color-float-window-header-background);
-                border-bottom: 1px solid var(--color-tabset-divider-line);
+                background-color: var(--fl-color-float-window-header-background);
+                border-bottom: 1px solid var(--fl-color-tabset-divider-line);
                 cursor: move;
                 user-select: none;
-                font-family: var(--font-family);
+                font-family: var(--fl-font-family);
                 font-size: .8em;
                 min-height: 15px;
 
@@ -1119,24 +1119,24 @@
             position: absolute;
             padding-top: 6px;
             padding-bottom: 5px;
-            font-size: var(--font-size);
-            font-family: var(--font-family);
-            font-weight: var(--font-weight);
+            font-size: var(--fl-font-size);
+            font-family: var(--fl-font-family);
+            font-weight: var(--fl-font-weight);
         }
 
         &__mini_scrollbar {
             position: absolute;
-            background-color: var(--color-mini-scroll-indicator);
+            background-color: var(--fl-color-mini-scroll-indicator);
             border-radius: 5px;
-            width: var(--size-mini-scroll-indicator);
-            height: var(--size-mini-scroll-indicator);
+            width: var(--fl-size-mini-scroll-indicator);
+            height: var(--fl-size-mini-scroll-indicator);
             visibility: hidden;
             opacity: 0;
             transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
         }
 
         &__mini_scrollbar:hover {
-            background-color: var(--color-mini-scroll-indicator-hovered);
+            background-color: var(--fl-color-mini-scroll-indicator-hovered);
             transition: background-color 0.3s ease-in-out;
         }
 

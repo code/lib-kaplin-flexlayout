@@ -240,7 +240,7 @@ export const Splitter = (props: ISplitterProps) => {
     }
 
     if (!isDesktop()) {
-        style["--splitter-active-size"] = `30px`;
+        style["--fl-splitter-active-size"] = `30px`;
     }
 
     // value announced to assistive technology: row splitters report a 0-100 percentage position

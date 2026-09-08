@@ -1,5 +1,8 @@
 {
-  "global": {},
+  "global": {
+    "tabEnablePin": true,
+    "tabEnableRename": true
+  },
   "borders": [
     {
       "type": "border",

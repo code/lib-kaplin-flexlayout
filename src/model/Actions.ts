@@ -365,6 +365,7 @@ export class Action {
     type: string;
     data: Record<string, any>;
     adjusting: boolean;
+    userData: any = undefined;
 
     constructor(type: string, data: Record<string, any>) {
         this.type = type;
@@ -377,13 +378,18 @@ export class Action {
         return this;
     }
 
+    setUserData(userData: any): Action {
+        this.userData = userData;
+        return this;
+    }
+
     isAdjusting(): boolean {
         return this.adjusting;
     }
 
-    /** serializes the action for display/logging as a plain {type, data} object */
+    /** serializes the action for display/logging as a plain {type, data} object, including userData when set */
     toJSON() {
-        return { type: this.type, data: this.data };
+        return this.userData === undefined ? { type: this.type, data: this.data } : { type: this.type, data: this.data, userData: this.userData };
     }
 }
 

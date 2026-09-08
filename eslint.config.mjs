@@ -7,7 +7,7 @@ import pluginReact from "eslint-plugin-react";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 
 export default defineConfig([
-  { ignores: ["demo/dist/", "dist/", "types/", "typedoc/"] }, // build outputs
+  { ignores: ["demo/dist/", "examples/dist/", "dist/", "types/", "typedoc/"] }, // build outputs
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"], languageOptions: { globals: globals.browser } },
   tseslint.configs.recommended,

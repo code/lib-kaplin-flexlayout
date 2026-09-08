@@ -7,7 +7,7 @@ import { createController, makeModel } from "./testUtils";
 const tab = (id: string, name: string, extra: Partial<IJsonTabNode> = {}): IJsonTabNode => ({ type: "tab", id, name, ...extra });
 
 const twoTabsets = (tabs: IJsonTabNode[]): IJsonModel => ({
-    global: { tabEnablePopout: true },
+    global: { tabEnablePopout: true, tabEnableFloat: true, tabEnablePin: true, tabEnableRename: true },
     layout: {
         type: "row",
         children: [
@@ -18,7 +18,7 @@ const twoTabsets = (tabs: IJsonTabNode[]): IJsonModel => ({
 });
 
 const borderJson: IJsonModel = {
-    global: { tabEnablePopout: true },
+    global: { tabEnablePopout: true, tabEnableFloat: true, tabEnablePin: true, tabEnableRename: true },
     borders: [{ type: "border", location: "left", children: [tab("bt0", "Border")] }],
     layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha")] }] },
 };
@@ -35,7 +35,7 @@ describe("getNodeContextActions", () => {
     });
 
     it("excludes actions that are not allowed on the node", () => {
-        const model = makeModel(twoTabsets([tab("t0", "Alpha", { enableRename: false, enableClose: false, enablePopout: false })]));
+        const model = makeModel(twoTabsets([tab("t0", "Alpha", { enableRename: false, enableClose: false, enablePopout: false, enableFloat: false })]));
         const node = model.getNodeById("t0") as TabNode;
         expect(getNodeContextActions(node)).toEqual(["pin"]);
     });
@@ -90,7 +90,7 @@ describe("getNodeContextMenuItems", () => {
     });
 
     it("shows not-allowed actions as disabled items when includeDisabled is true", () => {
-        const model = makeModel(twoTabsets([tab("t0", "Alpha", { enableRename: false, enableClose: false, enablePopout: false })]));
+        const model = makeModel(twoTabsets([tab("t0", "Alpha", { enableRename: false, enableClose: false, enablePopout: false, enableFloat: false })]));
         const items = itemsOf(getNodeContextMenuItems(model.getNodeById("t0") as TabNode, { includeDisabled: true }));
         expect(items.map((i) => i.key)).toEqual(["pin", "float", "popout", "rename", "close"]);
         expect(items.map((i) => i.disabled)).toEqual([false, true, true, true, true]);
@@ -265,19 +265,22 @@ describe("getNodeContextMenuItem", () => {
         expect(itemsOf(getNodeContextMenuItems(node, { actions: ["rename", "maximize"] })).map((i) => i.key)).toEqual(["rename"]);
     });
 
-    it("resolves labels through the controller's i18nMapper", () => {
+    it("resolves labels through the controller's i18nTranslator", () => {
         const model = makeModel(twoTabsets([tab("t0", "Alpha")]));
-        const controller = createController(model, {
+        const translations: Record<string, string> = {
+            [I18nLabel.Menu_Rename]: "Umbenennen",
+            [I18nLabel.Close_Tab]: "Schlie\u00dfen",
+        };
+        model.setI18nTranslator((key) => translations[key] ?? key);
+        createController(model, {
             supportsPopout: true,
-            i18nMapper: (id) => (id === I18nLabel.Menu_Rename ? "Umbenennen" : id === I18nLabel.Close_Tab ? "Schließen" : undefined),
         });
         const node = model.getNodeById("t0") as TabNode;
         const items = itemsOf(getNodeContextMenuItems(node));
         expect(items.find((i) => i.key === "rename")!.label).toBe("Umbenennen");
-        expect(items.find((i) => i.key === "close")!.label).toBe("Schließen");
+        expect(items.find((i) => i.key === "close")!.label).toBe("Schlie\u00dfen");
         // untranslated labels fall back to English
         expect(items.find((i) => i.key === "pin")!.label).toBe("Pin");
-        void controller;
     });
 });
 
@@ -298,7 +301,7 @@ describe("ContextMenuBuilder", () => {
 
     it("gives unnamed dividers unique keys so multiple groups do not collide", () => {
         const model = makeModel({
-            global: { tabEnablePopout: true },
+            global: { tabEnablePopout: true, tabEnableRename: true },
             layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha"), tab("t1", "Beta")] }] },
         });
         const node = model.getNodeById("t0") as TabNode;
@@ -480,11 +483,15 @@ describe("bulk close actions", () => {
         expect(keys).not.toContain("closeOthers");
     });
 
-    it("resolves bulk close labels through the controller's i18nMapper", () => {
+    it("resolves bulk close labels through the controller's i18nTranslator", () => {
         const model = makeModel(oneTabset([tab("t0", "Alpha"), tab("t1", "Beta")]));
+        const translations: Record<string, string> = {
+            [I18nLabel.Menu_Close_All]: "Alle schlie\u00dfen",
+            [I18nLabel.Menu_Close_Right]: "Alle rechts schlie\u00dfen",
+        };
+        model.setI18nTranslator((key) => translations[key] ?? key);
         createController(model, {
             supportsPopout: true,
-            i18nMapper: (id) => (id === I18nLabel.Menu_Close_All ? "Alle schließen" : id === I18nLabel.Menu_Close_Right ? "Alle rechts schließen" : undefined),
         });
         const node = model.getNodeById("t0") as TabNode;
         const items = itemsOf(getNodeContextMenuItems(node, { actions: ["closeAll", "closeRight"] }));
@@ -523,5 +530,70 @@ describe("enablePin", () => {
         const node = model.getNodeById("t0") as TabNode;
         model.doAction(Actions.updateNodeAttributes("t0", { enablePin: true }));
         expect(getNodeContextMenuItem(node, "pin")).toBeDefined();
+    });
+});
+
+describe("enableFloat", () => {
+    it("omits float when the tab is not floatable", () => {
+        const model = makeModel(twoTabsets([tab("t0", "Alpha", { enableFloat: false })]));
+        const node = model.getNodeById("t0") as TabNode;
+        expect(getNodeContextActions(node)).not.toContain("float");
+        expect(getNodeContextMenuItem(node, "float")).toBeUndefined();
+        expect(getNodeContextMenuItem(node, "float", { includeDisabled: true })!.disabled).toBe(true);
+    });
+
+    it("omits float when the global tabEnableFloat is disabled", () => {
+        const model = makeModel({
+            global: { tabEnableFloat: false },
+            layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha")] }] },
+        });
+        const node = model.getNodeById("t0") as TabNode;
+        expect(getNodeContextActions(node)).not.toContain("float");
+    });
+
+    it("offers float for a floatable tab but not for popout alone", () => {
+        const model = makeModel(twoTabsets([tab("t0", "Alpha", { enableFloat: false })]));
+        const node = model.getNodeById("t0") as TabNode;
+        // popout still allowed via the global, float suppressed by the per-tab override
+        expect(getNodeContextActions(node)).toContain("popout");
+        expect(getNodeContextActions(node)).not.toContain("float");
+    });
+
+    it("offers float even when popout is disabled", () => {
+        const model = makeModel({
+            global: { tabEnableFloat: true, tabEnablePin: true, tabEnableRename: true },
+            layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha")] }] },
+        });
+        const node = model.getNodeById("t0") as TabNode;
+        expect(node.isEnablePopout()).toBe(false);
+        expect(getNodeContextActions(node)).toContain("float");
+        expect(getNodeContextActions(node)).not.toContain("popout");
+    });
+
+    it("offers tabset float when every tab is floatable even if none are popoutable", () => {
+        const model = makeModel({
+            global: { tabEnableFloat: true, tabEnablePin: true, tabEnableRename: true },
+            layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [tab("t0", "Alpha"), tab("t2", "Gamma")] }] },
+        });
+        const node = model.getNodeById("ts0") as TabSetNode;
+        expect(getNodeContextActions(node)).toContain("float");
+        expect(getNodeContextActions(node)).not.toContain("popout");
+    });
+
+    it("offers tabset float only when every tab is floatable", () => {
+        const model = makeModel(twoTabsets([tab("t0", "Alpha"), tab("t2", "Gamma", { enableFloat: false })]));
+        expect(getNodeContextActions(model.getNodeById("ts0") as TabSetNode)).not.toContain("float");
+        // popout is unaffected by the float attribute
+        expect(getNodeContextActions(model.getNodeById("ts0") as TabSetNode)).toContain("popout");
+        model.doAction(Actions.updateNodeAttributes("t2", { enableFloat: true }));
+        expect(getNodeContextActions(model.getNodeById("ts0") as TabSetNode)).toContain("float");
+    });
+
+    it("gates float for selected border tabs", () => {
+        const model = makeModel(borderJson);
+        model.doAction(Actions.selectTab("bt0"));
+        expect(getNodeContextActions(model.getNodeById("bt0") as TabNode)).toContain("float");
+        model.doAction(Actions.updateNodeAttributes("bt0", { enableFloat: false }));
+        expect(getNodeContextActions(model.getNodeById("bt0") as TabNode)).not.toContain("float");
     });
 });

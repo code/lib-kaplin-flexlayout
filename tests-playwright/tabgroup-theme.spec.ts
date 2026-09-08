@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { findPath, waitForBox } from "./helpers";
 
-// Regression: --color-tabgroup-pill-text, --color-tabgroup-default and
-// --color-tabgroup-menu-palette CSS variables should control group appearance.
+// Regression: --fl-color-tabgroup-pill-text, --fl-color-tabgroup-default and
+// --fl-color-tabgroup-menu-palette CSS variables should control group appearance.
 // Mirrors the theme-float.spec.ts pattern: write overrides to the layout root via
 // __flexLayout().getRootDiv().style.setProperty().
 

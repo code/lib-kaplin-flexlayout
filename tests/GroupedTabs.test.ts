@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { Actions, TabGroupNode, IJsonModel, IJsonTabNode, Model, TabNode, TabSetNode, BorderNode, DockLocation } from "../src";
+import { I18nLabelDefaults } from "../src/view/I18nLabel";
 
 const tab = (id: string, name: string, extra: Partial<IJsonTabNode> = {}): IJsonTabNode => ({ type: "tab", id, name, ...extra });
 
@@ -165,6 +166,7 @@ describe("TabGroupNode serialization", () => {
 describe("TabGroupNode attributes", () => {
     it("defaults name, opened and enableDrag", () => {
         const model = makeModel({ global: {}, layout: { type: "row", children: [{ type: "tabset", id: "ts0", children: [] }] } });
+        model.setI18nDefaults(I18nLabelDefaults);
         const g = new TabGroupNode(model, {});
         expect(g.getName()).toBe("Group");
         expect(g.isOpened()).toBe(true);

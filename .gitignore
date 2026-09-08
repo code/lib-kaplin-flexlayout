@@ -3,6 +3,7 @@ types/
 dist/
 .idea/
 demo/dist/
+examples/dist/
 @private/
 .DS_Store
 typedoc/

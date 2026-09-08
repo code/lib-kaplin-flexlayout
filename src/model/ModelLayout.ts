@@ -116,7 +116,9 @@ export class ModelLayout {
 
     /** the name of this layout, e.g. as shown in the model explorer; undefined if not set */
     getName(): string | undefined {
-        return this.getAttr("name") as string | undefined;
+        return this.getController()
+            ?.getModel()
+            .translate(this.getAttr("name") as string | undefined);
     }
 
     /** @internal */

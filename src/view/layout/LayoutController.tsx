@@ -1,7 +1,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { DockLocation } from "../../model/DockLocation";
-import { I18nLabel } from "../I18nLabel";
+import { I18nLabel, I18nLabelDefaults } from "../I18nLabel";
 import { Rect } from "../../model/Rect";
 import { CLASSES } from "../../CSSClassNames";
 import { Action } from "../../model/Actions";
@@ -78,7 +78,7 @@ export class LayoutController {
     private _layoutId: string;
     private _layout: ModelLayout;
     private _mainController?: LayoutController;
-    private _popoutWindowName: string;
+    private _popoutWindowName: string | undefined;
     private _cachedLayoutDOMRect: Rect | undefined;
     private _reLayout: boolean;
     // _measurables: geometry measured into the model; _tabPanels: positioned from those rects
@@ -109,7 +109,7 @@ export class LayoutController {
         this._dragDropManager = new DragDropManager(this);
         this._layout = props.model.getLayouts().get(this._layoutId)!;
         this._layout.setController(this);
-        this._popoutWindowName = props.popoutWindowName || "Popout Window";
+        this._popoutWindowName = props.popoutWindowName;
         this._reLayout = false;
     }
 
@@ -906,7 +906,7 @@ export class LayoutController {
     }
 
     getPopoutWindowName() {
-        return this._popoutWindowName;
+        return this._popoutWindowName ?? this.i18nName(I18nLabel.Popout_Window_Name);
     }
 
     isReLayout() {
@@ -963,7 +963,7 @@ export class LayoutController {
     }
 
     isRealtimeResize() {
-        return this._props.realtimeResize ?? false;
+        return this._props.realtimeResize ?? true;
     }
 
     isSplitterDragging() {
@@ -1060,9 +1060,10 @@ export class LayoutController {
     }
 
     i18nName(id: I18nLabel, param?: string) {
-        let message;
-        if (this._props.i18nMapper) {
-            message = this._props.i18nMapper(id, param);
+        let message = this._props.model.translate(id);
+        // If no translator or translator returned the key unchanged, use built-in defaults
+        if (message === id) {
+            message = I18nLabelDefaults[id] ?? id;
         }
         if (message === undefined) {
             message = id + (param === undefined ? "" : param);

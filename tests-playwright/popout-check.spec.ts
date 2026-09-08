@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // targeted check: tab panels are positioned correctly inside popout windows
 test("popout window positions its tab panel", async ({ page, context }) => {
-    await page.goto("/demo?layout=default");
+    await page.goto("/demo?layout=test_popout");
     await expect(page.locator(".flexlayout__tabset").first()).toBeVisible();
 
     const popoutButton = page.locator('[data-layout-path$="/button/popout"]').first();

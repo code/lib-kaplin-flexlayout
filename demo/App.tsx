@@ -18,7 +18,6 @@ import {
     SettingsIcon,
     ILayoutApi,
     showPopupMenu,
-    showGroupMenu,
     PopupMenuEntry,
     ContextMenuBuilder,
     useUndo,
@@ -269,8 +268,8 @@ function App() {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            color: "var(--color-tab-unselected)",
-                            backgroundColor: "var(--color-tabset-background)",
+                            color: "var(--fl-color-tab-unselected)",
+                            backgroundColor: "var(--fl-color-tabset-background)",
                             marginBottom: 5,
                             fontWeight: 500,
                         }}
@@ -382,7 +381,7 @@ function App() {
     };
 
     // brings the Model Explorer tab to front (if not already showing) and selects the node in it
-    const showNodeInExplorer = (node: TabNode | TabSetNode | BorderNode) => {
+    const showNodeInExplorer = (node: TabNode | TabSetNode | BorderNode | TabGroupNode) => {
         const model = node.getModel();
         const explorer = findModelExplorerTab(model);
         if (explorer === undefined) {
@@ -417,21 +416,13 @@ function App() {
 
         let items: PopupMenuEntry[] = [];
         if (testing.isTestLayout(layoutName) || layoutName === "default" || layoutName === "simple" || layoutName === "groups") {
-            // show menu on the default/simple/test layouts for all node types
-            if (node instanceof TabGroupNode) {
-                contextMenuHideRef.current?.(); // close any menu already open
-                contextMenuHideRef.current = showGroupMenu(node, { x: event.clientX, y: event.clientY }, {});
-                return;
-            }
+            // unified default menus: group pills use the same addStandard() path (rename/color + toggleOpen/ungroup)
             const menu = new ContextMenuBuilder(node, { closeMenu: () => contextMenuHideRef.current?.() });
-            if (node instanceof TabNode) {
+            if (layoutName === "groups") {
+                menu.addStandard();
+            } else if (node instanceof TabNode) {
                 menu.add("pin").add("float").add("popout").add("rename");
-                if (layoutName === "groups") {
-                    menu.addDivider().add("addToNewGroup").add("addToGroup").add("removeFromGroup");
-                    menu.addDivider().add("close");
-                } else {
-                    menu.addDivider().add("closeAll").add("closeRight").add("closeOthers").addDivider().add("close");
-                }
+                menu.addDivider().add("closeAll").add("closeRight").add("closeOthers").addDivider().add("close");
             } else if (node instanceof TabSetNode) {
                 menu.add("maximize").add("float").add("popout").addDivider().add("close");
             } else {
@@ -599,7 +590,7 @@ function App() {
     const onFontSizeChange = (event: React.FormEvent) => {
         const target = event.target as HTMLSelectElement;
         const flexLayoutElement = document.querySelector(".flexlayout__layout") as HTMLElement | null;
-        flexLayoutElement!.style.setProperty("--font-size", target.value);
+        flexLayoutElement!.style.setProperty("--flexlayout-font-size", target.value);
     };
 
     const onRealtimeResizeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -740,37 +731,33 @@ function App() {
                         To-From JSON
                     </button>
                     <label style={{ marginLeft: 10 }} title="Redraw the layout as splitters are dragged">
-                        Realtime resize
+                        Realtime resize:
                         <input name="realtimeResize" type="checkbox" checked={realtimeResize} onChange={onRealtimeResizeChange} />
                     </label>
                     <label style={{ marginLeft: 10 }} title="Show the structure of the layout, blue for rows, orange for tabsets">
-                        Structure
+                        Structure:
                         <input name="show layout" type="checkbox" checked={showLayoutStructure} onChange={onShowLayoutChange} />
                     </label>
                     <label style={{ marginLeft: 10 }} title="Choose which type of component the factory returns for each tab">
-                        Render
+                        Render:
                         <select className="toolbar_control" aria-label="Attributes" style={{ marginLeft: 5 }} defaultValue="examples" onChange={onRenderModeChange}>
                             <option value="examples">Examples</option>
                             <option value="properties">Properties</option>
                             <option value="blank">Blank</option>
                         </select>
                     </label>
-                    <select className="toolbar_control" aria-label="Font size" title="Font Size" style={{ marginLeft: 5 }} onChange={onFontSizeChange} defaultValue="medium">
-                        <option value="xx-small">Size xx-small</option>
-                        <option value="x-small">Size x-small</option>
-                        <option value="small">Size small</option>
-                        <option value="medium">Size medium</option>
-                        <option value="large">Size large</option>
-                        <option value="8px">Size 8px</option>
-                        <option value="10px">Size 10px</option>
-                        <option value="12px">Size 12px</option>
-                        <option value="14px">Size 14px</option>
-                        <option value="16px">Size 16px</option>
-                        <option value="18px">Size 18px</option>
-                        <option value="20px">Size 20px</option>
-                        <option value="25px">Size 25px</option>
-                        <option value="30px">Size 30px</option>
-                    </select>
+                    <label style={{ marginLeft: 10 }} title="Font Size">
+                        Size:
+                        <select className="toolbar_control" aria-label="Font size" style={{ marginLeft: 5 }} onChange={onFontSizeChange} defaultValue="medium">
+                            <option value="xx-small">xx-small</option>
+                            <option value="x-small">x-small</option>
+                            <option value="small">small</option>
+                            <option value="medium">medium</option>
+                            <option value="large">large</option>
+                            <option value="25px">25px</option>
+                            <option value="30px">30px</option>
+                        </select>
+                    </label>
                     <select className="toolbar_control" aria-label="Theme" title="Theme" style={{ marginLeft: 5 }} defaultValue="alpha_light" onChange={onThemeChange}>
                         <option value="alpha_light">Alpha Light</option>
                         <option value="alpha_dark">Alpha Dark</option>
@@ -834,16 +821,16 @@ const borderIconStyle = { width: "1em", height: "1em", display: "flex", alignIte
 // a side panel splitting the layout (side by side)
 const SplitBorderIcon = () => (
     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" style={borderIconStyle} viewBox="0 0 24 24">
-        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--color-icon)" strokeWidth="1.5" />
-        <rect x="6.75" y="7.75" width="6" height="8.5" rx="1" fill="var(--color-icon)" stroke="var(--color-icon)" />
+        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--fl-color-icon)" strokeWidth="1.5" />
+        <rect x="6.75" y="7.75" width="6" height="8.5" rx="1" fill="var(--fl-color-icon)" stroke="var(--fl-color-icon)" />
     </svg>
 );
 
 // a side panel floating over the layout (protrudes beyond the frame, knocked out where it crosses it)
 const OverlayBorderIcon = () => (
     <svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" style={borderIconStyle} viewBox="0 0 24 24">
-        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--color-icon)" strokeWidth="1.5" />
-        <rect x="3.75" y="4.75" width="8" height="14.5" rx="1" fill="var(--color-icon)" stroke="var(--color-icon)" />
+        <rect x="3.75" y="4.75" width="16.5" height="14.5" rx="1" fill="none" stroke="var(--fl-color-icon)" strokeWidth="1.5" />
+        <rect x="3.75" y="4.75" width="8" height="14.5" rx="1" fill="var(--fl-color-icon)" stroke="var(--fl-color-icon)" />
     </svg>
 );
 

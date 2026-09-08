@@ -24,10 +24,11 @@ Before claiming a task complete, run and pass:
 
 - `pnpm dev` — demo app dev server (vite with HMR; the demo imports `src/` directly).
 - `pnpm test` — vitest single run (terminates). `pnpm test:coverage` for coverage.
-- `pnpm playwright` — Playwright e2e (UI runner).
+- `pnpm playwright` — Playwright e2e (headless chromium). `pnpm playwright:ui` for the UI runner.
 - `pnpm lint` — `check:interfaces` + eslint. `pnpm format` / `pnpm format:check` — prettier.
 - `pnpm typecheck` — `tsc -p tsconfig.json`.
-- `pnpm build` — full build: clean, generate interfaces, typecheck, demo, css, lib, types, typedoc.
+- `pnpm build` — full build: clean, generate interfaces, typecheck, demo, examples, css, lib, types, typedoc.
+- `pnpm dev:examples` / `pnpm build:examples` — run/build the `examples/` app (multi-page vite, root `./examples/`, one URL per example). `examples/` is covered by `lint`/`typecheck`/`format`.
 
 ## Mental model (60 seconds)
 
@@ -60,14 +61,18 @@ Full signatures are in `src/model/Actions.ts`; commonly needed ones:
 - **Border tabsets** → `src/view/BorderTabSet.tsx`, `BorderTab.tsx`, `BorderButton.tsx`, `src/view/layout/BorderContainer.tsx`; overlay behavior → `src/view/Overlay.tsx`.
 - **Tabs/tabstrip** → `src/view/Tab.tsx`, `TabButton.tsx`, `TabLayout.tsx`, `TabContentRenderer.tsx`, `TabOverflowHook.tsx`, `DragTabButton.tsx`, `TabButtonStamp.tsx`.
 - **Customization hooks** → `onRenderTab` / `onRenderTabSet` Layout props; custom icons via `icons` prop and `src/view/Icons.tsx`; class remapping via `classNameMapper` and the `CLASSES` enum in `src/CSSClassNames.ts`.
-- **Context/overflow menus** → `src/view/PopupMenu.tsx`, `src/view/ContextMenuBuilder.ts` (`showPopupMenu`).
+- **Context/overflow menus** → `src/view/PopupMenu.tsx`, `src/view/ContextMenuBuilder.tsx` (`showPopupMenu`).
 - **Accessibility / keyboard** → `keyMap` prop + `defaultKeyMap`; ARIA roles in view components and themes.
-- **i18n** → `i18nMapper` prop; labels in `src/view/I18nLabel.ts`.
+- **i18n** → `i18nTranslator` prop on `<Layout>`; default English text in `I18nLabelDefaults`; keys in `src/view/I18nLabel.ts`.
 - **Data model (no React)** → `src/model/`: `Model.ts` (serialization), `Node.ts` + subclasses, `Actions.ts`, `IJsonModel.ts`, `Attributes.ts`, `BorderSet.ts`, `ModelLayout.ts` (popout/float sub-layout), `Rect.ts`, `Orientation.ts`, `DockLocation.ts`.
+
+## Examples
+
+The `examples/` directory is a multi-page vite app (`pnpm dev:examples`), one self-contained example per feature at its own URL (see the landing page `examples/index.html` for the full list). Each example is a single `.tsx` importing only the public API and the combined stylesheet — they are the canonical reference for common features (borders, tab/tabset rendering, context menus, min sizes, pinned tabs, sticky buttons, tab wrapping, external drag, many tabs, undo/redo, localstorage persistence, empty-tabset placeholders, popouts, theming). To add one: create `examples/<name>/{index.html, Name.tsx}`, register it in `examples/vite.config.examples.ts` and link it from the landing page. All examples are covered by `lint`/`typecheck`/`format`.
 
 ## Theming
 
-- All themable values are CSS custom properties defined in `style/_themes.scss` (`--color-*`, `--font-*`, `--splitter-size`, `--tab-button-radius`, etc.), each as `var(--flexlayout-<name>, <theme default>)`. Override the global `--flexlayout-<name>` variables (on `:root`, a container, or the layout root) to restyle every theme/layout — including floats, sublayouts and popouts — without an scss rebuild.
+- All themable values are CSS custom properties defined in `style/_themes.scss` (`--fl-color-*`, `--fl-font-*`, `--fl-splitter-size`, `--fl-tab-button-radius`, etc.), each as `var(--flexlayout-<name>, <theme default>)`. Override the global `--flexlayout-<name>` variables (on `:root`, a container, or the layout root) to restyle every theme/layout — including floats, sublayouts and popouts — without an scss rebuild.
 - Full themes: import one theme css, or `combined.css` for runtime switching via a `flexlayout__theme_<name>` class on the container.
 - Scss sources/mixins: `style/_themes.scss`, `style/_base.scss`; compiled css is committed alongside.
 
@@ -83,4 +88,4 @@ Full signatures are in `src/model/Actions.ts`; commonly needed ones:
 - `typedoc/` — generated API docs (`pnpm doc`).
 - `CHANGELOG.md` — release history.
 - `demo/` — reference app and working patterns: `App.tsx`, plus showcases `monaco.tsx` (popout remounting), `aggrid.tsx`, `MUIDataGrid.tsx`, `chart.tsx`, `openlayer.tsx`, `terminal.tsx`, `SimpleForm.tsx`, `ModelExplorer.tsx`, `JsonView.tsx`, `AttributeEditor.tsx`, `ThemePanel.tsx`, `ActionLog.tsx`.
-- `examples/` — build output only (`dist/`); no readable source. Use `demo/` for examples.
+- `examples/` — runnable self-contained example apps (one per feature), each a multi-page vite entry at `examples/<name>/{index.html, X.tsx}` (e.g. `basic`, `borders`, `context-menu`, `undo-redo`, `pinned-tabs`). They import only the public API (`../../src/index`) and the theme styles (`../../style/combined.scss`), share `examples/Header.tsx` (title + GitHub source link), and are registered in `examples/vite.config.examples.ts`. These are the canonical "how do I use feature X" references; add new examples there rather than `demo/`.

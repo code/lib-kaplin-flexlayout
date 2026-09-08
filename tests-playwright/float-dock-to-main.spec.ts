@@ -116,8 +116,8 @@ test("docks a floating panel into a sublayout hosted in a main tab", async ({ pa
 });
 
 test("docks a floating panel into a popout window", async ({ page, context }) => {
-    // popouts need popoutable tabs, so use the default layout rather than the beforeEach's
-    await page.goto("/demo?layout=default");
+    // popouts need popoutable tabs, so use the test_popout layout rather than the beforeEach's
+    await page.goto("/demo?layout=test_popout");
     await page.waitForSelector(".flexlayout__tabset");
     await waitForBox(page.locator(".flexlayout__layout").first(), "main layout");
 

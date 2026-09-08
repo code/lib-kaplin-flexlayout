@@ -1,4 +1,24 @@
 /** @internal */
+const explicitSets = new WeakMap<Record<string, any>, Set<string>>();
+
+function markExplicit(obj: Record<string, any>, name: string) {
+    let set = explicitSets.get(obj);
+    if (!set) {
+        set = new Set();
+        explicitSets.set(obj, set);
+    }
+    set.add(name);
+}
+
+function unmarkExplicit(obj: Record<string, any>, name: string) {
+    explicitSets.get(obj)?.delete(name);
+}
+
+function isExplicit(obj: Record<string, any>, name: string): boolean {
+    return explicitSets.get(obj)?.has(name) ?? false;
+}
+
+/** @internal */
 export class Attributes {
     attributes: Attribute[];
     nameToAttribute: Map<string, Attribute>;
@@ -38,7 +58,7 @@ export class Attributes {
     toJson(jsonObj: any, obj: any) {
         for (const attr of this.attributes) {
             const fromValue = obj[attr.name];
-            if (attr.alwaysWriteJson || (fromValue !== undefined && fromValue !== attr.defaultValue)) {
+            if (attr.alwaysWriteJson || (fromValue !== undefined && fromValue !== attr.defaultValue) || (attr.preserveIfExplicit && fromValue !== undefined && isExplicit(obj, attr.name))) {
                 jsonObj[attr.name] = fromValue;
             }
         }
@@ -52,8 +72,10 @@ export class Attributes {
             }
             if (fromValue === undefined) {
                 obj[attr.name] = attr.defaultValue;
+                unmarkExplicit(obj, attr.name);
             } else {
                 obj[attr.name] = fromValue;
+                markExplicit(obj, attr.name);
             }
         }
     }
@@ -68,8 +90,10 @@ export class Attributes {
                 const fromValue = jsonObj[key];
                 if (fromValue === undefined) {
                     delete obj[attr.name];
+                    unmarkExplicit(obj, attr.name);
                 } else {
                     obj[attr.name] = fromValue;
+                    markExplicit(obj, attr.name);
                 }
             }
         }
@@ -78,6 +102,7 @@ export class Attributes {
     setDefaults(obj: any) {
         for (const attr of this.attributes) {
             obj[attr.name] = attr.defaultValue;
+            unmarkExplicit(obj, attr.name);
         }
     }
 
@@ -160,6 +185,7 @@ export class Attribute {
     pairedType?: string;
     defaultValue: any;
     alwaysWriteJson?: boolean;
+    preserveIfExplicit?: boolean;
     type?: string;
     required: boolean;
     fixed: boolean;
@@ -193,6 +219,11 @@ export class Attribute {
 
     setAlias(value: string) {
         this.alias = value;
+        return this;
+    }
+
+    setPreserveIfExplicit(value: boolean = true) {
+        this.preserveIfExplicit = value;
         return this;
     }
 

@@ -89,6 +89,10 @@ export class Model {
     private onCreateTabSet?: (tabNode?: TabNode) => ITabSetAttributes;
     /** @internal */
     private nextSubLayoutId: number;
+    /** @internal */
+    private i18nTranslator?: (key: string) => string;
+    /** @internal */
+    private i18nDefaults?: Record<string, string>;
 
     /** @internal */
     protected constructor() {
@@ -101,6 +105,34 @@ export class Model {
         this.mainLayout = new ModelLayout(Model.MAIN_LAYOUT_ID, 0, "window", Rect.empty());
         this.layouts.set(Model.MAIN_LAYOUT_ID, this.mainLayout);
         this.splitterSize = 8;
+    }
+
+    /** @internal */
+    setI18nTranslator(translator: ((key: string) => string) | undefined) {
+        this.i18nTranslator = translator;
+    }
+
+    /** @internal */
+    setI18nDefaults(defaults: Record<string, string> | undefined) {
+        this.i18nDefaults = defaults;
+    }
+
+    /** @internal */
+    translate(text: string | undefined): string | undefined {
+        if (text === undefined) {
+            return undefined;
+        }
+        if (this.i18nTranslator) {
+            return this.i18nTranslator(text);
+        }
+        // Fall back to built-in defaults (e.g. I18nLabelDefaults) for UI label keys
+        if (this.i18nDefaults) {
+            const resolved = this.i18nDefaults[text];
+            if (resolved !== undefined) {
+                return resolved;
+            }
+        }
+        return text;
     }
 
     /**
@@ -886,10 +918,6 @@ export class Model {
         return this.splitterSize;
     }
 
-    setSplitterSize(size?: number) {
-        this.splitterSize = size;
-    }
-
     isEnableEdgeDock() {
         return this.attributes.enableEdgeDock as boolean;
     }
@@ -941,6 +969,11 @@ export class Model {
     }
 
     /***********************internal ********************************/
+
+    /** @internal */
+    setSplitterSize(size?: number) {
+        this.splitterSize = size;
+    }
 
     /** @internal */
     getMainLayout() {
@@ -1110,13 +1143,14 @@ export class Model {
                 { value: ICloseType.Always, label: "Always" },
                 { value: ICloseType.Selected, label: "Selected" },
             ]);
-        attributeDefinitions.add("tabEnablePopout", false).setType(Attribute.BOOLEAN).setAlias("tabEnableFloat");
-        attributeDefinitions.add("tabEnablePopoutIcon", true).setType(Attribute.BOOLEAN);
-        attributeDefinitions.add("tabEnablePopoutFloatIcon", false).setType(Attribute.BOOLEAN);
+        attributeDefinitions.add("tabEnablePopout", false).setType(Attribute.BOOLEAN);
+        attributeDefinitions.add("tabEnableFloat", false).setType(Attribute.BOOLEAN);
+        attributeDefinitions.add("tabEnablePopoutIcon", false).setType(Attribute.BOOLEAN).setPreserveIfExplicit();
+        attributeDefinitions.add("tabEnableFloatIcon", false).setType(Attribute.BOOLEAN).setAlias("tabEnablePopoutFloatIcon");
         attributeDefinitions.add("tabEnablePopoutOverlay", false).setType(Attribute.BOOLEAN);
         attributeDefinitions.add("tabEnableDrag", true).setType(Attribute.BOOLEAN);
-        attributeDefinitions.add("tabEnableRename", true).setType(Attribute.BOOLEAN);
-        attributeDefinitions.add("tabEnablePin", true).setType(Attribute.BOOLEAN);
+        attributeDefinitions.add("tabEnableRename", false).setType(Attribute.BOOLEAN).setPreserveIfExplicit();
+        attributeDefinitions.add("tabEnablePin", false).setType(Attribute.BOOLEAN).setPreserveIfExplicit();
         attributeDefinitions.add("tabContentClassName", undefined).setType(Attribute.STRING);
         attributeDefinitions.add("tabClassName", undefined).setType(Attribute.STRING);
         attributeDefinitions.add("tabIcon", undefined).setType(Attribute.STRING);
@@ -1149,6 +1183,7 @@ export class Model {
         attributeDefinitions.add("tabSetMaxWidth", DefaultMax).setType(Attribute.NUMBER);
         attributeDefinitions.add("tabSetMaxHeight", DefaultMax).setType(Attribute.NUMBER);
         attributeDefinitions.add("tabSetEnableTabScrollbar", false).setType(Attribute.BOOLEAN);
+        attributeDefinitions.add("tabSetEnableTabGroups", false).setType(Attribute.BOOLEAN).setDescription(`whether the tab group options are enabled in the context menu (default menus)`);
 
         // tab group
         attributeDefinitions

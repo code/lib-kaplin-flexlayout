@@ -1,71 +1,72 @@
 @charset "UTF-8";
 .flexlayout__layout {
-  --color-text: var(--flexlayout-color-text, black);
-  --color-background: var(--flexlayout-color-background, white);
-  --color-base: var(--flexlayout-color-base, white);
-  --color-1: var(--flexlayout-color-1, rgb(98%, 98%, 98%));
-  --color-2: var(--flexlayout-color-2, rgb(96%, 96%, 96%));
-  --color-3: var(--flexlayout-color-3, rgb(93%, 93%, 93%));
-  --color-4: var(--flexlayout-color-4, rgb(90%, 90%, 90%));
-  --color-5: var(--flexlayout-color-5, rgb(87%, 87%, 87%));
-  --color-6: var(--flexlayout-color-6, rgb(84%, 84%, 84%));
-  --color-drag1: var(--flexlayout-color-drag1, rgb(95, 134, 196));
-  --color-drag2: var(--flexlayout-color-drag2, rgb(119, 166, 119));
-  --color-drag1-background: var(--flexlayout-color-drag1-background, rgba(95, 134, 196, 0.1));
-  --color-drag2-background: var(--flexlayout-color-drag2-background, rgba(119, 166, 119, 0.075));
-  --font-size: var(--flexlayout-font-size, medium);
-  --font-family: var(--flexlayout-font-family, Roboto, Arial, sans-serif);
-  --font-weight: var(--flexlayout-font-weight, normal);
-  --splitter-size: var(--flexlayout-splitter-size, 8px);
-  --splitter-active-size: var(--flexlayout-splitter-active-size, 8px);
-  --splitter-handle-visibility: var(--flexlayout-splitter-handle-visibility, hidden);
-  --color-overflow: var(--flexlayout-color-overflow, gray);
-  --color-icon: var(--flexlayout-color-icon, gray);
-  --color-focus: var(--flexlayout-color-focus, #3b7de7);
-  --color-tabset-background: var(--flexlayout-color-tabset-background, var(--color-background));
-  --color-tabset-background-selected: var(--flexlayout-color-tabset-background-selected, var(--color-1));
-  --color-tabset-background-maximized: var(--flexlayout-color-tabset-background-maximized, var(--color-6));
-  --color-tabset-divider-line: var(--flexlayout-color-tabset-divider-line, var(--color-3));
-  --color-border-tab-content: var(--flexlayout-color-border-tab-content, var(--color-background));
-  --color-border-background: var(--flexlayout-color-border-background, var(--color-background));
-  --color-border-divider-line: var(--flexlayout-color-border-divider-line, var(--color-3));
-  --color-tab-content: var(--flexlayout-color-tab-content, var(--color-background));
-  --color-tab-selected: var(--flexlayout-color-tab-selected, var(--color-text));
-  --color-tab-selected-background: var(--flexlayout-color-tab-selected-background, transparent);
-  --color-tab-unselected: var(--flexlayout-color-tab-unselected, gray);
-  --color-tab-unselected-background: var(--flexlayout-color-tab-unselected-background, transparent);
-  --color-tab-textbox: var(--flexlayout-color-tab-textbox, var(--color-text));
-  --color-tab-textbox-background: var(--flexlayout-color-tab-textbox-background, var(--color-3));
-  --color-border-tab-selected: var(--flexlayout-color-border-tab-selected, var(--color-text));
-  --color-border-tab-selected-background: var(--flexlayout-color-border-tab-selected-background, transparent);
-  --color-border-tab-unselected: var(--flexlayout-color-border-tab-unselected, gray);
-  --color-border-tab-unselected-background: var(--flexlayout-color-border-tab-unselected-background, transparent);
-  --color-splitter: var(--flexlayout-color-splitter, var(--color-1));
-  --color-splitter-hover: var(--flexlayout-color-splitter-hover, var(--color-4));
-  --color-splitter-drag: var(--flexlayout-color-splitter-drag, var(--color-4));
-  --color-splitter-handle: var(--flexlayout-color-splitter-handle, var(--color-3));
-  --color-drag-rect-border: var(--flexlayout-color-drag-rect-border, var(--color-6));
-  --color-drag-rect-background: var(--flexlayout-color-drag-rect-background, var(--color-4));
-  --color-drag-rect: var(--flexlayout-color-drag-rect, var(--color-text));
-  --color-popup-border: var(--flexlayout-color-popup-border, var(--color-6));
-  --color-popup-unselected: var(--flexlayout-color-popup-unselected, var(--color-text));
-  --color-popup-unselected-background: var(--flexlayout-color-popup-unselected-background, var(--color-background));
-  --color-popup-selected: var(--flexlayout-color-popup-selected, var(--color-text));
-  --color-popup-selected-background: var(--flexlayout-color-popup-selected-background, var(--color-3));
-  --color-edge-marker: var(--flexlayout-color-edge-marker, #aaa);
-  --color-edge-icon: var(--flexlayout-color-edge-icon, #555);
-  --color-underline: var(--flexlayout-color-underline, rgb(65, 105, 225));
-  --color-underline-hover: var(--flexlayout-color-underline-hover, #aaa);
-  --underline_height: 3px;
-  --color-mini-scroll-indicator: var(--flexlayout-color-mini-scroll-indicator, rgba(128, 128, 128, 0.5));
-  --color-mini-scroll-indicator-hovered: var(--flexlayout-color-mini-scroll-indicator-hovered, rgba(128, 128, 128, 0.7));
-  --size-mini-scroll-indicator: var(--flexlayout-size-mini-scroll-indicator, 4px);
-  --color-toolbar-button-hover: var(--flexlayout-color-toolbar-button-hover, var(--color-3));
-  --color-float-window-header-background: var(--flexlayout-color-float-window-header-background, var(--color-tabset-background));
-  --color-tabgroup-pill-text: var(--flexlayout-color-tabgroup-pill-text, black);
-  --color-tabgroup-default: var(--flexlayout-color-tabgroup-default, #9e9e9e);
-  --color-tabgroup-menu-palette: var(--flexlayout-color-tabgroup-menu-palette, #d97a7a, #dd8a4a, #cbc688, #94b870, #7ab0b2, #7db6c6, #7895c4, #a394cf, #d187b2, #bf9e81);
-  --tabgroup-pill-radius: var(--flexlayout-tabgroup-pill-radius, 10px);
+  --fl-color-text: var(--flexlayout-color-text, black);
+  --fl-color-background: var(--flexlayout-color-background, white);
+  --fl-color-base: var(--flexlayout-color-base, white);
+  --fl-color-1: var(--flexlayout-color-1, rgb(98%, 98%, 98%));
+  --fl-color-2: var(--flexlayout-color-2, rgb(96%, 96%, 96%));
+  --fl-color-3: var(--flexlayout-color-3, rgb(93%, 93%, 93%));
+  --fl-color-4: var(--flexlayout-color-4, rgb(90%, 90%, 90%));
+  --fl-color-5: var(--flexlayout-color-5, rgb(87%, 87%, 87%));
+  --fl-color-6: var(--flexlayout-color-6, rgb(84%, 84%, 84%));
+  --fl-color-drag1: var(--flexlayout-color-drag1, rgb(95, 134, 196));
+  --fl-color-drag2: var(--flexlayout-color-drag2, rgb(119, 166, 119));
+  --fl-color-drag1-background: var(--flexlayout-color-drag1-background, rgba(95, 134, 196, 0.1));
+  --fl-color-drag2-background: var(--flexlayout-color-drag2-background, rgba(119, 166, 119, 0.075));
+  --fl-font-size: var(--flexlayout-font-size, medium);
+  --fl-font-family: var(--flexlayout-font-family, ui-sans-serif, system-ui, -apple-system, Arial, sans-serif);
+  --fl-font-weight: var(--flexlayout-font-weight, normal);
+  --fl-splitter-size: var(--flexlayout-splitter-size, 8px);
+  --fl-splitter-active-size: var(--flexlayout-splitter-active-size, 8px);
+  --fl-splitter-handle-visibility: var(--flexlayout-splitter-handle-visibility, hidden);
+  --fl-color-overflow: var(--flexlayout-color-overflow, gray);
+  --fl-color-icon: var(--flexlayout-color-icon, gray);
+  --fl-color-focus: var(--flexlayout-color-focus, #3b7de7);
+  --fl-color-tabset-background: var(--flexlayout-color-tabset-background, var(--fl-color-background));
+  --fl-color-tabset-background-selected: var(--flexlayout-color-tabset-background-selected, var(--fl-color-tabset-background));
+  --fl-color-tabset-background-maximized: var(--flexlayout-color-tabset-background-maximized, var(--fl-color-tabset-background));
+  --fl-color-tabset-divider-line: var(--flexlayout-color-tabset-divider-line, var(--fl-color-3));
+  --fl-color-border-tab-content: var(--flexlayout-color-border-tab-content, var(--fl-color-background));
+  --fl-color-border-background: var(--flexlayout-color-border-background, var(--fl-color-background));
+  --fl-color-border-divider-line: var(--flexlayout-color-border-divider-line, var(--fl-color-3));
+  --fl-color-border: var(--flexlayout-color-border, var(--fl-color-text));
+  --fl-color-tab-content: var(--flexlayout-color-tab-content, var(--fl-color-background));
+  --fl-color-tab-selected: var(--flexlayout-color-tab-selected, var(--fl-color-text));
+  --fl-color-tab-selected-background: var(--flexlayout-color-tab-selected-background, transparent);
+  --fl-color-tab-unselected: var(--flexlayout-color-tab-unselected, gray);
+  --fl-color-tab-unselected-background: var(--flexlayout-color-tab-unselected-background, transparent);
+  --fl-color-tab-textbox: var(--flexlayout-color-tab-textbox, var(--fl-color-text));
+  --fl-color-tab-textbox-background: var(--flexlayout-color-tab-textbox-background, var(--fl-color-3));
+  --fl-color-border-tab-selected: var(--flexlayout-color-border-tab-selected, var(--fl-color-text));
+  --fl-color-border-tab-selected-background: var(--flexlayout-color-border-tab-selected-background, transparent);
+  --fl-color-border-tab-unselected: var(--flexlayout-color-border-tab-unselected, gray);
+  --fl-color-border-tab-unselected-background: var(--flexlayout-color-border-tab-unselected-background, transparent);
+  --fl-color-splitter: var(--flexlayout-color-splitter, var(--fl-color-1));
+  --fl-color-splitter-hover: var(--flexlayout-color-splitter-hover, var(--fl-color-4));
+  --fl-color-splitter-drag: var(--flexlayout-color-splitter-drag, var(--fl-color-4));
+  --fl-color-splitter-handle: var(--flexlayout-color-splitter-handle, var(--fl-color-3));
+  --fl-color-drag-rect-border: var(--flexlayout-color-drag-rect-border, var(--fl-color-6));
+  --fl-color-drag-rect-background: var(--flexlayout-color-drag-rect-background, var(--fl-color-4));
+  --fl-color-drag-rect: var(--flexlayout-color-drag-rect, var(--fl-color-text));
+  --fl-color-popup-border: var(--flexlayout-color-popup-border, var(--fl-color-6));
+  --fl-color-popup-unselected: var(--flexlayout-color-popup-unselected, var(--fl-color-text));
+  --fl-color-popup-unselected-background: var(--flexlayout-color-popup-unselected-background, var(--fl-color-background));
+  --fl-color-popup-selected: var(--flexlayout-color-popup-selected, var(--fl-color-text));
+  --fl-color-popup-selected-background: var(--flexlayout-color-popup-selected-background, var(--fl-color-3));
+  --fl-color-edge-marker: var(--flexlayout-color-edge-marker, #aaa);
+  --fl-color-edge-icon: var(--flexlayout-color-edge-icon, #555);
+  --fl-color-underline: var(--flexlayout-color-underline, rgb(65, 105, 225));
+  --fl-color-underline-hover: var(--flexlayout-color-underline-hover, #aaa);
+  --fl-underline_height: 3px;
+  --fl-color-mini-scroll-indicator: var(--flexlayout-color-mini-scroll-indicator, rgba(128, 128, 128, 0.5));
+  --fl-color-mini-scroll-indicator-hovered: var(--flexlayout-color-mini-scroll-indicator-hovered, rgba(128, 128, 128, 0.7));
+  --fl-size-mini-scroll-indicator: var(--flexlayout-size-mini-scroll-indicator, 4px);
+  --fl-color-toolbar-button-hover: var(--flexlayout-color-toolbar-button-hover, var(--fl-color-3));
+  --fl-color-float-window-header-background: var(--flexlayout-color-float-window-header-background, var(--fl-color-tabset-background));
+  --fl-color-tabgroup-pill-text: var(--flexlayout-color-tabgroup-pill-text, black);
+  --fl-color-tabgroup-default: var(--flexlayout-color-tabgroup-default, #9e9e9e);
+  --fl-color-tabgroup-menu-palette: var(--flexlayout-color-tabgroup-menu-palette, #d97a7a, #dd8a4a, #cbc688, #94b870, #7ab0b2, #7db6c6, #7895c4, #a394cf, #d187b2, #bf9e81);
+  --fl-tabgroup-pill-radius: var(--flexlayout-tabgroup-pill-radius, 10px);
 }
 
 /*
@@ -78,7 +79,7 @@
   bottom: 0;
   position: absolute;
   display: flex;
-  background-color: var(--color-background);
+  background-color: var(--fl-color-background);
 }
 .flexlayout__layout_metrics {
   position: absolute;
@@ -134,18 +135,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-splitter);
+  background-color: var(--fl-color-splitter);
   touch-action: none;
   z-index: 10;
   position: relative;
 }
 .flexlayout__splitter:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -2px;
 }
 .flexlayout__splitter_horz {
-  width: var(--splitter-size);
-  min-width: var(--splitter-size);
+  width: var(--fl-splitter-size);
+  min-width: var(--fl-splitter-size);
 }
 .flexlayout__splitter_horz::before {
   content: "";
@@ -154,13 +155,13 @@
   bottom: 0;
   /* Center the hit area over the thin line */
   left: 50%;
-  width: var(--splitter-active-size);
+  width: var(--fl-splitter-active-size);
   transform: translateX(-50%);
   z-index: 1;
 }
 .flexlayout__splitter_vert {
-  height: var(--splitter-size);
-  min-height: var(--splitter-size);
+  height: var(--fl-splitter-size);
+  min-height: var(--fl-splitter-size);
 }
 .flexlayout__splitter_vert::before {
   content: "";
@@ -169,13 +170,13 @@
   right: 0;
   /* Center the hit area over the thin line */
   top: 50%;
-  height: var(--splitter-active-size);
+  height: var(--fl-splitter-active-size);
   transform: translateY(-50%);
   z-index: 1;
 }
 @media (hover: hover) {
   .flexlayout__splitter:hover {
-    background-color: var(--color-splitter-hover);
+    background-color: var(--fl-color-splitter-hover);
     transition: background-color ease-in 0.1s;
     transition-delay: 0.05s;
     border-radius: 5px;
@@ -188,12 +189,12 @@
   justify-content: center;
   z-index: 1000;
   border-radius: 5px;
-  background-color: var(--color-splitter-drag);
+  background-color: var(--fl-color-splitter-drag);
 }
 .flexlayout__splitter_handle {
-  background-color: var(--color-splitter-handle);
+  background-color: var(--fl-color-splitter-handle);
   border-radius: 3px;
-  visibility: var(--splitter-handle-visibility);
+  visibility: var(--fl-splitter-handle-visibility);
 }
 .flexlayout__splitter_handle_horz {
   width: 3px;
@@ -207,15 +208,15 @@
   position: absolute;
   pointer-events: none;
   box-sizing: border-box;
-  border: 2px solid var(--color-drag1);
-  background: var(--color-drag1-background);
+  border: 2px solid var(--fl-color-drag1);
+  background: var(--fl-color-drag1-background);
   border-radius: 5px;
   z-index: 1000;
 }
 .flexlayout__outline_rect_edge {
   pointer-events: none;
-  border: 2px solid var(--color-drag2);
-  background: var(--color-drag2-background);
+  border: 2px solid var(--fl-color-drag2);
+  background: var(--fl-color-drag2-background);
   border-radius: 5px;
   z-index: 1000;
   box-sizing: border-box;
@@ -223,16 +224,16 @@
 .flexlayout__edge_rect {
   position: absolute;
   z-index: 1000;
-  background-color: var(--color-edge-marker);
+  background-color: var(--fl-color-edge-marker);
   pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .flexlayout__drag_rect {
-  color: var(--color-drag-rect);
-  background-color: var(--color-drag-rect-background);
-  border: 2px solid var(--color-drag-rect-border);
+  color: var(--fl-color-drag-rect);
+  background-color: var(--fl-color-drag-rect-background);
+  border: 2px solid var(--fl-color-drag-rect-border);
   border-radius: 5px;
   box-sizing: border-box;
   display: flex;
@@ -241,8 +242,8 @@
   overflow: hidden;
   padding: 0.3em 0.8em;
   word-wrap: break-word;
-  font-size: var(--font-size);
-  font-family: var(--font-family);
+  font-size: var(--fl-font-size);
+  font-family: var(--fl-font-family);
 }
 .flexlayout__row {
   display: flex;
@@ -257,9 +258,9 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  background-color: var(--color-tabset-background);
+  background-color: var(--fl-color-tabset-background);
   box-sizing: border-box;
-  font-family: var(--font-family);
+  font-family: var(--fl-font-family);
   overflow: hidden;
   flex-grow: 1;
 }
@@ -289,21 +290,21 @@
 }
 .flexlayout__tabset_tabbar_outer {
   box-sizing: border-box;
-  background-color: var(--color-tabset-background);
+  background-color: var(--fl-color-tabset-background);
   overflow: hidden;
   display: flex;
   align-items: center;
   min-height: 1.5em;
-  font-size: var(--font-size);
-  font-weight: var(--font-weight);
+  font-size: var(--fl-font-size);
+  font-weight: var(--fl-font-weight);
 }
 .flexlayout__tabset_tabbar_outer_top {
   padding: 0px 2px 0px 2px;
-  border-bottom: 1px solid var(--color-tabset-divider-line);
+  border-bottom: 1px solid var(--fl-color-tabset-divider-line);
 }
 .flexlayout__tabset_tabbar_outer_bottom {
   padding: 0px 2px 0px 2px;
-  border-top: 1px solid var(--color-tabset-divider-line);
+  border-top: 1px solid var(--fl-color-tabset-divider-line);
 }
 .flexlayout__tabset_tabbar_inner {
   position: relative;
@@ -331,10 +332,10 @@
   border-bottom: 2px solid transparent;
 }
 .flexlayout__tabset-selected {
-  background-color: var(--color-tabset-background-selected);
+  background-color: var(--fl-color-tabset-background-selected);
 }
 .flexlayout__tabset-maximized {
-  background-color: var(--color-tabset-background-maximized);
+  background-color: var(--fl-color-tabset-background-maximized);
 }
 .flexlayout__tab_button_stamp {
   display: inline-flex;
@@ -349,26 +350,26 @@
   gap: 0.35em;
   padding: 2px 8px 2px 8px;
   margin: 2px 2px;
-  border-radius: var(--tabgroup-pill-radius) 0 0 var(--tabgroup-pill-radius);
-  border: 1px solid var(--color-tabset-divider-line);
+  border-radius: var(--fl-tabgroup-pill-radius) 0 0 var(--fl-tabgroup-pill-radius);
+  border: 1px solid var(--fl-color-tabset-divider-line);
   border-right: none;
-  background-color: var(--color-base);
-  color: var(--color-tabgroup-pill-text);
+  background-color: var(--fl-color-base);
+  color: var(--fl-color-tabgroup-pill-text);
   cursor: pointer;
   user-select: none;
   white-space: nowrap;
   box-sizing: border-box;
 }
 .flexlayout__group_pill:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
 }
 .flexlayout__group_pill_collapsed {
-  border-radius: var(--tabgroup-pill-radius);
-  border-right: 1px solid var(--color-tabset-divider-line);
+  border-radius: var(--fl-tabgroup-pill-radius);
+  border-right: 1px solid var(--fl-color-tabset-divider-line);
 }
 .flexlayout__group_pill_underline {
-  border-radius: var(--tabgroup-pill-radius);
-  border-right: 1px solid var(--color-tabset-divider-line);
+  border-radius: var(--fl-tabgroup-pill-radius);
+  border-right: 1px solid var(--fl-color-tabset-divider-line);
 }
 .flexlayout__group_pill_name {
   max-width: 10em;
@@ -384,10 +385,10 @@
 }
 .flexlayout__group_end_marker {
   display: inline-block;
-  border-radius: 0 var(--tabgroup-pill-radius) var(--tabgroup-pill-radius) 0;
-  border: 1px solid var(--color-tabset-divider-line);
+  border-radius: 0 var(--fl-tabgroup-pill-radius) var(--fl-tabgroup-pill-radius) 0;
+  border: 1px solid var(--fl-color-tabset-divider-line);
   border-left: none;
-  background-color: var(--color-base);
+  background-color: var(--fl-color-base);
   padding: 2px 7px 2px 7px;
   margin: 2px 2px;
   cursor: pointer;
@@ -405,8 +406,8 @@
   left: 10px;
   right: 10px;
   bottom: 0;
-  height: var(--underline_height, 2px);
-  border-radius: calc(var(--underline_height, 2px) / 2);
+  height: var(--fl-underline_height, 2px);
+  border-radius: calc(var(--fl-underline_height, 2px) / 2);
   background-color: var(--flexlayout-group-color, transparent);
   pointer-events: none;
 }
@@ -418,9 +419,9 @@
 .flexlayout__group_rename_input {
   padding: 3px;
   border-radius: 5px;
-  border: 1px solid var(--color-popup-border);
-  background-color: var(--color-tab-textbox-background, var(--color-3));
-  color: var(--color-tab-textbox, var(--color-text));
+  border: 1px solid var(--fl-color-popup-border);
+  background-color: var(--fl-color-tab-textbox-background, var(--fl-color-3));
+  color: var(--fl-color-tab-textbox, var(--fl-color-text));
 }
 .flexlayout__group_picker {
   display: flex;
@@ -430,14 +431,14 @@
   max-width: 18em;
 }
 .flexlayout__group_picker_item {
-  border: 1px solid var(--color-popup-border);
+  border: 1px solid var(--fl-color-popup-border);
   border-radius: 10px;
   padding: 0 8px;
   line-height: 1.6em;
   font-size: 0.9em;
   cursor: pointer;
-  background-color: var(--color-base);
-  color: var(--color-popup-unselected);
+  background-color: var(--fl-color-base);
+  color: var(--fl-color-popup-unselected);
 }
 .flexlayout__group_picker_item:hover {
   filter: brightness(0.95);
@@ -454,7 +455,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 1px solid var(--color-popup-border);
+  border: 1px solid var(--fl-color-popup-border);
   cursor: pointer;
   padding: 0;
 }
@@ -471,8 +472,8 @@
 .flexlayout__tab {
   overflow: hidden;
   box-sizing: border-box;
-  background-color: var(--color-tab-content);
-  color: var(--color-text);
+  background-color: var(--fl-color-tab-content);
+  color: var(--fl-color-text);
   position: absolute;
 }
 .flexlayout__tab_moveable {
@@ -514,10 +515,10 @@
   align-items: center;
   box-sizing: border-box;
   padding: 3px 0.5em;
-  font-weight: var(--font-weight);
+  font-weight: var(--fl-font-weight);
 }
 .flexlayout__tab_button:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -2px;
 }
 .flexlayout__tab_button {
@@ -525,7 +526,7 @@
 }
 .flexlayout__tab_button_stretch {
   background-color: transparent;
-  color: var(--color-tab-selected);
+  color: var(--fl-color-tab-selected);
   width: 100%;
   padding: 3px 0em;
   text-wrap: nowrap;
@@ -537,21 +538,21 @@
 }
 @media (hover: hover) {
   .flexlayout__tab_button_stretch:hover {
-    color: var(--color-tab-selected);
+    color: var(--fl-color-tab-selected);
   }
 }
 .flexlayout__tab_button--selected {
-  background-color: var(--color-tab-selected-background);
-  color: var(--color-tab-selected);
+  background-color: var(--fl-color-tab-selected-background);
+  color: var(--fl-color-tab-selected);
 }
 @media (hover: hover) {
   .flexlayout__tab_button:hover {
-    color: var(--color-tab-selected);
+    color: var(--fl-color-tab-selected);
   }
 }
 .flexlayout__tab_button--unselected {
-  background-color: var(--color-tab-unselected-background);
-  color: var(--color-tab-unselected);
+  background-color: var(--fl-color-tab-unselected-background);
+  color: var(--fl-color-tab-unselected);
 }
 .flexlayout__tab_button_leading {
   display: flex;
@@ -565,17 +566,17 @@
 }
 .flexlayout__tab_button_textbox {
   border: none;
-  font-family: var(--font-family);
-  font-size: var(--font-size);
-  font-weight: var(--font-weight);
-  color: var(--color-tab-textbox);
-  background-color: var(--color-tab-textbox-background);
-  border: 1px inset var(--color-1);
+  font-family: var(--fl-font-family);
+  font-size: var(--fl-font-size);
+  font-weight: var(--fl-font-weight);
+  color: var(--fl-color-tab-textbox);
+  background-color: var(--fl-color-tab-textbox-background);
+  border: 1px inset var(--fl-color-1);
   border-radius: 3px;
   width: 10em;
 }
 .flexlayout__tab_button_textbox:focus {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -1px;
 }
 .flexlayout__tab_button_trailing {
@@ -584,7 +585,7 @@
   border-radius: 4px;
 }
 .flexlayout__tab_button_trailing:hover {
-  background-color: var(--color-toolbar-button-hover);
+  background-color: var(--fl-color-toolbar-button-hover);
 }
 @media (hover: hover) {
   .flexlayout__tab_button:hover .flexlayout__tab_button_trailing {
@@ -598,7 +599,7 @@
   display: flex;
   align-items: center;
   border: none;
-  color: var(--color-overflow);
+  color: var(--fl-color-overflow);
   font-size: inherit;
   background-color: transparent;
   width: 2em;
@@ -620,7 +621,7 @@
   padding: 1px;
 }
 .flexlayout__tab_toolbar_icon:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -2px;
 }
 .flexlayout__tab_toolbar_button {
@@ -633,12 +634,12 @@
   padding: 1px;
 }
 .flexlayout__tab_toolbar_button:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -2px;
 }
 @media (hover: hover) {
   .flexlayout__tab_toolbar_button:hover {
-    background-color: var(--color-toolbar-button-hover);
+    background-color: var(--fl-color-toolbar-button-hover);
   }
 }
 .flexlayout__tab_toolbar_sticky_buttons_container {
@@ -651,16 +652,16 @@
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
-  font-family: var(--font-family);
-  font-size: var(--font-size);
-  font-weight: var(--font-weight);
-  color: var(--color-border);
-  background-color: var(--color-border-background);
+  font-family: var(--fl-font-family);
+  font-size: var(--fl-font-size);
+  font-weight: var(--fl-font-weight);
+  color: var(--fl-color-border);
+  background-color: var(--fl-color-border-background);
 }
 .flexlayout__border_tab_contents {
   box-sizing: border-box;
   overflow: hidden;
-  background-color: var(--color-border-tab-content);
+  background-color: var(--fl-color-border-tab-content);
 }
 .flexlayout__border_tab_overlay {
   position: absolute;
@@ -694,20 +695,20 @@
   display: flex;
 }
 .flexlayout__border_top {
-  border-bottom: 1px solid var(--color-border-divider-line);
+  border-bottom: 1px solid var(--fl-color-border-divider-line);
   align-items: center;
 }
 .flexlayout__border_bottom {
-  border-top: 1px solid var(--color-border-divider-line);
+  border-top: 1px solid var(--fl-color-border-divider-line);
   align-items: center;
 }
 .flexlayout__border_left {
-  border-right: 1px solid var(--color-border-divider-line);
+  border-right: 1px solid var(--fl-color-border-divider-line);
   align-content: center;
   flex-direction: column;
 }
 .flexlayout__border_right {
-  border-left: 1px solid var(--color-border-divider-line);
+  border-left: 1px solid var(--fl-color-border-divider-line);
   align-content: center;
   flex-direction: column;
 }
@@ -757,24 +758,24 @@
   margin: 2px 0px;
   box-sizing: border-box;
   white-space: nowrap;
-  font-weight: var(--font-weight);
+  font-weight: var(--fl-font-weight);
 }
 .flexlayout__border_button:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -2px;
 }
 .flexlayout__border_button--selected {
-  background-color: var(--color-border-tab-selected-background);
-  color: var(--color-border-tab-selected);
+  background-color: var(--fl-color-border-tab-selected-background);
+  color: var(--fl-color-border-tab-selected);
 }
 @media (hover: hover) {
   .flexlayout__border_button:hover {
-    color: var(--color-border-tab-selected);
+    color: var(--fl-color-border-tab-selected);
   }
 }
 .flexlayout__border_button--unselected {
-  background-color: var(--color-border-tab-unselected-background);
-  color: var(--color-border-tab-unselected);
+  background-color: var(--fl-color-border-tab-unselected-background);
+  color: var(--fl-color-border-tab-unselected);
 }
 .flexlayout__border_button_leading {
   display: flex;
@@ -818,27 +819,27 @@
   padding: 1px;
 }
 .flexlayout__border_toolbar_button:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -2px;
 }
 @media (hover: hover) {
   .flexlayout__border_toolbar_button:hover {
-    background-color: var(--color-toolbar-button-hover);
+    background-color: var(--fl-color-toolbar-button-hover);
   }
 }
 .flexlayout__border_toolbar_button_overflow {
   display: flex;
   align-items: center;
   border: none;
-  color: var(--color-overflow);
+  color: var(--fl-color-overflow);
   font-size: inherit;
   background-color: transparent;
   width: 1.5em;
 }
 .flexlayout__popup_menu {
-  font-size: var(--font-size);
-  font-family: var(--font-family);
-  font-weight: var(--font-weight);
+  font-size: var(--fl-font-size);
+  font-family: var(--fl-font-family);
+  font-weight: var(--fl-font-weight);
 }
 .flexlayout__popup_menu_item {
   padding: 2px 0.5em;
@@ -847,18 +848,18 @@
   border-radius: 2px;
 }
 .flexlayout__popup_menu_item.flexlayout__popup_menu_item_grouped {
-  border-left: 5px solid var(--flexlayout-group-color, var(--color-tabgroup-default));
+  border-left: 5px solid var(--flexlayout-group-color, var(--fl-color-tabgroup-default));
   padding-left: calc(0.5em - 5px);
   border-radius: 0 !important;
 }
 .flexlayout__popup_menu_item:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: 2px solid var(--fl-color-focus);
   outline-offset: -2px;
 }
 .flexlayout__popup_menu_item--selected {
   font-weight: 500;
-  background-color: var(--color-tab-selected-background);
-  color: var(--color-tab-selected);
+  background-color: var(--fl-color-tab-selected-background);
+  color: var(--fl-color-tab-selected);
 }
 .flexlayout__popup_menu_item--disabled {
   opacity: 0.4;
@@ -867,19 +868,19 @@
 }
 @media (hover: hover) {
   .flexlayout__popup_menu_item:hover {
-    background-color: var(--color-6);
+    background-color: var(--fl-color-6);
   }
 }
 .flexlayout__popup_menu_divider {
   height: 1px;
   margin: 4px 2px;
-  background-color: var(--color-popup-border);
+  background-color: var(--fl-color-popup-border);
 }
 .flexlayout__popup_menu_container {
   box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--color-popup-border);
-  color: var(--color-popup-unselected);
-  background: var(--color-popup-unselected-background);
+  border: 1px solid var(--fl-color-popup-border);
+  color: var(--fl-color-popup-unselected);
+  background: var(--fl-color-popup-unselected-background);
   border-radius: 3px;
   position: absolute;
   z-index: 3000;
@@ -890,7 +891,7 @@
 }
 .flexlayout__float_window {
   box-sizing: border-box;
-  background-color: var(--color-tabset-background);
+  background-color: var(--fl-color-tabset-background);
   border-radius: 5px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   display: flex;
@@ -902,11 +903,11 @@
   display: flex;
   align-items: center;
   padding: 5px 5px;
-  background-color: var(--color-float-window-header-background);
-  border-bottom: 1px solid var(--color-tabset-divider-line);
+  background-color: var(--fl-color-float-window-header-background);
+  border-bottom: 1px solid var(--fl-color-tabset-divider-line);
   cursor: move;
   user-select: none;
-  font-family: var(--font-family);
+  font-family: var(--fl-font-family);
   font-size: 0.8em;
   min-height: 15px;
 }
@@ -978,22 +979,22 @@
   position: absolute;
   padding-top: 6px;
   padding-bottom: 5px;
-  font-size: var(--font-size);
-  font-family: var(--font-family);
-  font-weight: var(--font-weight);
+  font-size: var(--fl-font-size);
+  font-family: var(--fl-font-family);
+  font-weight: var(--fl-font-weight);
 }
 .flexlayout__mini_scrollbar {
   position: absolute;
-  background-color: var(--color-mini-scroll-indicator);
+  background-color: var(--fl-color-mini-scroll-indicator);
   border-radius: 5px;
-  width: var(--size-mini-scroll-indicator);
-  height: var(--size-mini-scroll-indicator);
+  width: var(--fl-size-mini-scroll-indicator);
+  height: var(--fl-size-mini-scroll-indicator);
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
 }
 .flexlayout__mini_scrollbar:hover {
-  background-color: var(--color-mini-scroll-indicator-hovered);
+  background-color: var(--fl-color-mini-scroll-indicator-hovered);
   transition: background-color 0.3s ease-in-out;
 }
 .flexlayout__mini_scrollbar_container {
@@ -1014,22 +1015,22 @@
     underline theme overrides 
 */
 .flexlayout__tab_button {
-  padding: 2px 0.5em calc(4px - var(--underline_height)) 0.5em;
+  padding: 2px 0.5em calc(4px - var(--fl-underline_height)) 0.5em;
 }
 .flexlayout__tab_button--selected {
-  border-bottom: var(--underline_height) solid var(--color-underline);
+  border-bottom: var(--fl-underline_height) solid var(--fl-color-underline);
 }
 .flexlayout__tab_button--unselected {
-  border-bottom: var(--underline_height) solid transparent;
+  border-bottom: var(--fl-underline_height) solid transparent;
 }
 .flexlayout__border_button {
-  padding: 2px 0.5em calc(4px - var(--underline_height)) 0.5em;
+  padding: 2px 0.5em calc(4px - var(--fl-underline_height)) 0.5em;
 }
 .flexlayout__border_button--selected {
-  border-bottom: var(--underline_height) solid var(--color-underline);
+  border-bottom: var(--fl-underline_height) solid var(--fl-color-underline);
 }
 .flexlayout__border_button--unselected {
-  border-bottom: var(--underline_height) solid transparent;
+  border-bottom: var(--fl-underline_height) solid transparent;
 }
 .flexlayout__tabset_tab_divider, .flexlayout__border_tab_divider {
   width: 1px;

@@ -1,6 +1,9 @@
 {
   "global": {
-    "tabEnablePopout": true
+    "tabEnablePopout": true,
+    "tabEnablePopoutIcon": true,
+    "tabEnableFloat": true,
+    "tabEnablePin": true
   },
   "borders": [],
   "layout": {

@@ -1,3 +1,14 @@
+## 0.11.0 - 2026-09-11
+* **Breaking Change:** Theme CSS variables are namespaced to avoid collisions: the bare `--color-*`, `--font-*`, `--splitter-*`, etc. variables are now `--fl-*` (e.g. `--color-text` is `--fl-color-text`). Custom CSS referencing the old bare variable names must be updated.
+* **Breaking Change:** New defaults: `realtimeResize` Layout prop is now `true`; `tabEnableRename`, `tabEnablePin` and `tabEnablePopoutIcon` are now `false`. Restore the old behavior via `global` (e.g. `tabEnableRename: true`).
+* **Breaking Change:** Removed the `i18nMapper` Layout prop. Use `i18nTranslator` instead — it receives all strings (model text and UI labels) and returns the translated string.
+* **Added:** `i18nTranslator` prop on `<Layout>` — a single function that translates both model strings (tab names, group names, tabset names) and built-in UI labels (button tooltips, context menu items, drag images, error messages).
+* **Added:** `I18nLabelDefaults` — a map of all built-in UI label keys to their default English text, useful as a base for translation dictionaries.
+* **Added:** `I18nLabel` enum values are now stable `flexlayout.ui.*` translation keys (e.g. `I18nLabel.Close_Tab = "flexlayout.ui.close.tab"`).
+* **Added:** `userData` on `Action` — reserved field for app use (carried on actions, not interpreted by the library).
+* **Added:** Directory of Examples.
+* **Changed:** Classic themes (`light`, `dark`, `gray`, `underline`, `rounded`) now use the system font stack (`ui-sans-serif, system-ui, -apple-system, Arial, sans-serif`) and no longer have different tabbar selected/maximized background colors.
+
 ## 0.10.8 - 2026-09-01
 * **Fixed:** horizontal trackpad scroll on tabbar (trackpad `deltaX` is now handled; dominant axis is picked per orientation to avoid tiny diagonal `deltaY` jitter).
 * **Fixed:** measure stickyButtons width for overflow hysteresis to prevent infinite loop ([#517](https://github.com/caplin/FlexLayout/issues/517)).
