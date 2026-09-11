@@ -8,35 +8,35 @@ FlexLayout is a layout manager for React that arranges components in multiple ta
 
 ![FlexLayout Demo Screenshot](screenshots/Screenshot_v0.10.png?raw=true "FlexLayout Demo Screenshot")
 
-[Run the Demo](https://caplin.github.io/FlexLayout/demos/v0.10/demo/index.html)
+[Run the Demo](https://caplin.github.io/FlexLayout/demos/v0.11/demo/index.html)
 
-[Examples](https://caplin.github.io/FlexLayout/demos/v0.10/examples/index.html)
+[Examples](https://caplin.github.io/FlexLayout/demos/v0.11/examples/index.html)
 
 [Example in CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf)
 
-[API Doc](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/index.html)
+[API Doc](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/index.html)
 
 FlexLayout's only dependency is React.
 
 Features:
-* Tabs (scrolling or wrapped) — see [Tab Wrapping](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-wrapping/) / [Many Tabs](https://caplin.github.io/FlexLayout/demos/v0.10/examples/many-tabs/)
-* Pinnable tabs — see [Pinned Tabs](https://caplin.github.io/FlexLayout/demos/v0.10/examples/pinned-tabs/)
-* Tab groups (Chrome-style colored group pills) — see [Tab Groups](#tab-groups) / [example](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-groups/)
-* Border tabsets: splitting the layout or overlaying it, with autohide when empty option — see [Borders](https://caplin.github.io/FlexLayout/demos/v0.10/examples/borders/)
+* Tabs (scrolling or wrapped) — see [Tab Wrapping](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tab-wrapping/) / [Many Tabs](https://caplin.github.io/FlexLayout/demos/v0.11/examples/many-tabs/)
+* Pinnable tabs — see [Pinned Tabs](https://caplin.github.io/FlexLayout/demos/v0.11/examples/pinned-tabs/)
+* Tab groups (Chrome-style colored group pills) — see [Tab Groups](#tab-groups) / [example](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tab-groups/)
+* Border tabsets: splitting the layout or overlaying it, with autohide when empty option — see [Borders](https://caplin.github.io/FlexLayout/demos/v0.11/examples/borders/)
 * Tabset dragging (move all tabs in a tabset in one operation)
 * Docking to tabsets or edges of the frame
 * Maximizing tabsets (double-click tabset header or use icon)
-* Tab overflow (menu for hidden tabs, mouse wheel scrolling) — see [Many Tabs](https://caplin.github.io/FlexLayout/demos/v0.10/examples/many-tabs/)
-* Popout tabs into floating panels or new browser windows — see [Popout](https://caplin.github.io/FlexLayout/demos/v0.10/examples/popout/)
-* Submodels (layouts inside layouts) — see [Sublayout](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sublayout/)
-* Theming (light, dark, underline, etc., and combined) — see [Theme](https://caplin.github.io/FlexLayout/demos/v0.10/examples/theme/)
+* Tab overflow (menu for hidden tabs, mouse wheel scrolling) — see [Many Tabs](https://caplin.github.io/FlexLayout/demos/v0.11/examples/many-tabs/)
+* Popout tabs into floating panels or new browser windows — see [Popout](https://caplin.github.io/FlexLayout/demos/v0.11/examples/popout/)
+* Submodels (layouts inside layouts) — see [Sublayout](https://caplin.github.io/FlexLayout/demos/v0.11/examples/sublayout/)
+* Theming (light, dark, underline, etc., and combined) — see [Theme](https://caplin.github.io/FlexLayout/demos/v0.11/examples/theme/)
 * Accessibility (ARIA roles, keyboard operation with a configurable keymap, visible focus) — see [Accessibility](#accessibility)
 * Mobile support (iPad, Android)
-* Multiple ways to add tabs (drag, active tabset, by ID) — see [External Drag](https://caplin.github.io/FlexLayout/demos/v0.10/examples/external-drag/) / [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sticky-button/)
-* Comprehensive tab and tabset attributes (`enableTabStrip`, `enableDock`, `enableDrop`, etc.) — see [Min Sizes](https://caplin.github.io/FlexLayout/demos/v0.10/examples/min-sizes/)
-* Customizable tab and tabset rendering — see [Tab Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-rendering/) / [Tabset Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tabset-rendering/)
-* Tabset placeholder for empty tabsets — see [Placeholder](https://caplin.github.io/FlexLayout/demos/v0.10/examples/placeholder/)
-* Support for internationalization — see [i18n](https://caplin.github.io/FlexLayout/demos/v0.10/examples/i18n/)
+* Multiple ways to add tabs (drag, active tabset, by ID) — see [External Drag](https://caplin.github.io/FlexLayout/demos/v0.11/examples/external-drag/) / [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.11/examples/sticky-button/)
+* Comprehensive tab and tabset attributes (`enableTabStrip`, `enableDock`, `enableDrop`, etc.) — see [Min Sizes](https://caplin.github.io/FlexLayout/demos/v0.11/examples/min-sizes/)
+* Customizable tab and tabset rendering — see [Tab Rendering](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tab-rendering/) / [Tabset Rendering](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tabset-rendering/)
+* Tabset placeholder for empty tabsets — see [Placeholder](https://caplin.github.io/FlexLayout/demos/v0.11/examples/placeholder/)
+* Support for internationalization — see [i18n](https://caplin.github.io/FlexLayout/demos/v0.11/examples/i18n/)
 * Preservation of component state when tabs are moved
 * TypeScript type declarations
 
@@ -149,7 +149,7 @@ The above code renders two tabsets horizontally, each containing a single tab th
 
 <img src="screenshots/Screenshot_two_tabs.png?raw=true" alt="Simple layout" title="Generated Layout"/>
 
-[Try it now using CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf) — see [Basic](https://caplin.github.io/FlexLayout/demos/v0.10/examples/basic/) — `examples/basic/Basic.tsx`.
+[Try it now using CodeSandbox](https://codesandbox.io/p/sandbox/yvjzqf) — see [Basic](https://caplin.github.io/FlexLayout/demos/v0.11/examples/basic/) — `examples/basic/Basic.tsx`.
 
 Note: The `<Layout>` component must be hosted in a container element (with CSS `position: absolute` or `relative`). The layout will fill the containing element.
 
@@ -186,7 +186,7 @@ Each node type has a defined set of required and optional attributes.
 
 Weights on rows and tabsets specify their relative size within the parent row. The absolute values do not matter, only their proportions (e.g., two tabsets with weights 30 and 70 would render the same as if they had weights 3 and 7).
 
-NOTE: The easiest way to create your initial layout JSON is to use the [demo](https://caplin.github.io/FlexLayout/demos/v0.10/demo/index.html) app. Modify an existing layout by dragging, dropping, and adding nodes, then press the 'print' button to print the JSON to the browser's developer console. Use the Model Explorer panel to view and modify the attributes of the layout and its nodes, and use the render dropdown in the demo to blank out the panels (other than the Model Explorer) so you can focus on the layout.
+NOTE: The easiest way to create your initial layout JSON is to use the [demo](https://caplin.github.io/FlexLayout/demos/v0.11/demo/index.html) app. Modify an existing layout by dragging, dropping, and adding nodes, then press the 'print' button to print the JSON to the browser's developer console. Use the Model Explorer panel to view and modify the attributes of the layout and its nodes, and use the render dropdown in the demo to blank out the panels (other than the Model Explorer) so you can focus on the layout.
 
 By changing global or node attributes, you can modify the layout's appearance and functionality. For example, setting `tabSetEnableTabStrip: false` in the global options would change the layout into a multi-splitter (without tabs or drag-and-drop):
 
@@ -241,7 +241,7 @@ For example:
     containerRef.current!.className = "flexlayout__theme_alpha_dark"
 ```
 
-See [Theme](https://caplin.github.io/FlexLayout/demos/v0.10/examples/theme/) — `examples/theme/Theme.tsx`.
+See [Theme](https://caplin.github.io/FlexLayout/demos/v0.11/examples/theme/) — `examples/theme/Theme.tsx`.
 
 ## Overriding Theme Variables
 
@@ -283,7 +283,7 @@ onRenderTab = (node: TabNode, renderValues: ITabRenderValues) => {
 }
 ```
 
-See [Tab Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-rendering/) — `examples/tab-rendering/TabRendering.tsx`.
+See [Tab Rendering](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tab-rendering/) — `examples/tab-rendering/TabRendering.tsx`.
 
 ## Customizing Tabsets
 
@@ -321,7 +321,7 @@ onRenderTabSet = (node: (TabSetNode | BorderNode), renderValues: ITabSetRenderVa
 }
 ```
 
-See [Tabset Rendering](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tabset-rendering/) — `examples/tabset-rendering/TabSetRendering.tsx` and [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sticky-button/) — `examples/sticky-button/StickyButton.tsx`.
+See [Tabset Rendering](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tabset-rendering/) — `examples/tabset-rendering/TabSetRendering.tsx` and [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.11/examples/sticky-button/) — `examples/sticky-button/StickyButton.tsx`.
 
 ## Customizing Icons
 
@@ -413,7 +413,7 @@ const onContextMenu = (node: TabNode | TabSetNode | BorderNode, event: React.Mou
 
 The items returned by `build()` (and the `getNodeContextMenuItems` helper) are plain data, so they don't have to be shown via `showPopupMenu` — you can render them in your own styled menu component. Each item's `label` is the menu text already resolved through the layout's `i18nTranslator`, and its `onSelect` fires the corresponding action against the node's model.
 
-See [Context Menu](https://caplin.github.io/FlexLayout/demos/v0.10/examples/context-menu/) — `examples/context-menu/ContextMenu.tsx`.
+See [Context Menu](https://caplin.github.io/FlexLayout/demos/v0.11/examples/context-menu/) — `examples/context-menu/ContextMenu.tsx`.
 
 ## Model Actions
 
@@ -423,7 +423,7 @@ Once the model JSON has been loaded, all changes are applied through actions. In
 
 Apply actions using the `model.doAction()` method. This method takes a single argument created by one of the action generators (accessible via the `Actions` import):
 
-[Actions Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/classes/Actions.html)
+[Actions Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/classes/Actions.html)
 
 ### Example
 
@@ -462,34 +462,34 @@ Notes:
 - `setModel(model)` replaces the model and clears the history; pass `false` as a second argument to keep the history (e.g. for an in-place round-trip of the same model). Use `reset()` to clear the history without replacing the model.
 - Options: `maxBufferSize` (default 100) and `ignoreActionTypes` (default `[Actions.SET_ACTIVE_TABSET]`) - actions whose types are listed do not create undo steps.
 
-See [Undo / Redo](https://caplin.github.io/FlexLayout/demos/v0.10/examples/undo-redo/) — `examples/undo-redo/UndoRedo.tsx`.
+See [Undo / Redo](https://caplin.github.io/FlexLayout/demos/v0.11/examples/undo-redo/) — `examples/undo-redo/UndoRedo.tsx`.
 
 ## Optional Layout Props
 
 Many optional properties can be applied to the layout:
 
-[Layout Properties Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/ILayoutProps.html)
+[Layout Properties Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/ILayoutProps.html)
 
 
 ## JSON Model Definition
 
 The JSON model is defined as a set of TypeScript interfaces. See the documentation for details on allowed attributes:
 
-[Model Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/IJsonModel.html)
+[Model Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonModel.html)
 
-[Global Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/IGlobalAttributes.html)
+[Global Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IGlobalAttributes.html)
 
-[Row Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/IJsonRowNode.html)
+[Row Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonRowNode.html)
 
-[Tabset Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/IJsonTabSetNode.html)
+[Tabset Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonTabSetNode.html)
 
 Note: Tabsets are dynamically created as tabs are moved and deleted when their last tab is removed (unless `enableDeleteWhenEmpty` is set to `false`).
 
-[Tab Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/ITabAttributes.html)
+[Tab Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/ITabAttributes.html)
 
-[Border Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/IJsonBorderNode.html)
+[Border Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonBorderNode.html)
 
-See [Load / Save](https://caplin.github.io/FlexLayout/demos/v0.10/examples/localstorage/) — `examples/localstorage/LocalStorage.tsx` for saving/restoring models.
+See [Load / Save](https://caplin.github.io/FlexLayout/demos/v0.11/examples/localstorage/) — `examples/localstorage/LocalStorage.tsx` for saving/restoring models.
 
 ## Tab Groups
 
@@ -537,7 +537,7 @@ model.doAction(Actions.ungroup("g1"));                                 // return
 model.doAction(Actions.removeTabFromGroup("tab2"));                    // move a tab out of its group
 ```
 
-For an example see [Tab Groups](https://caplin.github.io/FlexLayout/demos/v0.10/examples/tab-groups/) — `examples/tab-groups/TabGroups.tsx` (also the `Tab Groups` layout in the demo app).
+For an example see [Tab Groups](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tab-groups/) — `examples/tab-groups/TabGroups.tsx` (also the `Tab Groups` layout in the demo app).
 
 ### Tab group colors
 
@@ -583,13 +583,13 @@ function Placeholder() {
 }
 ```
 
-The callback receives the empty `TabSetNode` and should return a flex-filled element (`flexGrow: 1`). See [Placeholder](https://caplin.github.io/FlexLayout/demos/v0.10/examples/placeholder/) — `examples/placeholder/Placeholder.tsx`.
+The callback receives the empty `TabSetNode` and should return a flex-filled element (`flexGrow: 1`). See [Placeholder](https://caplin.github.io/FlexLayout/demos/v0.11/examples/placeholder/) — `examples/placeholder/Placeholder.tsx`.
 
 ## Layout API Methods to Create New Tabs
 
 The Layout Ref provides methods for adding tabs:
 
-[Layout Methods Documentation](https://caplin.github.io/FlexLayout/demos/v0.10/typedoc/interfaces/ILayoutApi.html)
+[Layout Methods Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/ILayoutApi.html)
 
 Example:
 
@@ -598,7 +598,7 @@ layoutRef.current.addTabToTabSet("NAVIGATION", { type: "tab", component: "grid",
 ```
 This adds a new grid component to the tabset with ID "NAVIGATION". (where `layoutRef` is a React ref to the `Layout` element; see [React Refs](https://react.dev/learn/referencing-values-with-refs)).
 
-See [External Drag](https://caplin.github.io/FlexLayout/demos/v0.10/examples/external-drag/) — `examples/external-drag/ExternalDrag.tsx` and [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.10/examples/sticky-button/) — `examples/sticky-button/StickyButton.tsx`.
+See [External Drag](https://caplin.github.io/FlexLayout/demos/v0.11/examples/external-drag/) — `examples/external-drag/ExternalDrag.tsx` and [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.11/examples/sticky-button/) — `examples/sticky-button/StickyButton.tsx`.
 
 
 ## Tab Node Events
@@ -626,7 +626,7 @@ function MyComponent({ node }) {
 
 ## Popout Windows
 
-Tabs can be rendered into external browser windows (useful for multi-monitor setups) by using the `enablePopout` and `enablePopoutIcon` attributes. When enabled, a popout icon appears in the tab header. See [Popout](https://caplin.github.io/FlexLayout/demos/v0.10/examples/popout/) — `examples/popout/Popout.tsx`.
+Tabs can be rendered into external browser windows (useful for multi-monitor setups) by using the `enablePopout` and `enablePopoutIcon` attributes. When enabled, a popout icon appears in the tab header. See [Popout](https://caplin.github.io/FlexLayout/demos/v0.11/examples/popout/) — `examples/popout/Popout.tsx`.
 
 
 
