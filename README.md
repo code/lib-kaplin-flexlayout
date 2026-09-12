@@ -30,7 +30,7 @@ Features:
 * Popout tabs into floating panels or new browser windows — see [Popout](https://caplin.github.io/FlexLayout/demos/v0.11/examples/popout/)
 * Submodels (layouts inside layouts) — see [Sublayout](https://caplin.github.io/FlexLayout/demos/v0.11/examples/sublayout/)
 * Theming (light, dark, underline, etc., and combined) — see [Theme](https://caplin.github.io/FlexLayout/demos/v0.11/examples/theme/)
-* Accessibility (ARIA roles, keyboard operation with a configurable keymap, visible focus) — see [Accessibility](#accessibility)
+* Accessibility (ARIA roles, keyboard operation with a configurable keymap, visible focus) — see [Accessibility](docs/accessibility.md)
 * Mobile support (iPad, Android)
 * Multiple ways to add tabs (drag, active tabset, by ID) — see [External Drag](https://caplin.github.io/FlexLayout/demos/v0.11/examples/external-drag/) / [Sticky Button](https://caplin.github.io/FlexLayout/demos/v0.11/examples/sticky-button/)
 * Comprehensive tab and tabset attributes (`enableTabStrip`, `enableDock`, `enableDrop`, etc.) — see [Min Sizes](https://caplin.github.io/FlexLayout/demos/v0.11/examples/min-sizes/)
@@ -464,32 +464,6 @@ Notes:
 
 See [Undo / Redo](https://caplin.github.io/FlexLayout/demos/v0.11/examples/undo-redo/) — `examples/undo-redo/UndoRedo.tsx`.
 
-## Optional Layout Props
-
-Many optional properties can be applied to the layout:
-
-[Layout Properties Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/ILayoutProps.html)
-
-
-## JSON Model Definition
-
-The JSON model is defined as a set of TypeScript interfaces. See the documentation for details on allowed attributes:
-
-[Model Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonModel.html)
-
-[Global Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IGlobalAttributes.html)
-
-[Row Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonRowNode.html)
-
-[Tabset Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonTabSetNode.html)
-
-Note: Tabsets are dynamically created as tabs are moved and deleted when their last tab is removed (unless `enableDeleteWhenEmpty` is set to `false`).
-
-[Tab Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/ITabAttributes.html)
-
-[Border Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonBorderNode.html)
-
-See [Load / Save](https://caplin.github.io/FlexLayout/demos/v0.11/examples/localstorage/) — `examples/localstorage/LocalStorage.tsx` for saving/restoring models.
 
 ## Tab Groups
 
@@ -538,25 +512,6 @@ model.doAction(Actions.removeTabFromGroup("tab2"));                    // move a
 ```
 
 For an example see [Tab Groups](https://caplin.github.io/FlexLayout/demos/v0.11/examples/tab-groups/) — `examples/tab-groups/TabGroups.tsx` (also the `Tab Groups` layout in the demo app).
-
-### Tab group colors
-
-The group pill text color, default group color (used when creating a new group), and color chooser palette are controlled by CSS custom properties. Override them via `--flexlayout-<name>` on a common ancestor (e.g. `:root`):
-
-```css
-:root {
-    --flexlayout-color-tabgroup-pill-text: white;                          /* pill text color */
-    --flexlayout-color-tabgroup-default: #2196f3;                         /* color for new groups (action default) */
-    --flexlayout-color-tabgroup-menu-palette: #f00, #0f0, #00f, #ff0;    /* comma-separated color list */
-}
-```
-
-| Variable | Default | Description |
-| --- | --- | --- |
-| `--flexlayout-color-tabgroup-pill-text` | `var(--fl-color-text)` | Text color inside the group pill |
-| `--flexlayout-color-tabgroup-default` | `#9e9e9e` | Default group color when creating a group via the context menu or action without a color |
-| `--flexlayout-color-tabgroup-menu-palette` | *(10 muted hex colors)* | Comma-separated list of preset swatch colors shown in the pill's right-click color picker |
-
 
 ## Tabset Placeholder
 
@@ -624,195 +579,51 @@ function MyComponent({ node }) {
 | visibility | `{visible}`| Called when the tab's visibility changes (during layout, before paint). |
 | save       | None       | Called before a `TabNode` is serialized to JSON. Use this to save node configuration by adding data to the object returned by `node.getConfig()`. |
 
-## Popout Windows
-
-Tabs can be rendered into external browser windows (useful for multi-monitor setups) by using the `enablePopout` and `enablePopoutIcon` attributes. When enabled, a popout icon appears in the tab header. See [Popout](https://caplin.github.io/FlexLayout/demos/v0.11/examples/popout/) — `examples/popout/Popout.tsx`.
-
-
-
-Popout windows require an additional HTML page, `popout.html`, hosted at the same location as the main page (you can copy this from the demo app). The `popout.html` acts as the host for the popped-out tab, and the main page's styles are copied into it at runtime.
-
-Because popout windows render into a different document, any code using global `document` or `window` objects (e.g., for event listeners) will not function correctly. Instead, you must use the `document` or `window` of the popout. The simplest way to obtain them is from the tab node, which knows which window it is currently rendered in (the main window or a popout window):
-
-```javascript
-// inside the factory, node is the TabNode being rendered
-const currentDocument = node.getDocument();
-const currentWindow = node.getWindow();
-```
-
-Alternatively, from an element rendered within the popout (such as a ref), use the element's `ownerDocument`:
-
-```javascript
-const currentDocument = selfRef.current.ownerDocument;
-const currentWindow = currentDocument.defaultView!;
-```
-In this example, `selfRef` is a React ref to the top-level element in the tab being rendered.
-
-Note: Libraries may support popout windows by allowing you to specify the document to use; for example, see the `getDocument()` callback in ag-Grid at https://www.ag-grid.com/javascript-grid-callbacks/
-
-### Rebuilding components that move between windows
-
-Some controls (monaco, ag-Grid, charts, maps, ...) bind their listeners, popups and tooltips to the document (or window) they were created in. When a tab is popped out or docked back, its React component instance survives but the document it renders into changes, so such a control can end up bound to the wrong document.
-
-The reliable fix is to rebuild the component when the document it is rendered in changes, carrying any state over in a ref. The demo's monaco tab shows the pattern: the editor is re-keyed (remounted) whenever the wrapper element's `ownerDocument` changes, and the edited text is carried across rebuilds via a ref:
-
-```javascript
-function MyComponent() {
-    const containerRef = React.useRef(null); // the tab's wrapper element
-    const editorDocument = React.useRef(null); // document captured at last mount
-    const valueRef = React.useRef(initialValue); // state to carry across rebuilds
-    const [seed, setSeed] = React.useState(0); // key for the current instance
-
-    React.useEffect(() => {
-        const target = containerRef.current;
-        if (!target) return;
-        if (editorDocument.current !== target.ownerDocument) {
-            if (editorDocument.current !== null) {
-                setSeed((n) => n + 1); // remount into the new document
-            }
-            editorDocument.current = target.ownerDocument;
-        }
-    });
-
-    return (
-        <div ref={containerRef} style={{ height: "100%", width: "100%" }}>
-            <MyControl key={seed} defaultValue={valueRef.current} />
-        </div>
-    );
-}
-```
-
-The initial `ownerDocument` capture is skipped so the component is not needlessly rebuilt on first mount. If the component cannot be rebuilt (for example it holds state that is expensive to recreate), the `enableWindowReMount` attribute forces the whole tab to remount when it is popped out or docked back; use `onRenderTab`/`onAction` or a save/visibility listener to persist state.
-
-### Limitations of Popout Windows
-
-Note this section only applies to window based popouts, not floating panels.
-
-* **React Portals**: FlexLayout uses React Portals for popout content. Code runs in the main window's JS context, effectively extending the rendering area.
-* **Event Listeners**: You must use the popout's window/document when adding listeners (e.g., `popoutDocument.addEventListener(...)`).
-* **Timer Throttling**: Timers may throttle when the main window is in the background. Use web workers for high-precision timing if needed.
-* **Third-Party Libraries**: Controls that rely on the global `document` for event listeners or visibility tracking may require modification.
-* **Browser Zoom**: Popouts may not size or position correctly when the browser is zoomed (e.g., at 50% zoom).
-* **States**: Popouts cannot reload in maximized or minimized states.
-* **State Preservation**: While FlexLayout maintains React state when moving tabs between windows, you can use the `enableWindowReMount` attribute to force a component to re-mount.
-
-See this article about using React portals in this way: https://dev.to/noriste/the-challenges-of-rendering-an-openlayers-map-in-a-popup-through-react-2elh
-
-### Styling Popout Windows with CSS-in-JS
-
-The main page's `<style>`/`<link>` elements are copied into the popout document at runtime. This works for CSS files and for css-in-js libraries that write their rules as text (e.g. Emotion in development), but **not** for rules inserted through the CSSOM `sheet.insertRule()` API — which is what Emotion ("speedy" mode) and styled-components use in production builds. Those rules leave the `<style>` element's `textContent` empty, so a cloned `<style>` would be blank.
-
-Two mechanisms are provided to get css-in-js styles into popouts:
-
-1. **Runtime CSSOM copy (default, works for all css-in-js).** The style copy reads `sheet.cssRules` and rebuilds them in the popout, so rules that were inserted via `insertRule` are captured too. The copied css-in-js tags are then re-synced whenever their rules change while a popout is open (a short poll covers insertions that the MutationObserver cannot see). This is what makes MUI/Emotion tabs style correctly in popouts in production builds with no extra code.
-
-2. **`renderPopoutContent` prop.** Wraps the content rendered into a popout window, giving access to the popout's `window`/`document` so you can provide css-in-js providers that inject directly into the popout document:
-
-```tsx
-<Layout
-    model={model}
-    factory={factory}
-    renderPopoutContent={({ children, popoutDocument }) => (
-        <StyleSheetManager target={popoutDocument.head}>{children}</StyleSheetManager>
-    )}
-/>
-```
-
-The demo's `PopoutStyleProvider` shows this pattern for styled-components (Emotion's `CacheProvider` cannot target a separate window: tabs keep their React fiber when they move to a popout, so components never re-render under a new cache, and Emotion creates its `<style>` tags with the global document). The `onPopoutOpen`/`onPopoutClose` props are also available if you need to run styling-specific setup or teardown when a popout window opens or closes.
-
-### Popout Windows in Secure Environments
-
-Deployments with strict security headers need the following for popout windows to work:
-
-* **Same origin**: `popout.html` must be served from the same origin as the main page. The popout document runs no scripts of its own; it is driven entirely by the main window's JavaScript, which requires script access to the popout document.
-* **Content Security Policy (style-src)**: the main page's stylesheets are copied into the popout document at runtime. `<link rel="stylesheet">` elements work provided their URLs are allowed by the `style-src` of the response serving `popout.html`. Inline `<style>` elements (as injected by CSS-in-JS libraries such as Emotion or styled-components, or by Vite in dev mode) are blocked by a nonce/hash based `style-src`, since the copied elements cannot carry a valid nonce for the popout document — the runtime CSSOM copy described in [Styling Popout Windows with CSS-in-JS](#styling-popout-windows-with-css-in-js) makes css-in-js work in popouts when the policy allows it; under a nonce/hash based `style-src`, prefer real CSS files for anything rendered in popouts.
-* **Cross-origin isolation (COOP/COEP)**: if the main page is served with `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` headers (e.g. for `SharedArrayBuffer`), `popout.html` must be served with compatible headers, otherwise the browser severs the connection between the windows and popouts cannot function. Set the `supportsPopout` prop to `false` to disable popouts explicitly where they cannot be supported.
-* **Popup blockers and sandboxed frames**: if `window.open` is blocked (popup blocker, or a sandboxed iframe without `allow-popups`) the popout degrades gracefully to a floating panel. Note that when a saved layout containing popouts is restored on page load, the `window.open` happens without a user gesture and is typically blocked — the popouts become floating panels unless the user has allowed popups for the site.
-* **Trusted Types**: the library uses no HTML string injection sinks and is compatible with `require-trusted-types-for 'script'`.
-* **Multi-monitor placement**: without the Window Management permission, browsers clamp popup window coordinates to the display of the main window, so a popout saved on a second monitor will restore on the main window's display. Popout positions are saved in the main window's CSS pixels and will scale if the browser zoom changes between sessions.
-
 ## Accessibility
 
 FlexLayout has keyboard operability, ARIA semantics and visible focus styling built in.
 
-### ARIA roles
-
-* Tabs follow the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/): the tab strip is a `tablist`, each tab button is a `tab` with `aria-selected`, and each tab's content area is a `tabpanel` labelled by its tab (`aria-labelledby`).
-* Splitters are exposed as `separator` elements with `aria-orientation` and `aria-valuenow`/`aria-valuemin`/`aria-valuemax`.
-* The tab overflow menu (and the reusable popup menu below) use `role="menu"`/`role="menuitem"`; the button that opens the overflow menu advertises `aria-haspopup` and `aria-expanded`.
-* Decorative icons are hidden from assistive technology with `aria-hidden`.
-* Tabs carry explicit accessible names (including pinned state), advertise their keyboard shortcuts via `aria-keyshortcuts`, and toggle buttons expose their state via `aria-pressed`.
-* Group pills are exposed as disclosure buttons (`role="button"` with `aria-expanded`) named after the group.
-
-### Keyboard operation
-
-| Context | Keys | Action                                                                         |
-| --- | --- |--------------------------------------------------------------------------------|
-| Tabs | Arrow keys | Move focus between tabs in a tabset                                            |
-| Tabs | Enter / Space | Select the focused tab                                                         |
-| Tabs | Ctrl+Delete (default, rebindable) | Close the focused tab (when it is closeable)                                   |
-| Tabs | F2 (default, rebindable) | Rename the focused tab (when it is renameable)                                 |
-| Tabs | `focusTabToggle` binding (off by default) | Toggle focus between the selected tab button and its content                   |
-| Group pills | Enter / Space | Collapse or expand the focused group                                           |
-| Group pills | ContextMenu / Shift+F10 | Open the group menu (rename, color, collapse/expand, ungroup)                  |
-| Layout | `focusNextTabset` / `focusPreviousTabset` bindings (off by default) | Move focus to the next / previous tabset, mapped to Ctrl+[, Ctrl+] in the demo |
-| Splitters | Arrow keys | Resize                                                                         |
-| Overlay borders | Escape (default, rebindable) | Close the open overlay panel (focus returns to the border tab)                 |
-| Menus | Arrow keys, Home / End, type a letter | Move between items                                                             |
-| Menus | Enter / Space | Activate the focused item                                                      |
-| Menus | Escape / Tab | Close and return focus to the trigger                                          |
-
-### Configurable shortcuts (the `keyMap` prop)
-
-The command shortcuts above are configured through the `keyMap` layout prop. Bindings are merged over the exported `defaultKeyMap`, and passing an explicit `undefined` for a binding disables that shortcut (WCAG 2.1.4 requires shortcuts to be remappable or off):
-
-```tsx
-<Layout
-    model={model}
-    factory={factory}
-    keyMap={{ focusTabToggle: "F6", focusNextTabset: "Ctrl+]", focusPreviousTabset: "Ctrl+[" }}
-/>
-```
-
-* A binding is a `KeyboardEvent.key` name, optionally prefixed with the modifiers Ctrl, Shift, Alt or Meta joined with `+` — e.g. `"F2"`, `"Escape"`, `"Ctrl+Delete"`, `"Ctrl+]"`. Prefer function keys or modifier combinations: WCAG 2.1.4 requires single printable-character shortcuts to be remappable or off by default.
-* The configured bindings are advertised to assistive technology via `aria-keyshortcuts` (on the tab buttons, tab panels and tablists), so the advertised shortcuts always match the configured ones.
-* `defaultKeyMap` is exported so an application can display the bindings (e.g. in a keyboard-help dialog) or register them with its own shortcut manager.
-* The structural keys of the ARIA widget patterns (arrow keys within a tablist, Enter/Space activation, menu navigation, splitter arrows) are fixed and not remappable — assistive technology announces these from the widget roles themselves.
-* Pressing Enter on an already selected tab also moves focus into its content (in addition to the optional `focusTabToggle` binding).
-
-### Focus styling
-
-The bundled themes draw a visible focus outline driven by the `--fl-color-focus` CSS variable (overridable globally via `--flexlayout-color-focus`). Override it (alongside the other theme CSS variables) to match your design system.
-
-### Reusable menu for application context menus
-
-The accessible menu control used for tab overflow is also exported for your own context menus, so they get the same keyboard and ARIA behaviour. It has no dependency on the layout model and can be used declaratively (`<PopupMenu>`) or imperatively (`showPopupMenu(...)`, e.g. from the `onContextMenu` layout prop).
+Full details — at [docs/accessibility.md](docs/accessibility.md).
 
 ## Testing Your Layout
 
-Every element the library renders carries a `data-layout-path` attribute describing its position in the layout tree — a stable selector for end-to-end tests (FlexLayout's own Playwright suite is built on it; see `tests-playwright/helpers.ts` for ready-made helper functions):
+Every element the library renders carries a `data-layout-path` attribute describing its position in the layout tree — a stable selector for end-to-end tests.
 
-| Path | Element |
-| --- | --- |
-| `/r<n>` / `/ts<n>` | Row / tabset (`n` is the index within the parent), nested as in the model, e.g. `/r1/ts0` |
-| `/border/<location>` | Border strip (`top`, `bottom`, `left`, `right`) |
-| `.../tb<n>` | Tab button `n`, in the same tree location as its panel (e.g. panel `/ts0/t0` ↔ button `/ts0/tb0`, and inside a group `/ts0/g0/t0` ↔ `/ts0/g0/tb0`); `n` is the tab's index within its parent |
-| `.../g<n>` | Group pill `n` (e.g. `/ts0/g0`, `/border/right/g0`) |
-| `.../g<n>/end` | Group end marker (right cap of a split pill, e.g. `/ts0/g0/end`) |
-| `.../t<n>` | Tab panel `n` within a tabset or border path |
-| `.../tabstrip` | A tabset's tab strip |
-| `.../s<n>` | Splitter after child `n` of a row (e.g. `/s0`), or a border's splitter |
-| `.../button/<name>` | Toolbar buttons: `max`, `overflow`, `close`, `popout`, `float`, `pin` |
-| `.../textbox` | The inline rename textbox |
-| `/popup-menu` | The overflow/popup menu |
+Full details — at [docs/testing-your-layout.md](docs/testing-your-layout.md).
 
-```ts
-// playwright example: select the second tab of the first tabset, check a border panel opened
-await page.locator('[data-layout-path="/ts0/tb1"]').click();
-await expect(page.locator('[data-layout-path="/border/left/t0"]')).toBeVisible();
-```
+## Popout Windows
 
-Note the paths describe the current structure, so indices shift when tabs and tabsets move — target stable states, or use node ids via the model for highly dynamic layouts.
+Tabs can be rendered into external browser windows (useful for multi-monitor setups) by using the `enablePopout` and `enablePopoutIcon` attributes. When enabled, a popout icon appears in the tab header. See [Popout](https://caplin.github.io/FlexLayout/demos/v0.11/examples/popout/) — `examples/popout/Popout.tsx`.
+
+Full details — at [docs/popout-windows.md](docs/popout-windows.md).
+
+## Optional Layout Props
+
+Many optional properties can be applied to the layout:
+
+[Layout Properties Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/ILayoutProps.html)
+
+
+## JSON Model Definition
+
+The JSON model is defined as a set of TypeScript interfaces. See the documentation for details on allowed attributes:
+
+[Model Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonModel.html)
+
+[Global Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IGlobalAttributes.html)
+
+[Row Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonRowNode.html)
+
+[Tabset Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonTabSetNode.html)
+
+Note: Tabsets are dynamically created as tabs are moved and deleted when their last tab is removed (unless `enableDeleteWhenEmpty` is set to `false`).
+
+[Tab Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/ITabAttributes.html)
+
+[Border Attributes Documentation](https://caplin.github.io/FlexLayout/demos/v0.11/typedoc/interfaces/IJsonBorderNode.html)
+
+See [Load / Save](https://caplin.github.io/FlexLayout/demos/v0.11/examples/localstorage/) — `examples/localstorage/LocalStorage.tsx` for saving/restoring models.
+
 
 ## Running the Demo and Building the Project
 
